@@ -35,7 +35,12 @@ const AddTrade = () => {
     }
 
     try {
-      await axios.post("/logtrade", form)
+      await axios.post("/logtrade", form, {
+        headers: {
+          "x-user-id": form.user_id,
+        },
+        withCredentials: true,
+      })
       alert("✅ Trade logged!")
       setForm({ name: "", version: "", buyPrice: "", sellPrice: "", platform: "Console", user_id: form.user_id })
     } catch (err) {
