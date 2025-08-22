@@ -2,15 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Custom scrollbars and tweaks */
+/* Optional: your global styles */
 body {
   @apply bg-black text-white;
-}
-
-::-webkit-scrollbar {
-  width: 6px;
-}
-::-webkit-scrollbar-thumb {
-  background: #00ff80;
-  border-radius: 3px;
 }
