@@ -4,6 +4,7 @@ import react from '@vitejs/plugin-react';
 const port = parseInt(process.env.PORT) || 8080;
 
 export default defineConfig({
+  base: './', // ← this is crucial for correct path resolution after build!
   plugins: [react()],
   server: {
     host: '0.0.0.0',
@@ -14,6 +15,6 @@ export default defineConfig({
     port,
   },
   build: {
-    outDir: 'dist', // ✅ Required for Railway to find static files
+    outDir: 'dist',
   },
 });
