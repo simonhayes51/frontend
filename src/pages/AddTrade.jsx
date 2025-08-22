@@ -3,10 +3,10 @@ import axios from "../axios"
 
 const AddTrade = () => {
   const [form, setForm] = useState({
-    player_name: "",
+    name: "",
     version: "",
-    buy_price: "",
-    sell_price: "",
+    buyPrice: "",
+    sellPrice: "",
     platform: "Console",
   })
   const [submitting, setSubmitting] = useState(false)
@@ -18,22 +18,18 @@ const AddTrade = () => {
   const handleSubmit = async (e) => {
     e.preventDefault()
     setSubmitting(true)
+
+    const user_id = new URLSearchParams(window.location.search).get("user_id")
+    if (!user_id) {
+      alert("❌ User not logged in")
+      setSubmitting(false)
+      return
+    }
+
     try {
-      await axios.post("/api/trade", {
-        player_name: form.player_name,
-        version: form.version,
-        buy_price: parseInt(form.buy_price),
-        sell_price: parseInt(form.sell_price),
-        platform: form.platform,
-      })
+      await axios.post("/logtrade", { ...form, user_id })
       alert("✅ Trade logged!")
-      setForm({
-        player_name: "",
-        version: "",
-        buy_price: "",
-        sell_price: "",
-        platform: "Console",
-      })
+      setForm({ name: "", version: "", buyPrice: "", sellPrice: "", platform: "Console" })
     } catch (err) {
       alert("❌ Failed to log trade.")
       console.error(err)
@@ -46,18 +42,13 @@ const AddTrade = () => {
     <form onSubmit={handleSubmit} className="bg-zinc-900 p-6 rounded-2xl space-y-4">
       <h2 className="text-xl font-semibold text-white">📥 Log a Trade</h2>
 
-      {[
-        { name: "player_name", placeholder: "Player Name" },
-        { name: "version", placeholder: "Card Version (e.g. Gold Rare)" },
-        { name: "buy_price", placeholder: "Buy Price" },
-        { name: "sell_price", placeholder: "Sell Price" },
-      ].map((field) => (
+      {["name", "version", "buyPrice", "sellPrice"].map((field) => (
         <input
-          key={field.name}
-          name={field.name}
+          key={field}
+          name={field}
           type="text"
-          placeholder={field.placeholder}
-          value={form[field.name]}
+          placeholder={field}
+          value={form[field]}
           onChange={handleChange}
           className="w-full p-3 rounded bg-zinc-800 text-white placeholder:text-zinc-400"
           required
