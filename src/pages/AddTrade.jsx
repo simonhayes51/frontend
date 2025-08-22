@@ -3,10 +3,10 @@ import axios from "../axios"
 
 const AddTrade = () => {
   const [form, setForm] = useState({
-    name: "",
+    player_name: "",
     version: "",
-    buyPrice: "",
-    sellPrice: "",
+    buy_price: "",
+    sell_price: "",
     platform: "Console",
   })
   const [submitting, setSubmitting] = useState(false)
@@ -19,9 +19,21 @@ const AddTrade = () => {
     e.preventDefault()
     setSubmitting(true)
     try {
-      await axios.post("/logtrade", form)
+      await axios.post("/api/trade", {
+        player_name: form.player_name,
+        version: form.version,
+        buy_price: parseInt(form.buy_price),
+        sell_price: parseInt(form.sell_price),
+        platform: form.platform,
+      })
       alert("✅ Trade logged!")
-      setForm({ name: "", version: "", buyPrice: "", sellPrice: "", platform: "Console" })
+      setForm({
+        player_name: "",
+        version: "",
+        buy_price: "",
+        sell_price: "",
+        platform: "Console",
+      })
     } catch (err) {
       alert("❌ Failed to log trade.")
       console.error(err)
@@ -34,13 +46,18 @@ const AddTrade = () => {
     <form onSubmit={handleSubmit} className="bg-zinc-900 p-6 rounded-2xl space-y-4">
       <h2 className="text-xl font-semibold text-white">📥 Log a Trade</h2>
 
-      {["name", "version", "buyPrice", "sellPrice"].map((field) => (
+      {[
+        { name: "player_name", placeholder: "Player Name" },
+        { name: "version", placeholder: "Card Version (e.g. Gold Rare)" },
+        { name: "buy_price", placeholder: "Buy Price" },
+        { name: "sell_price", placeholder: "Sell Price" },
+      ].map((field) => (
         <input
-          key={field}
-          name={field}
+          key={field.name}
+          name={field.name}
           type="text"
-          placeholder={field}
-          value={form[field]}
+          placeholder={field.placeholder}
+          value={form[field.name]}
           onChange={handleChange}
           className="w-full p-3 rounded bg-zinc-800 text-white placeholder:text-zinc-400"
           required
