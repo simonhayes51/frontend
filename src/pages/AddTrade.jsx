@@ -1,4 +1,4 @@
-import React, { useState } from "react"
+import React, { useState, useEffect } from "react"
 import axios from "../axios"
 
 const AddTrade = () => {
@@ -8,8 +8,17 @@ const AddTrade = () => {
     buyPrice: "",
     sellPrice: "",
     platform: "Console",
+    user_id: "",
   })
   const [submitting, setSubmitting] = useState(false)
+
+  // Get user_id from URL
+  useEffect(() => {
+    const userId = new URLSearchParams(window.location.search).get("user_id")
+    if (userId) {
+      setForm((prevForm) => ({ ...prevForm, user_id: userId }))
+    }
+  }, [])
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value })
@@ -19,17 +28,16 @@ const AddTrade = () => {
     e.preventDefault()
     setSubmitting(true)
 
-    const user_id = new URLSearchParams(window.location.search).get("user_id")
-    if (!user_id) {
+    if (!form.user_id) {
       alert("❌ User not logged in")
       setSubmitting(false)
       return
     }
 
     try {
-      await axios.post("/logtrade", { ...form, user_id })
+      await axios.post("/logtrade", form)
       alert("✅ Trade logged!")
-      setForm({ name: "", version: "", buyPrice: "", sellPrice: "", platform: "Console" })
+      setForm({ name: "", version: "", buyPrice: "", sellPrice: "", platform: "Console", user_id: form.user_id })
     } catch (err) {
       alert("❌ Failed to log trade.")
       console.error(err)
