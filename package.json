@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "vite",
-    "build": "NODE_ENV=development vite build",
+    "build": "vite build",,
     "start": "serve -s dist -l $PORT"
   },
   "dependencies": {
