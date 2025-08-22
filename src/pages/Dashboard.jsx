@@ -33,9 +33,11 @@ const Dashboard = () => {
   }
 
   useEffect(() => {
-    axios.get(`https://backend-production-1f1a.up.railway.app/api/profile/${userId}`).then(res => setProfile(res.data))
-    axios.get(`https://backend-production-1f1a.up.railway.app/api/sales/${userId}`).then(res => setSales(res.data))
-  }, [])
+    axios.get(`https://backend-production-1f1a.up.railway.app/api/profile/${userId}`)
+      .then(res => setProfile(res.data))
+    axios.get(`https://backend-production-1f1a.up.railway.app/api/sales/${userId}`)
+      .then(res => setSales(res.data))
+  }, [userId])
 
   if (!profile) return <p style={{ padding: "2rem" }}>Loading...</p>
 
