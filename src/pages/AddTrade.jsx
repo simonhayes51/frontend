@@ -25,31 +25,26 @@ const AddTrade = () => {
   }
 
   const handleSubmit = async (e) => {
-    e.preventDefault()
-    setSubmitting(true)
+  e.preventDefault()
+  setSubmitting(true)
 
-    if (!form.user_id) {
-      alert("❌ User not logged in")
-      setSubmitting(false)
-      return
-    }
-
-    try {
-      await axios.post("/logtrade", form, {
-        headers: {
-          "x-user-id": form.user_id,
-        },
-        withCredentials: true,
-      })
-      alert("✅ Trade logged!")
-      setForm({ name: "", version: "", buyPrice: "", sellPrice: "", platform: "Console", user_id: form.user_id })
-    } catch (err) {
-      alert("❌ Failed to log trade.")
-      console.error(err)
-    } finally {
-      setSubmitting(false)
-    }
+  try {
+    await axios.post("/logtrade", {
+      name: form.name,
+      version: form.version,
+      buyPrice: form.buyPrice,
+      sellPrice: form.sellPrice,
+      platform: form.platform,
+    })
+    alert("✅ Trade logged!")
+    setForm({ name: "", version: "", buyPrice: "", sellPrice: "", platform: "Console" })
+  } catch (err) {
+    alert("❌ Failed to log trade.")
+    console.error(err)
+  } finally {
+    setSubmitting(false)
   }
+}
 
   return (
     <form onSubmit={handleSubmit} className="bg-zinc-900 p-6 rounded-2xl space-y-4">
