@@ -1,9 +1,10 @@
 const Trades = () => {
   return (
     <div>
-      <h2 className="text-2xl font-bold text-lime mb-4">📈 Trades</h2>
-      <p>View and manage all your logged trades.</p>
+      <h1 className="text-2xl font-bold">📊 Trade History</h1>
+      <p>Here you’ll see all your trades listed.</p>
     </div>
   )
 }
+
 export default Trades
