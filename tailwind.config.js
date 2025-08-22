@@ -2,18 +2,14 @@
 export default {
   content: [
     "./index.html",
-    "./src/**/*.{js,ts,jsx,tsx}",
+    "./src/**/*.{js,jsx}"
   ],
   theme: {
     extend: {
       colors: {
-        limegreen: "#00ff80",
-        dark: "#0f0f0f",
-      },
-      fontFamily: {
-        sans: ["'Inter'", "sans-serif"],
-      },
-    },
+        lime: "#00ff80"
+      }
+    }
   },
-  plugins: [],
+  plugins: []
 }
