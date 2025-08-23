@@ -1,7 +1,8 @@
 import React, { useState } from "react";
-import axios from "../axios";
+import { useDashboard } from "../context/DashboardContext";
 
-const AddTrade = ({ user, onTradeAdded }) => {
+const AddTrade = () => {
+  const { addTrade } = useDashboard();
   const [form, setForm] = useState({
     player: "",
     version: "",
@@ -21,22 +22,27 @@ const AddTrade = ({ user, onTradeAdded }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
+    
     try {
-      await axios.post("/api/add_trade", { ...form, user_id: user.id });
-      setMessage("✅ Trade logged successfully!");
-      setForm({
-        player: "",
-        version: "",
-        buy: "",
-        sell: "",
-        quantity: 1,
-        platform: "Console",
-        tag: "General",
-      });
-      if (onTradeAdded) onTradeAdded(); // refresh dashboard
+      const result = await addTrade(form);
+      
+      if (result.success) {
+        setMessage("Trade logged successfully!");
+        setForm({
+          player: "",
+          version: "",
+          buy: "",
+          sell: "",
+          quantity: 1,
+          platform: "Console",
+          tag: "General",
+        });
+      } else {
+        setMessage("Failed to log trade: " + result.message);
+      }
     } catch (err) {
       console.error(err);
-      setMessage("❌ Failed to log trade.");
+      setMessage("Failed to log trade.");
     } finally {
       setLoading(false);
     }
@@ -44,7 +50,7 @@ const AddTrade = ({ user, onTradeAdded }) => {
 
   return (
     <div className="p-4">
-      <h1 className="text-xl font-bold mb-4">➕ Add Trade</h1>
+      <h1 className="text-xl font-bold mb-4">Add Trade</h1>
       {message && <p className="mb-3 text-sm">{message}</p>}
       <form onSubmit={handleSubmit} className="grid grid-cols-2 gap-4">
         <input name="player" placeholder="Player" value={form.player} onChange={handleChange} className="p-2 bg-gray-800 rounded" required />
