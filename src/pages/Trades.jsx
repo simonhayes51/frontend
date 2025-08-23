@@ -1,13 +1,14 @@
 import React, { useEffect, useState } from "react";
-import axios from "../axios";
+import { useDashboard } from "../context/DashboardContext";
 
 const Trades = () => {
+  const { getAllTrades } = useDashboard();
   const [trades, setTrades] = useState([]);
   const [loading, setLoading] = useState(true);
 
   // Helper to safely format numbers
   const safeNumber = (value) => Number(value || 0).toLocaleString();
-
+  
   // Helper to safely format dates
   const safeDate = (date) => {
     try {
@@ -19,32 +20,28 @@ const Trades = () => {
 
   useEffect(() => {
     const fetchTrades = async () => {
-      const userId = localStorage.getItem("user_id");
-      if (!userId) {
-        console.error("❌ No user_id found in localStorage");
-        setLoading(false);
-        return;
-      }
-
       try {
-        const res = await axios.get(`/api/trades/${userId}`);
-        setTrades(res.data || []);
+        const result = await getAllTrades();
+        if (result.success) {
+          setTrades(result.trades);
+        } else {
+          console.error("Failed to fetch trades:", result.message);
+        }
       } catch (err) {
-        console.error("❌ Failed to fetch trades:", err);
+        console.error("Failed to fetch trades:", err);
       } finally {
         setLoading(false);
       }
     };
-
+    
     fetchTrades();
-  }, []);
+  }, [getAllTrades]);
 
   if (loading) return <p className="text-gray-400">Loading trades...</p>;
 
   return (
     <div className="bg-zinc-900 p-6 rounded-2xl shadow-md">
-      <h1 className="text-2xl font-bold mb-4">📊 Trade History</h1>
-
+      <h1 className="text-2xl font-bold mb-4">Trade History</h1>
       {trades.length === 0 ? (
         <p className="text-gray-400">No trades logged yet.</p>
       ) : (
