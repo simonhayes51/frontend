@@ -1,16 +1,16 @@
-// 📁 src/axios.js
-import axios from "axios";
+import axios from "axios"
 
 const instance = axios.create({
-  baseURL: "https://backend-production-1f1a.up.railway.app/api",
-});
+  baseURL: "https://backend-production-1f1a.up.railway.app",
+})
 
+// Automatically include user_id from localStorage in GET requests
 instance.interceptors.request.use((config) => {
-  const userId = localStorage.getItem("user_id");
-  if (userId) {
-    config.url += config.url.includes("?") ? `&user_id=${userId}` : `?user_id=${userId}`;
+  const userId = localStorage.getItem("user_id")
+  if (userId && config.method === "get") {
+    config.params = { ...(config.params || {}), user_id: userId }
   }
-  return config;
-});
+  return config
+})
 
-export default instance;
+export default instance
