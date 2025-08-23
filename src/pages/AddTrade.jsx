@@ -1,18 +1,18 @@
 import React, { useState, useEffect } from "react";
 import axios from "../axios";
+import { useDashboard } from "../context/DashboardContext";
 
 const AddTrade = () => {
   const [form, setForm] = useState({
-    player: "",
+    name: "",
     version: "",
-    buy: "",
-    sell: "",
-    quantity: 1,
+    buyPrice: "",
+    sellPrice: "",
     platform: "Console",
-    tag: "",
     user_id: "",
   });
   const [submitting, setSubmitting] = useState(false);
+  const { fetchDashboard } = useDashboard();
 
   useEffect(() => {
     const userId = new URLSearchParams(window.location.search).get("user_id");
@@ -21,27 +21,20 @@ const AddTrade = () => {
     }
   }, []);
 
-  const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
-  };
+  const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSubmitting(true);
 
     try {
-      await axios.post("/api/add_trade", form);
-      alert("✅ Trade logged successfully!");
-      setForm({
-        player: "",
-        version: "",
-        buy: "",
-        sell: "",
-        quantity: 1,
-        platform: "Console",
-        tag: "",
-        user_id: form.user_id,
-      });
+      await axios.post("/logtrade", form);
+      alert("✅ Trade logged!");
+
+      setForm({ ...form, name: "", version: "", buyPrice: "", sellPrice: "" });
+
+      // 🔄 Instantly refresh dashboard totals
+      await fetchDashboard();
     } catch (err) {
       alert("❌ Failed to log trade.");
       console.error(err);
@@ -53,12 +46,11 @@ const AddTrade = () => {
   return (
     <form onSubmit={handleSubmit} className="bg-zinc-900 p-6 rounded-2xl space-y-4">
       <h2 className="text-xl font-semibold text-white">📥 Log a Trade</h2>
-
-      {["player", "version", "buy", "sell", "tag"].map((field) => (
+      {["name", "version", "buyPrice", "sellPrice"].map((field) => (
         <input
           key={field}
           name={field}
-          type={field === "buy" || field === "sell" ? "number" : "text"}
+          type="text"
           placeholder={field}
           value={form[field]}
           onChange={handleChange}
@@ -66,17 +58,6 @@ const AddTrade = () => {
           required
         />
       ))}
-
-      <input
-        name="quantity"
-        type="number"
-        placeholder="Quantity"
-        value={form.quantity}
-        onChange={handleChange}
-        className="w-full p-3 rounded bg-zinc-800 text-white placeholder:text-zinc-400"
-        required
-      />
-
       <select
         name="platform"
         value={form.platform}
@@ -86,7 +67,6 @@ const AddTrade = () => {
         <option value="Console">🎮 Console</option>
         <option value="PC">💻 PC</option>
       </select>
-
       <button
         type="submit"
         disabled={submitting}
