@@ -2,6 +2,7 @@ import { lazy, Suspense } from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
 import { DashboardProvider } from "./context/DashboardContext";
+import { SettingsProvider } from "./context/SettingsContext";
 import ErrorBoundary from "./components/ErrorBoundary";
 import Layout from "./components/Layout";
 import Loading from "./components/Loading";
@@ -31,9 +32,11 @@ function App() {
                 {/* Protected routes */}
                 <Route path="/" element={
                   <PrivateRoute>
-                    <DashboardProvider>
-                      <Layout />
-                    </DashboardProvider>
+                    <SettingsProvider>
+                      <DashboardProvider>
+                        <Layout />
+                      </DashboardProvider>
+                    </SettingsProvider>
                   </PrivateRoute>
                 }>
                   <Route index element={<Dashboard />} />
