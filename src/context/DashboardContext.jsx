@@ -10,10 +10,10 @@ export const DashboardProvider = ({ children }) => {
   const fetchDashboard = async () => {
     try {
       setLoading(true);
-      const response = await axios.get("/api/profile/me"); // Adjust if endpoint differs
-      setDashboardData(response.data);
-    } catch (err) {
-      console.error("Failed to fetch dashboard:", err);
+      const res = await axios.get("/api/profile/me");
+      setDashboardData(res.data);
+    } catch (error) {
+      console.error("Failed to fetch dashboard data:", error);
     } finally {
       setLoading(false);
     }
