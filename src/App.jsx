@@ -1,36 +1,27 @@
-import React, { useEffect } from "react";
-import { BrowserRouter as Router, Routes, Route, Link, Navigate } from "react-router-dom";
+import React from "react";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Dashboard from "./pages/Dashboard";
+import Trades from "./pages/Trades";
+import AddTrade from "./pages/AddTrade";
 import Settings from "./pages/Settings";
-import "./index.css";
+import Navbar from "./components/Navbar"; // Assuming you already have this
 
 const App = () => {
-  useEffect(() => {
-    // Handle URL parameters safely in browser environment
-    const urlParams = new URLSearchParams(window.location.search);
-    const userId = urlParams.get("user_id");
-    if (userId) {
-      localStorage.setItem("user_id", userId);
-    }
-  }, []);
-
   return (
     <Router>
-      <div className="min-h-screen bg-zinc-950 text-white">
-        <nav className="flex justify-between items-center bg-zinc-900 p-4 shadow-lg">
-          <h1 className="text-xl font-bold text-lime">FUT Trader Dashboard</h1>
-          <div className="flex gap-6">
-            <Link to="/" className="hover:text-lime">Dashboard</Link>
-            <Link to="/settings" className="hover:text-lime">Settings</Link>
-          </div>
-        </nav>
-        <main className="p-6">
+      <div className="min-h-screen bg-black text-white">
+        {/* Navbar */}
+        <Navbar />
+
+        {/* Main Content */}
+        <div className="max-w-6xl mx-auto p-6">
           <Routes>
             <Route path="/" element={<Dashboard />} />
+            <Route path="/trades" element={<Trades />} />
+            <Route path="/add-trade" element={<AddTrade />} />
             <Route path="/settings" element={<Settings />} />
-            <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
-        </main>
+        </div>
       </div>
     </Router>
   );
