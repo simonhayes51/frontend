@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext } from "react";
+import React, { useState, useContext } from "react";
 import axios from "../axios";
 import { DashboardContext } from "../context/DashboardContext";
 
@@ -8,19 +8,10 @@ const AddTrade = () => {
     version: "",
     buyPrice: "",
     sellPrice: "",
-    platform: "Console",
-    user_id: "",
+    platform: "Console"
   });
-  const [submitting, setSubmitting] = useState(false);
+  const [loading, setLoading] = useState(false);
   const { refreshDashboard } = useContext(DashboardContext);
-
-  // Get user_id from URL if provided
-  useEffect(() => {
-    const userId = new URLSearchParams(window.location.search).get("user_id");
-    if (userId) {
-      setForm((prevForm) => ({ ...prevForm, user_id: userId }));
-    }
-  }, []);
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -28,80 +19,92 @@ const AddTrade = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setSubmitting(true);
+    setLoading(true);
 
     try {
-      const response = await axios.post("/logtrade", {
+      await axios.post("/logtrade", {
         name: form.name,
         version: form.version,
         buy_price: Number(form.buyPrice),
         sell_price: Number(form.sellPrice),
-        platform: form.platform,
-        user_id: form.user_id,
+        platform: form.platform
       });
 
-      if (response.status === 200) {
-        alert("✅ Trade logged successfully!");
-        setForm({
-          name: "",
-          version: "",
-          buyPrice: "",
-          sellPrice: "",
-          platform: "Console",
-          user_id: form.user_id,
-        });
+      alert("✅ Trade logged successfully!");
+      setForm({
+        name: "",
+        version: "",
+        buyPrice: "",
+        sellPrice: "",
+        platform: "Console"
+      });
 
-        // Refresh dashboard totals instantly
-        refreshDashboard();
-      } else {
-        alert("❌ Failed to log trade. Please try again.");
-      }
-    } catch (err) {
-      console.error("Log trade error:", err.response?.data || err.message);
-      alert("❌ Failed to log trade.");
+      refreshDashboard(); // instantly refresh totals
+    } catch (error) {
+      console.error("Error logging trade:", error);
+      alert("❌ Failed to log trade");
     } finally {
-      setSubmitting(false);
+      setLoading(false);
     }
   };
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      className="bg-zinc-900 p-6 rounded-2xl space-y-4 shadow-lg"
-    >
-      <h2 className="text-xl font-semibold text-white">📥 Log a Trade</h2>
-
-      {["name", "version", "buyPrice", "sellPrice"].map((field) => (
+    <div className="bg-zinc-900 p-6 rounded-xl shadow-lg text-white">
+      <h2 className="text-2xl font-bold mb-4">📥 Log a Trade</h2>
+      <form onSubmit={handleSubmit} className="space-y-4">
         <input
-          key={field}
-          name={field}
-          type={field.includes("Price") ? "number" : "text"}
-          placeholder={field}
-          value={form[field]}
+          type="text"
+          name="name"
+          placeholder="Player Name"
+          value={form.name}
           onChange={handleChange}
-          className="w-full p-3 rounded bg-zinc-800 text-white placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-lime"
+          className="w-full p-3 rounded bg-zinc-800"
           required
         />
-      ))}
-
-      <select
-        name="platform"
-        value={form.platform}
-        onChange={handleChange}
-        className="w-full p-3 rounded bg-zinc-800 text-white focus:outline-none focus:ring-2 focus:ring-lime"
-      >
-        <option value="Console">🎮 Console</option>
-        <option value="PC">💻 PC</option>
-      </select>
-
-      <button
-        type="submit"
-        disabled={submitting}
-        className="bg-lime text-black py-2 px-6 rounded hover:opacity-90 font-semibold w-full"
-      >
-        {submitting ? "Submitting..." : "Submit Trade"}
-      </button>
-    </form>
+        <input
+          type="text"
+          name="version"
+          placeholder="Card Version (e.g. TOTS)"
+          value={form.version}
+          onChange={handleChange}
+          className="w-full p-3 rounded bg-zinc-800"
+        />
+        <input
+          type="number"
+          name="buyPrice"
+          placeholder="Buy Price"
+          value={form.buyPrice}
+          onChange={handleChange}
+          className="w-full p-3 rounded bg-zinc-800"
+          required
+        />
+        <input
+          type="number"
+          name="sellPrice"
+          placeholder="Sell Price"
+          value={form.sellPrice}
+          onChange={handleChange}
+          className="w-full p-3 rounded bg-zinc-800"
+          required
+        />
+        <select
+          name="platform"
+          value={form.platform}
+          onChange={handleChange}
+          className="w-full p-3 rounded bg-zinc-800"
+        >
+          <option value="Console">🎮 Console</option>
+          <option value="PC">💻 PC</option>
+        </select>
+        <button
+          type="submit"
+          disabled={loading}
+          className="bg-lime text-black py-3 px-6 rounded-lg hover:opacity-90 w-full"
+        >
+          {loading ? "Submitting..." : "Submit Trade"}
+        </button>
+      </form>
+    </div>
   );
 };
 
