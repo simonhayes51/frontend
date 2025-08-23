@@ -1,3 +1,4 @@
+// Fixed tailwind.config.js
 /** @type {import('tailwindcss').Config} */
 export default {
   content: [
@@ -7,9 +8,12 @@ export default {
   theme: {
     extend: {
       colors: {
-        lime: "#00ff80"
+        lime: {
+          DEFAULT: "#00ff80",
+          400: "#00ff80" // This allows text-lime-400 to work
+        }
       }
     }
   },
   plugins: []
-}
+};
