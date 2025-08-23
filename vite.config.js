@@ -1,20 +1,28 @@
-import { defineConfig } from 'vite';
-import react from '@vitejs/plugin-react';
-
-const port = parseInt(process.env.PORT) || 8080;
+import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
 
 export default defineConfig({
-  base: './',
   plugins: [react()],
   server: {
-    host: '0.0.0.0',
-    port,
+    host: true,
+    port: process.env.PORT ? parseInt(process.env.PORT) : 5173
   },
   preview: {
-    host: '0.0.0.0',
-    port,
+    host: true,
+    port: process.env.PORT ? parseInt(process.env.PORT) : 4173
   },
   build: {
     outDir: 'dist',
-  },
-});
+    sourcemap: false,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'react-vendor': ['react', 'react-dom'],
+          'router-vendor': ['react-router-dom'],
+          'chart-vendor': ['recharts'],
+          'http-vendor': ['axios']
+        }
+      }
+    }
+  }
+})
