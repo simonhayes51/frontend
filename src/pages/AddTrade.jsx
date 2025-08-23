@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import axios from "../axios";
+import { DashboardContext } from "../context/DashboardContext";
 
-const AddTrade = ({ onTradeAdded }) => {
+const AddTrade = () => {
   const [form, setForm] = useState({
     name: "",
     version: "",
@@ -10,14 +11,14 @@ const AddTrade = ({ onTradeAdded }) => {
     platform: "Console",
     user_id: "",
   });
-
   const [submitting, setSubmitting] = useState(false);
+  const { refreshDashboard } = useContext(DashboardContext);
 
-  // Load user_id from localStorage or URL
+  // Get user_id from URL if provided
   useEffect(() => {
-    const userId = localStorage.getItem("user_id") || new URLSearchParams(window.location.search).get("user_id");
+    const userId = new URLSearchParams(window.location.search).get("user_id");
     if (userId) {
-      setForm((prev) => ({ ...prev, user_id: userId }));
+      setForm((prevForm) => ({ ...prevForm, user_id: userId }));
     }
   }, []);
 
@@ -30,35 +31,33 @@ const AddTrade = ({ onTradeAdded }) => {
     setSubmitting(true);
 
     try {
-      if (!form.user_id) {
-        alert("❌ No user ID found. Please log in again.");
-        return;
-      }
-
-      await axios.post("/api/logtrade", {
-        user_id: form.user_id,
+      const response = await axios.post("/logtrade", {
         name: form.name,
         version: form.version,
-        buyPrice: Number(form.buyPrice),
-        sellPrice: Number(form.sellPrice),
+        buy_price: Number(form.buyPrice),
+        sell_price: Number(form.sellPrice),
         platform: form.platform,
-      });
-
-      alert("✅ Trade logged successfully!");
-
-      setForm({
-        name: "",
-        version: "",
-        buyPrice: "",
-        sellPrice: "",
-        platform: "Console",
         user_id: form.user_id,
       });
 
-      // Trigger instant dashboard update
-      if (onTradeAdded) onTradeAdded();
+      if (response.status === 200) {
+        alert("✅ Trade logged successfully!");
+        setForm({
+          name: "",
+          version: "",
+          buyPrice: "",
+          sellPrice: "",
+          platform: "Console",
+          user_id: form.user_id,
+        });
+
+        // Refresh dashboard totals instantly
+        refreshDashboard();
+      } else {
+        alert("❌ Failed to log trade. Please try again.");
+      }
     } catch (err) {
-      console.error("❌ Trade log failed:", err.response?.data || err);
+      console.error("Log trade error:", err.response?.data || err.message);
       alert("❌ Failed to log trade.");
     } finally {
       setSubmitting(false);
@@ -66,18 +65,21 @@ const AddTrade = ({ onTradeAdded }) => {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="bg-zinc-900 p-6 rounded-2xl space-y-4">
+    <form
+      onSubmit={handleSubmit}
+      className="bg-zinc-900 p-6 rounded-2xl space-y-4 shadow-lg"
+    >
       <h2 className="text-xl font-semibold text-white">📥 Log a Trade</h2>
 
       {["name", "version", "buyPrice", "sellPrice"].map((field) => (
         <input
           key={field}
           name={field}
-          type="text"
+          type={field.includes("Price") ? "number" : "text"}
           placeholder={field}
           value={form[field]}
           onChange={handleChange}
-          className="w-full p-3 rounded bg-zinc-800 text-white placeholder:text-zinc-400"
+          className="w-full p-3 rounded bg-zinc-800 text-white placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-lime"
           required
         />
       ))}
@@ -86,7 +88,7 @@ const AddTrade = ({ onTradeAdded }) => {
         name="platform"
         value={form.platform}
         onChange={handleChange}
-        className="w-full p-3 rounded bg-zinc-800 text-white"
+        className="w-full p-3 rounded bg-zinc-800 text-white focus:outline-none focus:ring-2 focus:ring-lime"
       >
         <option value="Console">🎮 Console</option>
         <option value="PC">💻 PC</option>
@@ -95,7 +97,7 @@ const AddTrade = ({ onTradeAdded }) => {
       <button
         type="submit"
         disabled={submitting}
-        className="bg-lime text-black py-2 px-6 rounded hover:opacity-90 font-semibold"
+        className="bg-lime text-black py-2 px-6 rounded hover:opacity-90 font-semibold w-full"
       >
         {submitting ? "Submitting..." : "Submit Trade"}
       </button>
