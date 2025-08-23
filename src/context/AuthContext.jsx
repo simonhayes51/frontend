@@ -3,7 +3,6 @@ import api from '../utils/axios';
 
 const AuthContext = createContext();
 
-// Auth reducer for managing authentication state
 const authReducer = (state, action) => {
   switch (action.type) {
     case 'SET_LOADING':
@@ -45,11 +44,6 @@ const initialState = {
 export const AuthProvider = ({ children }) => {
   const [state, dispatch] = useReducer(authReducer, initialState);
 
-  // Check authentication status on mount
-  useEffect(() => {
-    checkAuthStatus();
-  }, []);
-
   const checkAuthStatus = async () => {
     try {
       dispatch({ type: 'SET_LOADING', payload: true });
@@ -65,7 +59,6 @@ export const AuthProvider = ({ children }) => {
   };
 
   const login = () => {
-    // Redirect to backend OAuth endpoint
     window.location.href = `${api.defaults.baseURL}/api/login`;
   };
 
@@ -75,10 +68,13 @@ export const AuthProvider = ({ children }) => {
       dispatch({ type: 'SET_UNAUTHENTICATED' });
     } catch (error) {
       console.error('Logout error:', error);
-      // Even if logout fails on server, clear local state
       dispatch({ type: 'SET_UNAUTHENTICATED' });
     }
   };
+
+  useEffect(() => {
+    checkAuthStatus();
+  }, []);
 
   const value = {
     ...state,
