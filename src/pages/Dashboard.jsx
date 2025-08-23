@@ -1,5 +1,7 @@
+// Updated Dashboard component with settings integration
 import React from "react";
 import { useDashboard } from "../context/DashboardContext";
+import { useSettings } from "../context/SettingsContext";
 
 const Dashboard = () => {
   const { 
@@ -11,42 +13,196 @@ const Dashboard = () => {
     error 
   } = useDashboard();
 
-  if (isLoading) return <div>Loading dashboard...</div>;
-  if (error) return <div className="text-red-500">{error}</div>;
+  const { 
+    formatCurrency, 
+    formatDate, 
+    calculateProfit,
+    visible_widgets,
+    include_tax_in_profit,
+    isLoading: settingsLoading
+  } = useSettings();
 
-  return (
-    <div className="p-4">
-      <h1 className="text-xl font-bold mb-4">📊 Dashboard</h1>
-      <div className="grid grid-cols-3 gap-4">
-        <div className="bg-gray-800 rounded-lg p-4">
-          <h2 className="text-lg">Net Profit</h2>
-          <p className="text-2xl text-green-400">{netProfit.toLocaleString()} coins</p>
-        </div>
-        <div className="bg-gray-800 rounded-lg p-4">
-          <h2 className="text-lg">EA Tax Paid</h2>
-          <p className="text-2xl text-red-400">{taxPaid.toLocaleString()} coins</p>
-        </div>
-        <div className="bg-gray-800 rounded-lg p-4">
-          <h2 className="text-lg">Starting Balance</h2>
-          <p className="text-2xl">{startingBalance.toLocaleString()} coins</p>
+  if (isLoading || settingsLoading) {
+    return (
+      <div className="p-4">
+        <div className="animate-pulse">
+          <div className="h-8 bg-gray-800 rounded mb-4"></div>
+          <div className="grid grid-cols-3 gap-4 mb-6">
+            {[1, 2, 3].map(i => (
+              <div key={i} className="bg-gray-800 rounded-lg p-4">
+                <div className="h-4 bg-gray-700 rounded mb-2"></div>
+                <div className="h-8 bg-gray-700 rounded"></div>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
-      <h2 className="mt-6 text-lg">Recent Trades</h2>
-      <ul className="bg-gray-900 rounded-lg p-4 mt-2">
-        {trades.length > 0 ? (
-          trades.map((trade, i) => (
-            <li key={i} className="border-b border-gray-700 py-2">
-              <span className="font-bold">{trade.player}</span> ({trade.version}) —  
-              Profit:{" "}
-              <span className={trade.profit >= 0 ? "text-green-400" : "text-red-400"}>
-                {trade.profit?.toLocaleString() || 'N/A'} coins
-              </span>
-            </li>
-          ))
-        ) : (
-          <li>No trades logged yet.</li>
+    );
+  }
+
+  if (error) return <div className="text-red-500 p-4">{error}</div>;
+
+  // Widget components
+  const widgets = {
+    profit: (
+      <div className="bg-gray-800 rounded-lg p-4">
+        <h2 className="text-lg font-medium text-gray-300">Net Profit</h2>
+        <p className="text-2xl font-bold text-green-400">
+          {formatCurrency(netProfit)} coins
+        </p>
+        {!include_tax_in_profit && (
+          <p className="text-sm text-gray-400">
+            (Before tax: {formatCurrency(netProfit + taxPaid)} coins)
+          </p>
         )}
-      </ul>
+      </div>
+    ),
+    tax: (
+      <div className="bg-gray-800 rounded-lg p-4">
+        <h2 className="text-lg font-medium text-gray-300">EA Tax Paid</h2>
+        <p className="text-2xl font-bold text-red-400">
+          {formatCurrency(taxPaid)} coins
+        </p>
+        <p className="text-sm text-gray-400">
+          {taxPaid > 0 ? `${((taxPaid / (netProfit + taxPaid)) * 100).toFixed(1)}% of gross profit` : 'No tax yet'}
+        </p>
+      </div>
+    ),
+    balance: (
+      <div className="bg-gray-800 rounded-lg p-4">
+        <h2 className="text-lg font-medium text-gray-300">Starting Balance</h2>
+        <p className="text-2xl font-bold text-blue-400">
+          {formatCurrency(startingBalance)} coins
+        </p>
+        {startingBalance > 0 && netProfit > 0 && (
+          <p className="text-sm text-gray-400">
+            ROI: {((netProfit / startingBalance) * 100).toFixed(1)}%
+          </p>
+        )}
+      </div>
+    ),
+    trades: (
+      <div className="bg-gray-800 rounded-lg p-4">
+        <h2 className="text-lg font-medium text-gray-300">Total Trades</h2>
+        <p className="text-2xl font-bold text-purple-400">{trades.length}</p>
+        {trades.length > 0 && (
+          <p className="text-sm text-gray-400">
+            Avg profit: {formatCurrency(netProfit / trades.length)} coins
+          </p>
+        )}
+      </div>
+    )
+  };
+
+  return (
+    <div className="p-4 max-w-6xl mx-auto">
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-bold">Dashboard</h1>
+        <div className="text-sm text-gray-400">
+          Last updated: {formatDate(new Date())}
+        </div>
+      </div>
+
+      {/* Stats Grid - Only show widgets that are enabled in settings */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        {visible_widgets.map(widgetKey => widgets[widgetKey]).filter(Boolean)}
+      </div>
+
+      {/* Recent Trades Section */}
+      <div className="bg-gray-900 rounded-lg p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-semibold">Recent Trades</h2>
+          <span className="text-sm text-gray-400">
+            Showing last {Math.min(trades.length, 10)} trades
+          </span>
+        </div>
+
+        {trades.length === 0 ? (
+          <div className="text-center py-8">
+            <div className="text-gray-400 mb-2">No trades logged yet</div>
+            <p className="text-sm text-gray-500">
+              Start by adding your first trade to see your progress here
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {trades.slice(0, 10).map((trade, i) => {
+              const displayProfit = include_tax_in_profit 
+                ? trade.profit - (trade.ea_tax || 0)
+                : trade.profit;
+
+              return (
+                <div key={i} className="flex items-center justify-between p-4 bg-gray-800 rounded-lg hover:bg-gray-750 transition-colors">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3">
+                      <span className="font-semibold">{trade.player}</span>
+                      <span className="text-sm text-gray-400">({trade.version})</span>
+                      {trade.tag && (
+                        <span className="text-xs bg-gray-700 px-2 py-1 rounded-full">
+                          {trade.tag}
+                        </span>
+                      )}
+                    </div>
+                    <div className="text-sm text-gray-400 mt-1">
+                      {formatCurrency(trade.buy)} → {formatCurrency(trade.sell)} 
+                      {trade.quantity > 1 && ` (${trade.quantity}x)`}
+                      • {trade.platform}
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className={`font-semibold ${
+                      displayProfit >= 0 ? "text-green-400" : "text-red-400"
+                    }`}>
+                      {displayProfit >= 0 ? "+" : ""}{formatCurrency(displayProfit)} coins
+                    </div>
+                    <div className="text-xs text-gray-400">
+                      {formatDate(trade.timestamp)}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {trades.length > 10 && (
+          <div className="mt-4 text-center">
+            <button className="text-blue-400 hover:text-blue-300 text-sm">
+              View all {trades.length} trades →
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Quick Stats Bar */}
+      {trades.length > 0 && (
+        <div className="mt-6 grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="text-center">
+            <div className="text-2xl font-bold text-green-400">
+              {trades.filter(t => (t.profit || 0) > 0).length}
+            </div>
+            <div className="text-sm text-gray-400">Winning Trades</div>
+          </div>
+          <div className="text-center">
+            <div className="text-2xl font-bold text-red-400">
+              {trades.filter(t => (t.profit || 0) < 0).length}
+            </div>
+            <div className="text-sm text-gray-400">Losing Trades</div>
+          </div>
+          <div className="text-center">
+            <div className="text-2xl font-bold text-blue-400">
+              {trades.length > 0 ? ((trades.filter(t => (t.profit || 0) > 0).length / trades.length) * 100).toFixed(1) : 0}%
+            </div>
+            <div className="text-sm text-gray-400">Win Rate</div>
+          </div>
+          <div className="text-center">
+            <div className="text-2xl font-bold text-purple-400">
+              {trades.length > 0 ? formatCurrency(Math.max(...trades.map(t => t.profit || 0))) : 0}
+            </div>
+            <div className="text-sm text-gray-400">Best Trade</div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
