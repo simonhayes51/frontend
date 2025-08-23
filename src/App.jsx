@@ -1,37 +1,49 @@
-import React from "react";
-import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
-import Dashboard from "./pages/Dashboard";
-import AddTrade from "./pages/AddTrade";
-import Settings from "./pages/Settings";
-import { DashboardProvider } from "./context/DashboardContext";
+import React, { useEffect, useState } from "react";
+import axios from "./axios";
 
-const App = () => {
+const Navbar = () => {
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      const userId = localStorage.getItem("user_id");
+      if (!userId) return;
+
+      try {
+        const res = await axios.get(`/api/profile/${userId}`);
+        setUser(res.data.discord);
+      } catch (err) {
+        console.error("❌ Failed to fetch Discord profile:", err);
+      }
+    };
+
+    fetchUser();
+  }, []);
+
+  const handleLogout = () => {
+    localStorage.removeItem("user_id");
+    window.location.href = "/";
+  };
+
   return (
-    <DashboardProvider>
-      <Router>
-        <div className="min-h-screen bg-black text-white">
-          <nav className="bg-zinc-900 px-6 py-4 shadow flex justify-between items-center">
-            <Link to="/" className="text-lime font-bold text-xl">
-              FUT Trader Dashboard
-            </Link>
-            <div className="space-x-6">
-              <Link to="/" className="hover:text-lime">Dashboard</Link>
-              <Link to="/add-trade" className="hover:text-lime">Add Trade</Link>
-              <Link to="/settings" className="hover:text-lime">Settings</Link>
-            </div>
-          </nav>
-
-          <main className="p-6">
-            <Routes>
-              <Route path="/" element={<Dashboard />} />
-              <Route path="/add-trade" element={<AddTrade />} />
-              <Route path="/settings" element={<Settings />} />
-            </Routes>
-          </main>
-        </div>
-      </Router>
-    </DashboardProvider>
+    <nav className="flex items-center justify-between bg-black p-4">
+      <h1 className="text-lime text-2xl font-bold">FUT Trader Dashboard</h1>
+      <div className="flex items-center gap-4">
+        {user && (
+          <>
+            <img src={user.avatar} alt="PFP" className="w-8 h-8 rounded-full" />
+            <span className="text-white">{user.username}</span>
+          </>
+        )}
+        <button
+          onClick={handleLogout}
+          className="bg-red-500 hover:bg-red-600 px-4 py-1 rounded"
+        >
+          Logout
+        </button>
+      </div>
+    </nav>
   );
 };
 
-export default App;
+export default Navbar;
