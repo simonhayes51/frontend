@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
 import Dashboard from "./pages/Dashboard";
 import Settings from "./pages/Settings";
 import "./index.css";
+import { BrowserRouter as Router, Routes, Route, Link, Navigate } from "react-router-dom";
 
 const App = () => {
   useEffect(() => {
