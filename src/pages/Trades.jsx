@@ -1,93 +1,71 @@
-import React, { useEffect, useState } from "react"
-import axios from "../axios"
+import React, { useEffect, useState } from "react";
+import axios from "../axios";
 
 const Trades = () => {
-  const [trades, setTrades] = useState([])
-  const [loading, setLoading] = useState(true)
+  const [trades, setTrades] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchTrades = async () => {
-      try {
-        const res = await axios.get(`/api/trades/${localStorage.getItem("user_id")}`)
-        setTrades(res.data)
-      } catch (err) {
-        console.error("❌ Failed to fetch trades:", err)
-      } finally {
-        setLoading(false)
+      const userId = localStorage.getItem("user_id");
+      if (!userId) {
+        console.error("❌ No user_id found in localStorage");
+        setLoading(false);
+        return;
       }
-    }
 
-    fetchTrades()
-  }, [])
+      try {
+        const res = await axios.get(`/api/trades/${userId}`);
+        setTrades(res.data);
+      } catch (err) {
+        console.error("❌ Failed to fetch trades:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  if (loading) {
-    return <p className="text-gray-400">⏳ Loading trades...</p>
-  }
+    fetchTrades();
+  }, []);
 
-  if (trades.length === 0) {
-    return <p className="text-gray-400">📭 No trades logged yet.</p>
-  }
+  if (loading) return <p className="text-gray-400">Loading trades...</p>;
 
   return (
-    <div className="p-6 bg-zinc-900 rounded-2xl shadow-md">
-      <h1 className="text-2xl font-bold text-lime mb-4">📊 Trade History</h1>
-      <div className="overflow-x-auto">
-        <table className="min-w-full bg-zinc-800 rounded-lg">
+    <div className="bg-zinc-900 p-6 rounded-2xl shadow-md">
+      <h1 className="text-2xl font-bold mb-4">📊 Trade History</h1>
+      {trades.length === 0 ? (
+        <p className="text-gray-400">No trades logged yet.</p>
+      ) : (
+        <table className="w-full border-collapse">
           <thead>
-            <tr className="bg-zinc-700 text-gray-200 text-sm">
-              <th className="px-4 py-3 text-left">Player</th>
-              <th className="px-4 py-3 text-left">Version</th>
-              <th className="px-4 py-3 text-center">Buy</th>
-              <th className="px-4 py-3 text-center">Sell</th>
-              <th className="px-4 py-3 text-center">Profit</th>
-              <th className="px-4 py-3 text-center">EA Tax</th>
-              <th className="px-4 py-3 text-center">Qty</th>
-              <th className="px-4 py-3 text-center">Platform</th>
-              <th className="px-4 py-3 text-right">Date</th>
+            <tr className="text-left border-b border-gray-700">
+              <th className="py-2">Player</th>
+              <th>Version</th>
+              <th>Qty</th>
+              <th>Buy</th>
+              <th>Sell</th>
+              <th>Profit</th>
+              <th>Date</th>
             </tr>
           </thead>
           <tbody>
-            {trades.map((trade, index) => (
-              <tr
-                key={index}
-                className="border-b border-zinc-700 hover:bg-zinc-700 transition"
-              >
-                <td className="px-4 py-3">{trade.player}</td>
-                <td className="px-4 py-3">{trade.version}</td>
-                <td className="px-4 py-3 text-center text-blue-400">
-                  {trade.buy.toLocaleString()}
+            {trades.map((trade, i) => (
+              <tr key={i} className="border-b border-gray-800">
+                <td className="py-2">{trade.player}</td>
+                <td>{trade.version}</td>
+                <td>{trade.quantity}</td>
+                <td>{trade.buy.toLocaleString()}</td>
+                <td>{trade.sell.toLocaleString()}</td>
+                <td className={trade.profit >= 0 ? "text-green-400" : "text-red-400"}>
+                  {trade.profit.toLocaleString()}
                 </td>
-                <td className="px-4 py-3 text-center text-green-400">
-                  {trade.sell.toLocaleString()}
-                </td>
-                <td
-                  className={`px-4 py-3 text-center font-semibold ${
-                    trade.profit >= 0 ? "text-lime" : "text-red-500"
-                  }`}
-                >
-                  {trade.profit >= 0 ? `+${trade.profit.toLocaleString()}` : trade.profit.toLocaleString()}
-                </td>
-                <td className="px-4 py-3 text-center text-yellow-400">
-                  {trade.ea_tax.toLocaleString()}
-                </td>
-                <td className="px-4 py-3 text-center">{trade.quantity}</td>
-                <td className="px-4 py-3 text-center">{trade.platform}</td>
-                <td className="px-4 py-3 text-right text-gray-400">
-                  {new Date(trade.timestamp).toLocaleDateString("en-GB", {
-                    day: "2-digit",
-                    month: "short",
-                    year: "2-digit",
-                    hour: "2-digit",
-                    minute: "2-digit"
-                  })}
-                </td>
+                <td>{new Date(trade.timestamp).toLocaleDateString()}</td>
               </tr>
             ))}
           </tbody>
         </table>
-      </div>
+      )}
     </div>
-  )
-}
+  );
+};
 
-export default Trades
+export default Trades;
