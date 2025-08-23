@@ -1,8 +1,11 @@
 import axios from "axios";
 
 const instance = axios.create({
-  baseURL: "https://backend-production-1f1a.up.railway.app",
+  baseURL: "https://backend-production-1f1a.up.railway.app", // ✅ Correct URL
+  withCredentials: true,
 });
+
+export default instance;
 
 // Automatically include user_id from localStorage in GET requests
 instance.interceptors.request.use((config) => {
