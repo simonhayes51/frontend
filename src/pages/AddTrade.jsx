@@ -3,6 +3,7 @@ import axios from "../axios";
 import { useDashboard } from "../context/DashboardContext";
 
 const AddTrade = () => {
+  const { refreshDashboard } = useDashboard();
   const [form, setForm] = useState({
     name: "",
     version: "",
@@ -12,12 +13,11 @@ const AddTrade = () => {
     user_id: "",
   });
   const [submitting, setSubmitting] = useState(false);
-  const { fetchDashboard } = useDashboard();
 
   useEffect(() => {
     const userId = new URLSearchParams(window.location.search).get("user_id");
     if (userId) {
-      setForm((prevForm) => ({ ...prevForm, user_id: userId }));
+      setForm((prev) => ({ ...prev, user_id: userId }));
     }
   }, []);
 
@@ -26,18 +26,13 @@ const AddTrade = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSubmitting(true);
-
     try {
       await axios.post("/logtrade", form);
+      refreshDashboard(); // ✅ Updates totals instantly
       alert("✅ Trade logged!");
-
-      setForm({ ...form, name: "", version: "", buyPrice: "", sellPrice: "" });
-
-      // 🔄 Instantly refresh dashboard totals
-      await fetchDashboard();
-    } catch (err) {
+      setForm({ ...form, name: "", version: "", buyPrice: "", sellPrice: "", platform: "Console" });
+    } catch {
       alert("❌ Failed to log trade.");
-      console.error(err);
     } finally {
       setSubmitting(false);
     }
@@ -54,7 +49,7 @@ const AddTrade = () => {
           placeholder={field}
           value={form[field]}
           onChange={handleChange}
-          className="w-full p-3 rounded bg-zinc-800 text-white placeholder:text-zinc-400"
+          className="w-full p-3 rounded bg-zinc-800 text-white"
           required
         />
       ))}
