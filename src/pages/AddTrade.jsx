@@ -1,60 +1,64 @@
-import React, { useState, useEffect } from "react"
-import axios from "../axios"
+import React, { useState, useEffect } from "react";
+import axios from "../axios";
 
 const AddTrade = () => {
   const [form, setForm] = useState({
-    name: "",
+    player: "",
     version: "",
-    buyPrice: "",
-    sellPrice: "",
+    buy: "",
+    sell: "",
+    quantity: 1,
     platform: "Console",
+    tag: "",
     user_id: "",
-  })
-  const [submitting, setSubmitting] = useState(false)
+  });
+  const [submitting, setSubmitting] = useState(false);
 
-  // Get user_id from URL
   useEffect(() => {
-    const userId = new URLSearchParams(window.location.search).get("user_id")
+    const userId = new URLSearchParams(window.location.search).get("user_id");
     if (userId) {
-      setForm((prevForm) => ({ ...prevForm, user_id: userId }))
+      setForm((prevForm) => ({ ...prevForm, user_id: userId }));
     }
-  }, [])
+  }, []);
 
   const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value })
-  }
+    setForm({ ...form, [e.target.name]: e.target.value });
+  };
 
   const handleSubmit = async (e) => {
-  e.preventDefault()
-  setSubmitting(true)
+    e.preventDefault();
+    setSubmitting(true);
 
-  try {
-    await axios.post("/logtrade", {
-      name: form.name,
-      version: form.version,
-      buyPrice: form.buyPrice,
-      sellPrice: form.sellPrice,
-      platform: form.platform,
-    })
-    alert("✅ Trade logged!")
-    setForm({ name: "", version: "", buyPrice: "", sellPrice: "", platform: "Console" })
-  } catch (err) {
-    alert("❌ Failed to log trade.")
-    console.error(err)
-  } finally {
-    setSubmitting(false)
-  }
-}
+    try {
+      await axios.post("/api/add_trade", form);
+      alert("✅ Trade logged successfully!");
+      setForm({
+        player: "",
+        version: "",
+        buy: "",
+        sell: "",
+        quantity: 1,
+        platform: "Console",
+        tag: "",
+        user_id: form.user_id,
+      });
+    } catch (err) {
+      alert("❌ Failed to log trade.");
+      console.error(err);
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   return (
     <form onSubmit={handleSubmit} className="bg-zinc-900 p-6 rounded-2xl space-y-4">
       <h2 className="text-xl font-semibold text-white">📥 Log a Trade</h2>
 
-      {["name", "version", "buyPrice", "sellPrice"].map((field) => (
+      {["player", "version", "buy", "sell", "tag"].map((field) => (
         <input
           key={field}
           name={field}
-          type="text"
+          type={field === "buy" || field === "sell" ? "number" : "text"}
           placeholder={field}
           value={form[field]}
           onChange={handleChange}
@@ -62,6 +66,16 @@ const AddTrade = () => {
           required
         />
       ))}
+
+      <input
+        name="quantity"
+        type="number"
+        placeholder="Quantity"
+        value={form.quantity}
+        onChange={handleChange}
+        className="w-full p-3 rounded bg-zinc-800 text-white placeholder:text-zinc-400"
+        required
+      />
 
       <select
         name="platform"
@@ -81,7 +95,7 @@ const AddTrade = () => {
         {submitting ? "Submitting..." : "Submit Trade"}
       </button>
     </form>
-  )
-}
+  );
+};
 
-export default AddTrade
+export default AddTrade;
