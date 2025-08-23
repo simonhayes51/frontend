@@ -1,79 +1,41 @@
-import React, { useEffect, useState } from "react";
-import axios from "../axios";
+import React from "react";
+import { useDashboard } from "../context/DashboardContext";
 
 const Dashboard = () => {
-  const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const userId = localStorage.getItem("user_id");
+  const { dashboard, loading } = useDashboard();
 
-  useEffect(() => {
-    if (!userId) return;
-    const fetchDashboard = async () => {
-      try {
-        const res = await axios.get(`/api/dashboard/${userId}`);
-        setData(res.data);
-      } catch (err) {
-        console.error("❌ Failed to fetch dashboard:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchDashboard();
-  }, [userId]);
+  if (loading) return <p className="text-gray-400">Loading dashboard...</p>;
+  if (!dashboard) return <p className="text-gray-400">No data available.</p>;
 
-  if (loading) return <p className="text-lime text-xl">Loading...</p>;
-  if (!data) return <p className="text-red-500">Failed to load dashboard.</p>;
-
-  const safeNumber = (value) => Number(value || 0).toLocaleString();
+  const { netProfit, taxPaid, startingBalance, profile } = dashboard;
 
   return (
-    <div className="grid gap-6">
-      {/* Overview Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-zinc-900 p-6 rounded-xl shadow-lg">
-          <h2 className="text-xl font-semibold mb-2">💰 Net Profit</h2>
-          <p className="text-3xl font-bold text-lime">{safeNumber(data.netProfit)}</p>
-        </div>
-        <div className="bg-zinc-900 p-6 rounded-xl shadow-lg">
-          <h2 className="text-xl font-semibold mb-2">🧾 EA Tax Paid</h2>
-          <p className="text-3xl font-bold text-lime">{safeNumber(data.taxPaid)}</p>
-        </div>
-        <div className="bg-zinc-900 p-6 rounded-xl shadow-lg">
-          <h2 className="text-xl font-semibold mb-2">🏦 Starting Balance</h2>
-          <p className="text-3xl font-bold text-lime">{safeNumber(data.startingBalance)}</p>
-        </div>
+    <div className="space-y-6">
+      <div className="bg-zinc-900 p-6 rounded-2xl shadow-md">
+        <h2 className="text-2xl font-bold">💰 Net Profit</h2>
+        <p className="text-green-400 text-3xl">{netProfit.toLocaleString()}</p>
       </div>
 
-      {/* Trader Profile */}
-      <div className="bg-zinc-900 p-6 rounded-xl shadow-lg">
-        <h2 className="text-xl font-semibold mb-4">🧳 Trader Profile</h2>
-        <p>💰 Total Profit: <span className="text-lime">{safeNumber(data.profile?.totalProfit)}</span></p>
-        <p>🛒 Trades Logged: <span className="text-lime">{data.profile?.tradesLogged || 0}</span></p>
-        <p>📈 Win Rate: <span className="text-lime">{data.profile?.winRate || 0}%</span></p>
-        <p>🏷️ Most Used Tag: <span className="text-lime">
-  {data.profile.mostUsedTag} ({data.profile.tagTrades} trades)
-</span></p>
-        {data.profile?.bestTrade && (
-          <p>🏆 Best Trade: <span className="text-lime">
-            {data.profile.bestTrade.player} (+{safeNumber(data.profile.bestTrade.profit)})
-          </span></p>
-        )}
+      <div className="bg-zinc-900 p-6 rounded-2xl shadow-md">
+        <h2 className="text-2xl font-bold">🧾 EA Tax Paid</h2>
+        <p className="text-green-400 text-3xl">{taxPaid.toLocaleString()}</p>
       </div>
 
-      {/* Recent Trades */}
-      <div className="bg-zinc-900 p-6 rounded-xl shadow-lg">
-        <h2 className="text-xl font-semibold mb-4">📄 Recent Trades</h2>
-        {data.trades && data.trades.length > 0 ? (
-          <ul className="space-y-2">
-            {data.trades.map((trade, i) => (
-              <li key={i} className="bg-zinc-800 p-3 rounded-lg flex justify-between items-center">
-                <span>{trade.player} ({trade.version})</span>
-                <span className="text-lime">+{safeNumber(trade.profit)} coins</span>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p className="text-gray-400">No trades yet.</p>
+      <div className="bg-zinc-900 p-6 rounded-2xl shadow-md">
+        <h2 className="text-2xl font-bold">🏦 Starting Balance</h2>
+        <p className="text-green-400 text-3xl">{startingBalance.toLocaleString()}</p>
+      </div>
+
+      <div className="bg-zinc-900 p-6 rounded-2xl shadow-md">
+        <h2 className="text-xl font-bold mb-2">📊 Trader Profile</h2>
+        <p>💵 Total Profit: {profile.totalProfit.toLocaleString()}</p>
+        <p>📝 Trades Logged: {profile.tradesLogged}</p>
+        <p>📈 Win Rate: {profile.winRate}%</p>
+        <p>🏷️ Most Used Tag: {profile.mostUsedTag}</p>
+        {profile.bestTrade && (
+          <p>
+            🏆 Best Trade: {profile.bestTrade.player} (+{profile.bestTrade.profit.toLocaleString()})
+          </p>
         )}
       </div>
     </div>
