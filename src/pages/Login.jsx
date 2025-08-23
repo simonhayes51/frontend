@@ -1,19 +1,36 @@
-import React from "react";
+import { useEffect } from 'react';
+import { useAuth } from '../context/AuthContext';
+import { Navigate, useSearchParams } from 'react-router-dom';
 
 const Login = () => {
-  const handleLogin = () => {
-    window.location.href = "https://backend-production-1f1a.up.railway.app/login";
-  };
+  const { isAuthenticated, login, checkAuthStatus } = useAuth();
+  const [searchParams] = useSearchParams();
+
+  // Check if user was redirected back from OAuth
+  useEffect(() => {
+    if (searchParams.get('authenticated') === 'true') {
+      checkAuthStatus();
+    }
+  }, [searchParams, checkAuthStatus]);
+
+  if (isAuthenticated) {
+    return <Navigate to="/" replace />;
+  }
 
   return (
-    <div className="flex flex-col items-center justify-center h-screen text-white bg-black">
-      <h1 className="text-3xl font-bold mb-6">🔐 Login to FUT Dashboard</h1>
-      <button
-        onClick={handleLogin}
-        className="bg-[#00ff80] text-black px-6 py-3 rounded-lg font-semibold hover:bg-green-400 transition"
-      >
-        Login with Discord
-      </button>
+    <div className="min-h-screen bg-black text-white flex items-center justify-center">
+      <div className="text-center">
+        <h1 className="text-4xl font-bold mb-8">FUT Trading Dashboard</h1>
+        <p className="text-gray-400 mb-8">
+          Track your FIFA Ultimate Team trades and profits
+        </p>
+        <button
+          onClick={login}
+          className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg transition-colors"
+        >
+          Login with Discord
+        </button>
+      </div>
     </div>
   );
 };
