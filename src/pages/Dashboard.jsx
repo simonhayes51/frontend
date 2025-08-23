@@ -1,37 +1,18 @@
-import React, { useEffect, useState } from "react";
-import axios from "../axios";
+import React from "react";
+import { useDashboard } from "../context/DashboardContext";
 
-const Dashboard = ({ user }) => {
-  const [dashboard, setDashboard] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+const Dashboard = () => {
+  const { 
+    netProfit, 
+    taxPaid, 
+    startingBalance, 
+    trades, 
+    isLoading, 
+    error 
+  } = useDashboard();
 
-  const fetchDashboard = async () => {
-    if (!user?.id) return;
-    try {
-      const res = await axios.get(`/api/profile/${user.id}`);
-      setDashboard(res.data);
-      setError(null);
-    } catch (err) {
-      console.error("Failed to fetch dashboard:", err);
-      setError("Failed to load dashboard data.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchDashboard();
-  }, [user?.id]);
-
-  if (loading) return <div>Loading dashboard...</div>;
+  if (isLoading) return <div>Loading dashboard...</div>;
   if (error) return <div className="text-red-500">{error}</div>;
-
-  const stats = dashboard || {};
-  const netProfit = stats.netProfit ?? 0;
-  const taxPaid = stats.taxPaid ?? 0;
-  const startingBalance = stats.startingBalance ?? 0;
-  const trades = stats.trades || [];
 
   return (
     <div className="p-4">
@@ -50,7 +31,6 @@ const Dashboard = ({ user }) => {
           <p className="text-2xl">{startingBalance.toLocaleString()} coins</p>
         </div>
       </div>
-
       <h2 className="mt-6 text-lg">Recent Trades</h2>
       <ul className="bg-gray-900 rounded-lg p-4 mt-2">
         {trades.length > 0 ? (
@@ -59,7 +39,7 @@ const Dashboard = ({ user }) => {
               <span className="font-bold">{trade.player}</span> ({trade.version}) —  
               Profit:{" "}
               <span className={trade.profit >= 0 ? "text-green-400" : "text-red-400"}>
-                {trade.profit.toLocaleString()} coins
+                {trade.profit?.toLocaleString() || 'N/A'} coins
               </span>
             </li>
           ))
