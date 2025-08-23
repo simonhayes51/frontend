@@ -1,17 +1,18 @@
-import React, { useState, useContext } from "react";
+import React, { useState } from "react";
 import axios from "../axios";
-import { DashboardContext } from "../context/DashboardContext";
 
-const AddTrade = () => {
+const AddTrade = ({ user, onTradeAdded }) => {
   const [form, setForm] = useState({
-    name: "",
+    player: "",
     version: "",
-    buyPrice: "",
-    sellPrice: "",
-    platform: "Console"
+    buy: "",
+    sell: "",
+    quantity: 1,
+    platform: "Console",
+    tag: "General",
   });
   const [loading, setLoading] = useState(false);
-  const { refreshDashboard } = useContext(DashboardContext);
+  const [message, setMessage] = useState(null);
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -20,88 +21,44 @@ const AddTrade = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-
     try {
-      await axios.post("/logtrade", {
-        name: form.name,
-        version: form.version,
-        buy_price: Number(form.buyPrice),
-        sell_price: Number(form.sellPrice),
-        platform: form.platform
-      });
-
-      alert("✅ Trade logged successfully!");
+      await axios.post("/api/add_trade", { ...form, user_id: user.id });
+      setMessage("✅ Trade logged successfully!");
       setForm({
-        name: "",
+        player: "",
         version: "",
-        buyPrice: "",
-        sellPrice: "",
-        platform: "Console"
+        buy: "",
+        sell: "",
+        quantity: 1,
+        platform: "Console",
+        tag: "General",
       });
-
-      refreshDashboard(); // instantly refresh totals
-    } catch (error) {
-      console.error("Error logging trade:", error);
-      alert("❌ Failed to log trade");
+      if (onTradeAdded) onTradeAdded(); // refresh dashboard
+    } catch (err) {
+      console.error(err);
+      setMessage("❌ Failed to log trade.");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="bg-zinc-900 p-6 rounded-xl shadow-lg text-white">
-      <h2 className="text-2xl font-bold mb-4">📥 Log a Trade</h2>
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <input
-          type="text"
-          name="name"
-          placeholder="Player Name"
-          value={form.name}
-          onChange={handleChange}
-          className="w-full p-3 rounded bg-zinc-800"
-          required
-        />
-        <input
-          type="text"
-          name="version"
-          placeholder="Card Version (e.g. TOTS)"
-          value={form.version}
-          onChange={handleChange}
-          className="w-full p-3 rounded bg-zinc-800"
-        />
-        <input
-          type="number"
-          name="buyPrice"
-          placeholder="Buy Price"
-          value={form.buyPrice}
-          onChange={handleChange}
-          className="w-full p-3 rounded bg-zinc-800"
-          required
-        />
-        <input
-          type="number"
-          name="sellPrice"
-          placeholder="Sell Price"
-          value={form.sellPrice}
-          onChange={handleChange}
-          className="w-full p-3 rounded bg-zinc-800"
-          required
-        />
-        <select
-          name="platform"
-          value={form.platform}
-          onChange={handleChange}
-          className="w-full p-3 rounded bg-zinc-800"
-        >
-          <option value="Console">🎮 Console</option>
-          <option value="PC">💻 PC</option>
+    <div className="p-4">
+      <h1 className="text-xl font-bold mb-4">➕ Add Trade</h1>
+      {message && <p className="mb-3 text-sm">{message}</p>}
+      <form onSubmit={handleSubmit} className="grid grid-cols-2 gap-4">
+        <input name="player" placeholder="Player" value={form.player} onChange={handleChange} className="p-2 bg-gray-800 rounded" required />
+        <input name="version" placeholder="Version" value={form.version} onChange={handleChange} className="p-2 bg-gray-800 rounded" required />
+        <input name="buy" type="number" placeholder="Buy Price" value={form.buy} onChange={handleChange} className="p-2 bg-gray-800 rounded" required />
+        <input name="sell" type="number" placeholder="Sell Price" value={form.sell} onChange={handleChange} className="p-2 bg-gray-800 rounded" required />
+        <input name="quantity" type="number" placeholder="Qty" value={form.quantity} onChange={handleChange} className="p-2 bg-gray-800 rounded" required />
+        <select name="platform" value={form.platform} onChange={handleChange} className="p-2 bg-gray-800 rounded">
+          <option value="Console">Console</option>
+          <option value="PC">PC</option>
         </select>
-        <button
-          type="submit"
-          disabled={loading}
-          className="bg-lime text-black py-3 px-6 rounded-lg hover:opacity-90 w-full"
-        >
-          {loading ? "Submitting..." : "Submit Trade"}
+        <input name="tag" placeholder="Tag" value={form.tag} onChange={handleChange} className="p-2 bg-gray-800 rounded" required />
+        <button disabled={loading} type="submit" className="bg-green-500 text-black py-2 px-4 rounded hover:bg-green-400">
+          {loading ? "Logging..." : "Log Trade"}
         </button>
       </form>
     </div>
