@@ -1,99 +1,17 @@
-import { createContext, useContext, useReducer, useEffect } from 'react';
-import api from '../utils/axios';
-
-const AuthContext = createContext();
-
-const authReducer = (state, action) => {
-  switch (action.type) {
-    case 'SET_LOADING':
-      return { ...state, isLoading: action.payload };
-    case 'SET_AUTHENTICATED':
-      return {
-        ...state,
-        isAuthenticated: true,
-        user: action.payload,
-        isLoading: false,
-        error: null
-      };
-    case 'SET_UNAUTHENTICATED':
-      return {
-        ...state,
-        isAuthenticated: false,
-        user: null,
-        isLoading: false,
-        error: null
-      };
-    case 'SET_ERROR':
-      return {
-        ...state,
-        error: action.payload,
-        isLoading: false
-      };
-    default:
-      return state;
+// In AuthContext.jsx, add logging to checkAuthStatus:
+const checkAuthStatus = async () => {
+  try {
+    console.log('AUTH: Checking authentication status...');
+    dispatch({ type: 'SET_LOADING', payload: true });
+    
+    const response = await api.get('/api/me');
+    console.log('AUTH: User authenticated:', response.data);
+    dispatch({ 
+      type: 'SET_AUTHENTICATED', 
+      payload: response.data 
+    });
+  } catch (error) {
+    console.log('AUTH: User not authenticated:', error.response?.status);
+    dispatch({ type: 'SET_UNAUTHENTICATED' });
   }
-};
-
-const initialState = {
-  isAuthenticated: false,
-  user: null,
-  isLoading: true,
-  error: null
-};
-
-export const AuthProvider = ({ children }) => {
-  const [state, dispatch] = useReducer(authReducer, initialState);
-
-  const checkAuthStatus = async () => {
-    try {
-      dispatch({ type: 'SET_LOADING', payload: true });
-      
-      const response = await api.get('/api/me');
-      dispatch({ 
-        type: 'SET_AUTHENTICATED', 
-        payload: response.data 
-      });
-    } catch (error) {
-      dispatch({ type: 'SET_UNAUTHENTICATED' });
-    }
-  };
-
-  const login = () => {
-    window.location.href = `${api.defaults.baseURL}/api/login`;
-  };
-
-  const logout = async () => {
-    try {
-      await api.get('/api/logout');
-      dispatch({ type: 'SET_UNAUTHENTICATED' });
-    } catch (error) {
-      console.error('Logout error:', error);
-      dispatch({ type: 'SET_UNAUTHENTICATED' });
-    }
-  };
-
-  useEffect(() => {
-    checkAuthStatus();
-  }, []);
-
-  const value = {
-    ...state,
-    login,
-    logout,
-    checkAuthStatus
-  };
-
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
-  );
-};
-
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
 };
