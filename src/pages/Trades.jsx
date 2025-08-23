@@ -5,6 +5,18 @@ const Trades = () => {
   const [trades, setTrades] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  // Helper to safely format numbers
+  const safeNumber = (value) => Number(value || 0).toLocaleString();
+
+  // Helper to safely format dates
+  const safeDate = (date) => {
+    try {
+      return date ? new Date(date).toLocaleDateString() : "N/A";
+    } catch {
+      return "N/A";
+    }
+  };
+
   useEffect(() => {
     const fetchTrades = async () => {
       const userId = localStorage.getItem("user_id");
@@ -16,7 +28,7 @@ const Trades = () => {
 
       try {
         const res = await axios.get(`/api/trades/${userId}`);
-        setTrades(res.data);
+        setTrades(res.data || []);
       } catch (err) {
         console.error("❌ Failed to fetch trades:", err);
       } finally {
@@ -32,6 +44,7 @@ const Trades = () => {
   return (
     <div className="bg-zinc-900 p-6 rounded-2xl shadow-md">
       <h1 className="text-2xl font-bold mb-4">📊 Trade History</h1>
+
       {trades.length === 0 ? (
         <p className="text-gray-400">No trades logged yet.</p>
       ) : (
@@ -50,15 +63,21 @@ const Trades = () => {
           <tbody>
             {trades.map((trade, i) => (
               <tr key={i} className="border-b border-gray-800">
-                <td className="py-2">{trade.player}</td>
-                <td>{trade.version}</td>
-                <td>{trade.quantity}</td>
-                <td>{trade.buy.toLocaleString()}</td>
-                <td>{trade.sell.toLocaleString()}</td>
-                <td className={trade.profit >= 0 ? "text-green-400" : "text-red-400"}>
-                  {trade.profit.toLocaleString()}
+                <td className="py-2">{trade.player || "N/A"}</td>
+                <td>{trade.version || "N/A"}</td>
+                <td>{trade.quantity || 0}</td>
+                <td>{safeNumber(trade.buy)}</td>
+                <td>{safeNumber(trade.sell)}</td>
+                <td
+                  className={
+                    (trade.profit || 0) >= 0
+                      ? "text-green-400"
+                      : "text-red-400"
+                  }
+                >
+                  {safeNumber(trade.profit)}
                 </td>
-                <td>{new Date(trade.timestamp).toLocaleDateString()}</td>
+                <td>{safeDate(trade.timestamp)}</td>
               </tr>
             ))}
           </tbody>
