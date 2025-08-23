@@ -1,10 +1,11 @@
+// Fixed vite.config.js
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
 const port = parseInt(process.env.PORT) || 8080;
 
 export default defineConfig({
-  base: './', // ← this is crucial for correct path resolution after build!
+  base: './',
   plugins: [react()],
   server: {
     host: '0.0.0.0',
@@ -16,5 +17,10 @@ export default defineConfig({
   },
   build: {
     outDir: 'dist',
+    rollupOptions: {
+      output: {
+        manualChunks: undefined,
+      },
+    },
   },
 });
