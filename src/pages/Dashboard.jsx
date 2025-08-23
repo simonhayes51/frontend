@@ -50,7 +50,9 @@ const Dashboard = () => {
         <p>💰 Total Profit: <span className="text-lime">{safeNumber(data.profile?.totalProfit)}</span></p>
         <p>🛒 Trades Logged: <span className="text-lime">{data.profile?.tradesLogged || 0}</span></p>
         <p>📈 Win Rate: <span className="text-lime">{data.profile?.winRate || 0}%</span></p>
-        <p>🏷️ Most Used Tag: <span className="text-lime">{data.profile?.mostUsedTag || "N/A"}</span></p>
+        <p>🏷️ Most Used Tag: <span className="text-lime">
+  {data.profile.mostUsedTag} ({data.profile.tagTrades} trades)
+</span></p>
         {data.profile?.bestTrade && (
           <p>🏆 Best Trade: <span className="text-lime">
             {data.profile.bestTrade.player} (+{safeNumber(data.profile.bestTrade.profit)})
