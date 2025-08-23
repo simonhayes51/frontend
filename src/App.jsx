@@ -1,49 +1,29 @@
-import React, { useEffect, useState } from "react";
-import axios from "./axios";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { DashboardProvider } from "./context/DashboardContext";
+import Dashboard from "./pages/Dashboard";
+import AddTrade from "./pages/AddTrade";
+import Trades from "./pages/Trades";
+import Profile from "./pages/Profile";
+import Settings from "./pages/Settings";
+import ProfitGraph from "./pages/ProfitGraph";
 
-const Navbar = () => {
-  const [user, setUser] = useState(null);
-
-  useEffect(() => {
-    const fetchUser = async () => {
-      const userId = localStorage.getItem("user_id");
-      if (!userId) return;
-
-      try {
-        const res = await axios.get(`/api/profile/${userId}`);
-        setUser(res.data.discord);
-      } catch (err) {
-        console.error("❌ Failed to fetch Discord profile:", err);
-      }
-    };
-
-    fetchUser();
-  }, []);
-
-  const handleLogout = () => {
-    localStorage.removeItem("user_id");
-    window.location.href = "/";
-  };
-
+function App() {
   return (
-    <nav className="flex items-center justify-between bg-black p-4">
-      <h1 className="text-lime text-2xl font-bold">FUT Trader Dashboard</h1>
-      <div className="flex items-center gap-4">
-        {user && (
-          <>
-            <img src={user.avatar} alt="PFP" className="w-8 h-8 rounded-full" />
-            <span className="text-white">{user.username}</span>
-          </>
-        )}
-        <button
-          onClick={handleLogout}
-          className="bg-red-500 hover:bg-red-600 px-4 py-1 rounded"
-        >
-          Logout
-        </button>
-      </div>
-    </nav>
+    <DashboardProvider>
+      <Router>
+        <div className="bg-black min-h-screen text-white">
+          <Routes>
+            <Route path="/" element={<Dashboard />} />
+            <Route path="/addtrade" element={<AddTrade />} />
+            <Route path="/trades" element={<Trades />} />
+            <Route path="/profile" element={<Profile />} />
+            <Route path="/settings" element={<Settings />} />
+            <Route path="/profitgraph" element={<ProfitGraph />} />
+          </Routes>
+        </div>
+      </Router>
+    </DashboardProvider>
   );
-};
+}
 
-export default Navbar;
+export default App;
