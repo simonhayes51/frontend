@@ -5,8 +5,6 @@ const instance = axios.create({
   withCredentials: true,
 });
 
-export default instance;
-
 // Automatically include user_id from localStorage in GET requests
 instance.interceptors.request.use((config) => {
   // Check if we're in a browser environment (not during build)
