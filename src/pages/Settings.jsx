@@ -42,10 +42,10 @@ const Settings = () => {
 
   const updateSetting = async (key, value) => {
     const newSettings = { ...settings, [key]: value };
-    setSettings(newSettings);
+    setSettings(newSettings);  // Updates local state
     
     try {
-      await api.post("/api/settings", newSettings);
+      await api.post("/api/settings", newSettings);  // Saves to backend (working)
       setMessage("Settings updated successfully!");
       setTimeout(() => setMessage(""), 3000);
     } catch (error) {
