@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const instance = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || "https://backend-production-1f1a.up.railway.app",
+  baseURL: (import.meta.env.VITE_API_URL || "https://backend-production-1f1a.up.railway.app") + "/api",
   withCredentials: true, // This handles session cookies automatically
   timeout: 10000, // 10 second timeout
 });
