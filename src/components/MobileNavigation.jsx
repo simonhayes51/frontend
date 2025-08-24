@@ -35,3 +35,6 @@ const MobileNavigation = () => {
     </nav>
   );
 };
+
+const MobileNavigation = () => { /* ... */ };
+export default MobileNavigation;
