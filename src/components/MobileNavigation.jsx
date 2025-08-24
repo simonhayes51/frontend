@@ -1,3 +1,5 @@
+// MobileNavigation.jsx
+
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -36,5 +38,4 @@ const MobileNavigation = () => {
   );
 };
 
-const MobileNavigation = () => { /* ... */ };
-export default MobileNavigation;
+export default MobileNavigation;   // ← only this line added
