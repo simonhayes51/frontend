@@ -15,6 +15,7 @@ const Trades = lazy(() => import("./pages/Trades"));
 const Profile = lazy(() => import("./pages/Profile"));
 const Settings = lazy(() => import("./pages/Settings"));
 const ProfitGraph = lazy(() => import("./pages/ProfitGraph"));
+const PriceCheck = lazy(() => import("./pages/PriceCheck")); // ✅ NEW IMPORT
 const Login = lazy(() => import("./pages/Login"));
 const AccessDenied = lazy(() => import("./pages/AccessDenied"));
 const NotFound = lazy(() => import("./pages/NotFound"));
@@ -30,25 +31,29 @@ function App() {
                 {/* Public routes */}
                 <Route path="/login" element={<Login />} />
                 <Route path="/access-denied" element={<AccessDenied />} />
-                
+
                 {/* Protected routes */}
-                <Route path="/" element={
-                  <PrivateRoute>
-                    <SettingsProvider>
-                      <DashboardProvider>
-                        <Layout />
-                      </DashboardProvider>
-                    </SettingsProvider>
-                  </PrivateRoute>
-                }>
+                <Route
+                  path="/"
+                  element={
+                    <PrivateRoute>
+                      <SettingsProvider>
+                        <DashboardProvider>
+                          <Layout />
+                        </DashboardProvider>
+                      </SettingsProvider>
+                    </PrivateRoute>
+                  }
+                >
                   <Route index element={<Dashboard />} />
                   <Route path="add-trade" element={<AddTrade />} />
                   <Route path="trades" element={<Trades />} />
+                  <Route path="pricecheck" element={<PriceCheck />} /> {/* ✅ NEW ROUTE */}
                   <Route path="profile" element={<Profile />} />
                   <Route path="settings" element={<Settings />} />
                   <Route path="analytics" element={<ProfitGraph />} />
                 </Route>
-                
+
                 {/* 404 route */}
                 <Route path="*" element={<NotFound />} />
               </Routes>
