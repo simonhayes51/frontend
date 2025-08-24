@@ -1,4 +1,3 @@
-// src/components/DesktopSidebar.jsx
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -67,7 +66,7 @@ const DesktopSidebar = () => {
   ];
 
   return (
-    <aside className="fixed left-0 top-0 w-64 h-screen bg-gray-900/95 backdrop-blur-sm border-r border-gray-700/50 p-6">
+    <aside className="fixed left-0 top-0 w-64 h-screen bg-gray-900/95 backdrop-blur-sm border-r border-gray-700/50 flex flex-col p-6">
       {/* Logo/Brand */}
       <div className="flex items-center space-x-3 mb-8">
         <div className="w-10 h-10 bg-gradient-to-r from-green-400 to-blue-500 rounded-full flex items-center justify-center">
@@ -152,7 +151,7 @@ const DesktopSidebar = () => {
       </div>
 
       {/* Bottom Actions */}
-      <div className="absolute bottom-6 left-6 right-6">
+      <div className="mt-auto">
         <div className="space-y-2">
           <Link
             to="/help"
