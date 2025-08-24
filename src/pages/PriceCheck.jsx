@@ -1,70 +1,66 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import axios from "../utils/axios";
+import PlayerSearch from "../components/PlayerSearch";
+import PlayerCard from "../components/PlayerCard";
 
 export default function PriceCheck() {
-  const [query, setQuery] = useState("");
-  const [platform, setPlatform] = useState("ps");
-  const [loading, setLoading] = useState(false);
+  const [selectedPlayer, setSelectedPlayer] = useState(null);
   const [priceData, setPriceData] = useState(null);
-  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [graphUrl, setGraphUrl] = useState(null);
+  const [error, setError] = useState(null);
 
-  const handleSearch = async () => {
-    if (!query) return;
-    setLoading(true);
-    setError("");
+  const handlePlayerSelect = async (player) => {
+    setSelectedPlayer(player);
+    setPriceData(null);
+    setGraphUrl(null);
+    setError(null);
 
     try {
+      setLoading(true);
+
+      // Fetch player price data
       const res = await axios.get(`/api/pricecheck`, {
-        params: { player_id: query, platform },
+        params: {
+          player_name: `${player.name} ${player.rating}`,
+          platform: "console",
+        },
       });
+
       setPriceData(res.data);
+
+      // Set graph URL (served by backend)
+      setGraphUrl(
+        `${import.meta.env.VITE_API_URL}/api/pricegraph?player_name=${encodeURIComponent(player.name + " " + player.rating)}`
+      );
     } catch (err) {
-      setError("Could not fetch price data. Try again later.");
+      console.error("Failed to fetch player data:", err);
+      setError("Failed to fetch player data. Please try again.");
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   return (
-    <div className="p-6 text-white">
-      <h1 className="text-3xl font-bold mb-4">🎮 Price Check</h1>
-      <div className="flex gap-4 mb-6">
-        <input
-          className="p-3 w-1/2 bg-gray-800 rounded-lg text-white"
-          placeholder="Enter Player ID (e.g. 247819)"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-        />
+    <div className="p-6 text-white min-h-screen">
+      <h1 className="text-3xl font-bold mb-6 text-lime-400">💰 Price Check</h1>
+      <p className="text-gray-400 mb-6">Search for any player to view live FUTBIN price data.</p>
 
-        <select
-          className="p-3 bg-gray-800 rounded-lg text-white"
-          value={platform}
-          onChange={(e) => setPlatform(e.target.value)}
-        >
-          <option value="ps">PlayStation</option>
-          <option value="xbox">Xbox</option>
-          <option value="pc">PC</option>
-        </select>
+      <PlayerSearch onSelect={handlePlayerSelect} />
 
-        <button
-          onClick={handleSearch}
-          className="px-6 py-3 bg-lime-500 hover:bg-lime-600 text-black font-bold rounded-lg"
-        >
-          {loading ? "Loading..." : "Check"}
-        </button>
-      </div>
+      {loading && (
+        <div className="mt-6 text-gray-400 animate-pulse">
+          Fetching price data...
+        </div>
+      )}
 
-      {error && <p className="text-red-500">{error}</p>}
+      {error && (
+        <div className="mt-6 text-red-500 font-medium">{error}</div>
+      )}
 
       {priceData && (
-        <div className="bg-gray-900 p-6 rounded-lg shadow-lg">
-          <h2 className="text-xl font-bold">Player Price</h2>
-          {priceData.price ? (
-            <p className="text-2xl mt-2 font-semibold text-lime-400">
-              {priceData.price.toLocaleString()} coins
-            </p>
-          ) : (
-            <p className="text-yellow-400">Price not available</p>
-          )}
+        <div className="mt-6">
+          <PlayerCard player={priceData} graphUrl={graphUrl} />
         </div>
       )}
     </div>
