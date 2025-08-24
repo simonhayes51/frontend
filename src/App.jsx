@@ -1,28 +1,61 @@
-// src/components/Layout.jsx
-import React from 'react';
-import { Outlet } from 'react-router-dom';
-import { useMediaQuery } from '../hooks/useMediaQuery';
-import MobileNavigation from './MobileNavigation';
-import DesktopSidebar from './DesktopSidebar';
+import { lazy, Suspense } from "react";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { AuthProvider } from "./context/AuthContext";
+import { DashboardProvider } from "./context/DashboardContext";
+import { SettingsProvider } from "./context/SettingsContext";
+import ErrorBoundary from "./components/ErrorBoundary";
+import Layout from "./components/Layout";
+import Loading from "./components/Loading";
+import PrivateRoute from "./components/PrivateRoute";
 
-function Layout() {
-  const isMobile = useMediaQuery('(max-width: 768px)');
+// Lazy load components for better performance
+const Dashboard = lazy(() => import("./pages/Dashboard"));
+const AddTrade = lazy(() => import("./pages/AddTrade"));
+const Trades = lazy(() => import("./pages/Trades"));
+const Profile = lazy(() => import("./pages/Profile"));
+const Settings = lazy(() => import("./pages/Settings"));
+const ProfitGraph = lazy(() => import("./pages/ProfitGraph"));
+const Login = lazy(() => import("./pages/Login"));
+const NotFound = lazy(() => import("./pages/NotFound"));
 
+function App() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900">
-      {!isMobile && (
-        <div className="hidden md:block fixed left-0 top-0 h-screen">
-          <DesktopSidebar />
-        </div>
-      )}
-
-      <main className={isMobile ? 'pb-20' : 'ml-64'}>
-        <Outlet />
-      </main>
-
-      {isMobile && <MobileNavigation />}
-    </div>
+    <ErrorBoundary>
+      <AuthProvider>
+        <Router>
+          <div className="bg-black min-h-screen text-white">
+            <Suspense fallback={<Loading />}>
+              <Routes>
+                {/* Public routes */}
+                <Route path="/login" element={<Login />} />
+                
+                {/* Protected routes */}
+                <Route path="/" element={
+                  <PrivateRoute>
+                    <SettingsProvider>
+                      <DashboardProvider>
+                        <Layout />
+                      </DashboardProvider>
+                    </SettingsProvider>
+                  </PrivateRoute>
+                }>
+                  <Route index element={<Dashboard />} />
+                  <Route path="add-trade" element={<AddTrade />} />
+                  <Route path="trades" element={<Trades />} />
+                  <Route path="profile" element={<Profile />} />
+                  <Route path="settings" element={<Settings />} />
+                  <Route path="analytics" element={<ProfitGraph />} />
+                </Route>
+                
+                {/* 404 route */}
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </Suspense>
+          </div>
+        </Router>
+      </AuthProvider>
+    </ErrorBoundary>
   );
 }
 
-export default Layout;  // 👈 default export required by `import Layout from "./components/Layout"`
+export default App;
