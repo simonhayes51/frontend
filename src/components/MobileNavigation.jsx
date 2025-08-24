@@ -12,6 +12,7 @@ const MobileNavigation = () => {
     { path: '/', label: 'Dashboard', icon: '📊' },
     { path: '/add-trade', label: 'Add Trade', icon: '➕' },
     { path: '/trades', label: 'Trades', icon: '📋' },
+    { path: '/pricecheck', label: 'Price Check', icon: '💰' },
     { path: '/analytics', label: 'Analytics', icon: '📈' },
     { path: '/profile', label: 'Profile', icon: '👤' }
   ];
