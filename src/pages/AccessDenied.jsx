@@ -1,5 +1,5 @@
 // src/pages/AccessDenied.jsx
-import React from ‘react’;
+import React from 'react';
 
 const AccessDenied = () => {
 return (
