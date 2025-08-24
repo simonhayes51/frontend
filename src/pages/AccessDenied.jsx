@@ -1,4 +1,4 @@
-// src/pages/AccessDenied.jsx
+// src/pages/AccessDenied.jsx 
 import React from "react";
 
 const AccessDenied = () => {
