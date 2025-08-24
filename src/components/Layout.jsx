@@ -1,4 +1,4 @@
-// src/components/Layout.jsx - Replace your existing Layout
+// src/components/Layout.jsx
 import { Outlet } from 'react-router-dom';
 import { useMediaQuery } from '../hooks/useMediaQuery';
 import MobileNavigation from './MobileNavigation';
@@ -17,3 +17,5 @@ const Layout = () => {
     </div>
   );
 };
+
+export default Layout;   // ← add this
