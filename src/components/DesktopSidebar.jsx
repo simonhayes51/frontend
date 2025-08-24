@@ -36,6 +36,15 @@ const DesktopSidebar = () => {
       )
     },
     { 
+      path: '/pricecheck', 
+      label: 'Price Check',
+      icon: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4m-4-8v4m0 8v4m8-8h4m-16 0H4" />
+        </svg>
+      )
+    },
+    { 
       path: '/analytics', 
       label: 'Analytics',
       icon: (
