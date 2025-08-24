@@ -34,6 +34,8 @@ const Settings = () => {
   const fetchSettings = async () => {
     try {
       const response = await api.get("/api/settings");
+      console.log("Full response:", response);
+      console.log("Response data:", response.data);
       setSettings(response.data);
     } catch (error) {
       console.error("Failed to fetch settings:", error);
