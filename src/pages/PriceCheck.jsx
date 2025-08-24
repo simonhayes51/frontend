@@ -22,7 +22,7 @@ export default function PriceCheck() {
       // Fetch player price data
       const res = await axios.get(`/api/pricecheck`, {
         params: {
-          player_name: `${player.name} ${player.rating}`,
+          player: `${player.name} ${player.rating}`, // ✅ change player_name → player
           platform: "console",
         },
       });
