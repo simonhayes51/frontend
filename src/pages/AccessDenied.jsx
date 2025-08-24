@@ -59,7 +59,7 @@ e.target.src = ‘data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" vie
 
         {/* Join Server Button */}
         <a
-          href="https://discord.gg/your-server-invite"
+          href="https://discord.gg/3sSpu3rDgn"
           target="_blank"
           rel="noopener noreferrer"
           className="inline-flex items-center space-x-2 bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-3 px-6 rounded-lg transition-colors mb-4"
