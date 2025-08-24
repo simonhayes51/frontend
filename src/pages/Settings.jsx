@@ -272,7 +272,7 @@ const Settings = () => {
               </button>
             </div>
             <div className="flex flex-wrap gap-2">
-              {settings.custom_tags.map((tag, index) => (
+              {(settings.custom_tags || []).map((tag, index) => (
                 <span
                   key={index}
                   className="bg-gray-700 px-3 py-1 rounded-full text-sm flex items-center gap-2"
