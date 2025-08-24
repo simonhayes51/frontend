@@ -2,7 +2,7 @@ import { lazy, Suspense } from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
 import { DashboardProvider } from "./context/DashboardContext";
-import { SettingsProvider } from "./context/SettingsContext";
+import { SettingsProvider } from "./context/SettingsProvider";
 import ErrorBoundary from "./components/ErrorBoundary";
 import Layout from "./components/Layout";
 import Loading from "./components/Loading";
@@ -16,6 +16,7 @@ const Profile = lazy(() => import("./pages/Profile"));
 const Settings = lazy(() => import("./pages/Settings"));
 const ProfitGraph = lazy(() => import("./pages/ProfitGraph"));
 const Login = lazy(() => import("./pages/Login"));
+const AccessDenied = lazy(() => import("./pages/AccessDenied"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 function App() {
@@ -28,6 +29,7 @@ function App() {
               <Routes>
                 {/* Public routes */}
                 <Route path="/login" element={<Login />} />
+                <Route path="/access-denied" element={<AccessDenied />} />
                 
                 {/* Protected routes */}
                 <Route path="/" element={
