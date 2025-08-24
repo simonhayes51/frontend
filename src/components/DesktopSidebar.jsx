@@ -12,13 +12,13 @@ const NAV = [
 
 export default function DesktopSidebar() {
   return (
-    <aside className="w-64 p-6 border-r border-gray-700/50 h-screen">
+    <aside className="w-64 p-6 border-r border-gray-700/50 h-screen bg-transparent">
       <nav className="space-y-2">
         {NAV.map(({ path, label, icon }) => (
           <NavLink
             key={path}
             to={path}
-            end={path === "/"} // exact-match root
+            end={path === "/"} // exact match for root
             className={({ isActive }) =>
               `flex items-center space-x-3 p-3 rounded-lg transition-colors ${
                 isActive
