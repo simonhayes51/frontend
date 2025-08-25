@@ -1,9 +1,12 @@
+// src/components/PlayerSearch.jsx
 import React, { useState, useEffect } from "react";
 import { Search, TrendingUp, TrendingDown, Minus, Loader2, Target } from "lucide-react";
 
+// Config: backend base (set VITE_API_URL to your backend URL)
 const API_BASE = import.meta.env.VITE_API_URL || "";
 
-// 🔹 FUT.GG image builder
+/* ============================= FUT.GG IMAGE HELPERS ============================= */
+
 const FUTGG_IMG_PREFIX =
   "https://game-assets.fut.gg/cdn-cgi/image/quality=100,format=auto,width=";
 
@@ -12,7 +15,7 @@ function futggImgUrl(imagePath, width = 80) {
   return `${FUTGG_IMG_PREFIX}${width}/${imagePath}`;
 }
 
-// 🔹 Safe image component with proxy fallback
+// Safe image with automatic fallback to backend proxy
 const FutGGImage = ({ path, width = 40, alt = "" }) => {
   const [useProxy, setUseProxy] = useState(false);
   if (!path) return null;
@@ -33,13 +36,16 @@ const FutGGImage = ({ path, width = 40, alt = "" }) => {
   );
 };
 
-// 🔹 API fetch helpers
+/* ============================= API HELPERS ============================= */
+
+// DB search via your backend
 const searchPlayers = async (query) => {
   if (!query.trim()) return [];
   try {
-    const r = await fetch(`${API_BASE}/api/search-players?q=${encodeURIComponent(query)}`, {
-      credentials: "include",
-    });
+    const r = await fetch(
+      `${API_BASE}/api/search-players?q=${encodeURIComponent(query)}`,
+      { credentials: "include" }
+    );
     if (!r.ok) return [];
     const data = await r.json();
     return data.players || [];
@@ -49,6 +55,7 @@ const searchPlayers = async (query) => {
   }
 };
 
+// FUT.GG: player definition via your backend proxy
 const fetchPlayerDefinition = async (cardId) => {
   try {
     const response = await fetch(`${API_BASE}/api/fut-player-definition/${cardId}`, {
@@ -64,6 +71,7 @@ const fetchPlayerDefinition = async (cardId) => {
   return null;
 };
 
+// FUT.GG: player price via your backend proxy
 const fetchPlayerPrice = async (cardId) => {
   try {
     const response = await fetch(`${API_BASE}/api/fut-player-price/${cardId}`, {
@@ -84,29 +92,28 @@ const fetchPlayerPrice = async (cardId) => {
   return null;
 };
 
-// 🔹 Helpers
+/* ============================= UI HELPERS ============================= */
+
 const getPositionName = (id) =>
-  (
-    {
-      0: "GK",
-      1: "RWB",
-      2: "RB",
-      3: "CB",
-      4: "LB",
-      5: "LWB",
-      6: "CDM",
-      7: "RM",
-      8: "CM",
-      9: "LM",
-      10: "CAM",
-      11: "RF",
-      12: "CF",
-      13: "LF",
-      14: "RW",
-      15: "ST",
-      16: "LW",
-    }[id] || "Unknown"
-  );
+  ({
+    0: "GK",
+    1: "RWB",
+    2: "RB",
+    3: "CB",
+    4: "LB",
+    5: "LWB",
+    6: "CDM",
+    7: "RM",
+    8: "CM",
+    9: "LM",
+    10: "CAM",
+    11: "RF",
+    12: "CF",
+    13: "LF",
+    14: "RW",
+    15: "ST",
+    16: "LW",
+  }[id] || "Unknown");
 
 const getAttributeColor = (value) => {
   if (value >= 90) return "text-green-400";
@@ -116,7 +123,8 @@ const getAttributeColor = (value) => {
   return "text-red-400";
 };
 
-// 🔹 Search box
+/* ============================= SEARCH BOX ============================= */
+
 const SearchBox = ({ onPlayerSelect }) => {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState([]);
@@ -192,7 +200,8 @@ const SearchBox = ({ onPlayerSelect }) => {
   );
 };
 
-// 🔹 Price trend
+/* ============================= PRICE TREND ============================= */
+
 const PriceTrend = ({ auctions }) => {
   if (!auctions || auctions.length < 2) return null;
   const [a, b] = auctions.slice(0, 2);
@@ -214,11 +223,7 @@ const PriceTrend = ({ auctions }) => {
       )}
       <span
         className={`font-medium ${
-          change > 0
-            ? "text-green-600"
-            : change < 0
-            ? "text-red-600"
-            : "text-gray-600"
+          change > 0 ? "text-green-600" : change < 0 ? "text-red-600" : "text-gray-600"
         }`}
       >
         {pct}% {change > 0 ? `(+${change.toLocaleString()})` : `(${change.toLocaleString()})`}
@@ -227,7 +232,8 @@ const PriceTrend = ({ auctions }) => {
   );
 };
 
-// 🔹 Player detail
+/* ============================= PLAYER DETAIL ============================= */
+
 const PlayerDetail = ({ player, onBack }) => {
   const [priceData, setPriceData] = useState(null);
   const [playerData, setPlayerData] = useState(null);
@@ -253,9 +259,7 @@ const PlayerDetail = ({ player, onBack }) => {
   const priceRange =
     priceData?.auctions?.length
       ? (() => {
-          const prices = priceData.auctions
-            .map((a) => a.soldPrice)
-            .filter(Boolean);
+          const prices = priceData.auctions.map((a) => a.soldPrice).filter(Boolean);
           if (!prices.length) return null;
           return { min: Math.min(...prices), max: Math.max(...prices) };
         })()
@@ -267,9 +271,7 @@ const PlayerDetail = ({ player, onBack }) => {
       (playerData?.firstName && playerData?.lastName
         ? `${playerData.firstName} ${playerData.lastName}`
         : `${player.name} (${player.rating})`),
-    position:
-      getPositionName(playerData?.position || playerData?.preferredPosition1) ||
-      "Unknown",
+    position: getPositionName(playerData?.position || playerData?.preferredPosition1) || "Unknown",
     club: playerData?.club?.name || player.club || "Unknown",
     clubPath: playerData?.club?.imagePath,
     nation: playerData?.nation?.name || player.nation || "Unknown",
@@ -277,13 +279,13 @@ const PlayerDetail = ({ player, onBack }) => {
     league: playerData?.league?.name || "Unknown League",
     leaguePath: playerData?.league?.imagePath,
     cardPath: playerData?.futggCardImagePath,
+    cardFallback: player.image_url || "",
     rating: playerData?.overall ?? player.rating,
     version: playerData?.rarity?.name || player.version || "Base",
     skillMoves: playerData?.skillMoves ?? 3,
     weakFoot: playerData?.weakFoot ?? 3,
     age: playerData?.dateOfBirth
-      ? new Date().getFullYear() -
-        new Date(playerData.dateOfBirth).getFullYear()
+      ? new Date().getFullYear() - new Date(playerData.dateOfBirth).getFullYear()
       : null,
     foot: playerData?.foot === 2 ? "Left" : "Right",
     accelerateType: playerData?.accelerateType || "Controlled",
@@ -327,6 +329,29 @@ const PlayerDetail = ({ player, onBack }) => {
     },
   };
 
+  // Card image: use FUT.GG path if present (with fallback to proxy), else fallback URL from DB
+  const CardImage = () => {
+    if (d.cardPath) {
+      return <FutGGImage path={d.cardPath} width={500} alt={d.fullName} />;
+    }
+    if (d.cardFallback) {
+      return (
+        <img
+          src={d.cardFallback}
+          alt={d.fullName}
+          width={500}
+          height={500}
+          className="object-contain"
+        />
+      );
+    }
+    return (
+      <div className="w-[500px] h-[500px] bg-gray-700 rounded-lg flex items-center justify-center">
+        <span className="text-gray-300 text-sm">No image</span>
+      </div>
+    );
+  };
+
   return (
     <div className="w-full max-w-6xl mx-auto bg-[#0f172a]">
       <button
@@ -339,11 +364,7 @@ const PlayerDetail = ({ player, onBack }) => {
       <div className="bg-[#1e293b] border border-gray-700 text-white rounded-xl p-6">
         <div className="flex flex-col lg:flex-row items-start gap-6 mb-6">
           <div className="relative">
-            <FutGGImage
-              path={d.cardPath}
-              width={500}
-              alt={d.fullName}
-            />
+            <CardImage />
             <div className="absolute top-2 right-2 bg-black/75 text-white px-2 py-1 rounded text-xs">
               {d.version}
             </div>
@@ -390,19 +411,25 @@ const PlayerDetail = ({ player, onBack }) => {
 
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
               <div className="text-center bg-[#334155] rounded-lg p-3">
-                <FutGGImage path={d.clubPath} width={40} alt={d.club} />
+                <div className="w-10 h-10 mx-auto mb-2 flex items-center justify-center">
+                  <FutGGImage path={d.clubPath} width={40} alt={d.club} />
+                </div>
                 <div className="text-sm text-gray-400 mb-1">Club</div>
                 <div className="font-medium text-sm">{d.club}</div>
               </div>
 
               <div className="text-center bg-[#334155] rounded-lg p-3">
-                <FutGGImage path={d.nationPath} width={40} alt={d.nation} />
+                <div className="w-10 h-8 mx-auto mb-2 flex items-center justify-center">
+                  <FutGGImage path={d.nationPath} width={40} alt={d.nation} />
+                </div>
                 <div className="text-sm text-gray-400 mb-1">Nation</div>
                 <div className="font-medium text-sm">{d.nation}</div>
               </div>
 
               <div className="text-center bg-[#334155] rounded-lg p-3">
-                <FutGGImage path={d.leaguePath} width={40} alt={d.league} />
+                <div className="w-10 h-10 mx-auto mb-2 flex items-center justify-center">
+                  <FutGGImage path={d.leaguePath} width={40} alt={d.league} />
+                </div>
                 <div className="text-sm text-gray-400 mb-1">League</div>
                 <div className="font-medium text-sm">{d.league}</div>
               </div>
@@ -414,16 +441,98 @@ const PlayerDetail = ({ player, onBack }) => {
               </div>
             </div>
 
-            {/* Stats + Attributes etc (unchanged) */}
-            {/* ... keep your existing stats/attributes code here ... */}
+            <div className="bg-[#334155] rounded-lg p-4 mb-4">
+              <h3 className="font-semibold mb-3 text-lg">Player Stats</h3>
+              <div className="grid grid-cols-3 md:grid-cols-6 gap-4">
+                {Object.entries(d.stats).map(([stat, value]) => (
+                  <div key={stat} className="text-center">
+                    <div className={`text-2xl font-bold ${getAttributeColor(value)}`}>{value}</div>
+                    <div className="text-xs text-gray-400 capitalize">{stat}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+              <div className="text-center bg-[#334155] rounded-lg p-3">
+                <div className="text-lg font-semibold text-yellow-400">
+                  {"⭐".repeat(d.skillMoves)}
+                </div>
+                <div className="text-xs text-gray-400">Skill Moves</div>
+              </div>
+              <div className="text-center bg-[#334155] rounded-lg p-3">
+                <div className="text-lg font-semibold text-yellow-400">
+                  {"⚽".repeat(d.weakFoot)}
+                </div>
+                <div className="text-xs text-gray-400">Weak Foot</div>
+              </div>
+              <div className="text-center bg-[#334155] rounded-lg p-3">
+                <div className="text-sm font-semibold text-green-400">
+                  {d.age ? `${d.age} years` : "Unknown"}
+                </div>
+                <div className="text-xs text-gray-400">Age</div>
+              </div>
+              <div className="text-center bg-[#334155] rounded-lg p-3">
+                <div className="text-sm font-semibold text-blue-400">{d.foot}</div>
+                <div className="text-xs text-gray-400">Preferred Foot</div>
+              </div>
+            </div>
           </div>
         </div>
+
+        <div className="bg-[#334155] rounded-lg p-4 mb-4">
+          <h3 className="font-semibold mb-3 text-lg">Detailed Attributes</h3>
+          <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 text-sm">
+            {Object.entries(d.attributes).map(
+              ([attr, value]) =>
+                value > 0 && (
+                  <div
+                    key={attr}
+                    className="flex justify-between items-center bg-[#475569] rounded px-2 py-1"
+                  >
+                    <span className="text-gray-300 capitalize text-xs">
+                      {attr.replace(/([A-Z])/g, " $1").trim()}
+                    </span>
+                    <span className={`font-semibold ${getAttributeColor(value)}`}>{value}</span>
+                  </div>
+                )
+            )}
+          </div>
+        </div>
+
+        {priceData?.auctions?.length > 0 && (
+          <div className="bg-[#334155] rounded-lg p-4">
+            <h3 className="font-semibold mb-3 text-lg">Recent Sales</h3>
+            <div className="space-y-2">
+              {priceData.auctions.slice(0, 5).map((a, idx) => (
+                <div
+                  key={idx}
+                  className="flex justify-between items-center text-sm bg-[#475569] rounded px-3 py-2"
+                >
+                  <span className="text-gray-400">
+                    {a.soldDate ? new Date(a.soldDate).toLocaleString() : "—"}
+                  </span>
+                  <span className="font-medium text-yellow-400">
+                    {a.soldPrice ? a.soldPrice.toLocaleString() : "N/A"}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {priceData?.updatedAt && (
+          <div className="text-center text-gray-400 text-xs mt-4">
+            Price updated: {new Date(priceData.updatedAt).toLocaleString()}
+          </div>
+        )}
       </div>
     </div>
   );
 };
 
-// 🔹 Main component
+/* ============================= MAIN ============================= */
+
 export default function PlayerSearch() {
   const [selectedPlayer, setSelectedPlayer] = useState(null);
 
@@ -439,8 +548,9 @@ export default function PlayerSearch() {
             </p>
           </div>
         ) : (
-          <PlayerDetail
-            player={selectedPlayer}
-            onBack={() => setSelectedPlayer(null)}
-          />
-       
+          <PlayerDetail player={selectedPlayer} onBack={() => setSelectedPlayer(null)} />
+        )}
+      </div>
+    </div>
+  );
+}
