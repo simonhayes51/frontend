@@ -1,8 +1,8 @@
-import React from 'react';
-import PlayerSearch from '../components/PlayerSearch';
+import React from "react";
+import PlayerSearchView from "../components/PlayerSearch"; // alias the import
 
-const PlayerSearch = () => {
-  return <PlayerSearch />;
+const PlayerSearchPage = () => {
+  return <PlayerSearchView />;
 };
 
-export default PlayerSearch;
+export default PlayerSearchPage;
