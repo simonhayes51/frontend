@@ -33,7 +33,7 @@ const fetchPlayerDefinition = async (cardId) => {
     const response = await fetch(`/api/fut-player-definition/${cardId}`);
     if (response.ok) {
       const data = await response.json();
-      return data.data; // Return the player definition data
+      return data.data;
     }
   } catch (error) {
     console.error('Failed to fetch player definition:', error);
@@ -58,7 +58,6 @@ const fetchPlayerPrice = async (cardId) => {
   }
   return null;
 };
-
 /* =========================
    Small helpers
    ========================= */
