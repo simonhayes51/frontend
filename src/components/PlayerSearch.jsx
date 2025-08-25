@@ -1,4 +1,4 @@
-<div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
               <div className="text-center bg-[#334155] rounded-lg p-3">
                 {d.clubImage ? (
                   <img 
@@ -400,14 +400,14 @@ const PlayerDetail = ({ player, onBack }) => {
 
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
               <div className="bg-[#334155] rounded-lg p-3">
-                <div className="text-gray-400 text-sm mb-1">Price</div>
+                <div className="text-gray-400 text-sm mb-1">💰 Price</div>
                 <div className="text-2xl font-bold text-yellow-400">
                   {loading ? (
                     <Loader2 className="w-6 h-6 animate-spin inline" />
                   ) : priceData?.isExtinct ? (
                     "Extinct"
                   ) : (
-                    `${formatPrice(priceData?.current)}`
+                    formatPrice(priceData?.current)
                   )}
                 </div>
               </div>
