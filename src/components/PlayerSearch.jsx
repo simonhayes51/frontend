@@ -35,7 +35,7 @@ const fetchPlayerDefinition = async (cardId) => {
       return data.data;
     }
   } catch (error) {
-    console.error('Failed to fetch player definition:', error);
+    console.error("Failed to fetch player definition:", error);
   }
   return null;
 };
@@ -52,55 +52,44 @@ const fetchPlayerPrice = async (cardId) => {
         current: data.data?.currentPrice?.price || null,
         isExtinct: data.data?.currentPrice?.isExtinct || false,
         updatedAt: data.data?.currentPrice?.priceUpdatedAt || null,
-        auctions: data.data?.completedAuctions || []
+        auctions: data.data?.completedAuctions || [],
       };
     }
   } catch (error) {
-    console.error('Failed to fetch price:', error);
+    console.error("Failed to fetch price:", error);
   }
   return null;
 };
 
-// Helper functions
-const getPositionName = (id) =>
-  ({
-    0: "GK",
-    1: "RWB",
-    2: "RB",
-    3: "CB",
-    4: "LB",
-    5: "LWB",
-    6: "CDM",
-    7: "RM",
-    8: "CM",
-    9: "LM",
-    10: "CAM",
-    11: "RF",
-    12: "CF",
-    13: "LF",
-    14: "RW",
-    15: "ST",
-    16: "LW",
-  }[id] || "Unknown");
-
-// ---- robust position resolver ----
+// ---- FC25 Position Map ----
 const POS_CODE_TO_NAME = {
-  0:"GK",1:"RWB",2:"RB",3:"CB",4:"LB",5:"LWB",6:"CDM",7:"RM",8:"CM",9:"LM",
-  10:"CAM",11:"RF",12:"CF",13:"LF",14:"RW",15:"ST",16:"LW"
+  0: "GK", 1: "GK", 2: "GK",
+  3: "RB", 4: "RB",
+  5: "CB", 6: "CB",
+  7: "LB", 8: "LB", 9: "LB",
+  10: "CDM", 11: "CDM",
+  12: "RM", 13: "RM",
+  14: "CM", 15: "CM",
+  16: "LM", 17: "LM",
+  18: "CAM", 19: "CAM", 20: "CAM", 21: "CAM", 22: "CAM",
+  23: "RW", 24: "RW",
+  25: "ST", 26: "ST",
+  27: "LW",
 };
 
+const getPositionName = (id) => POS_CODE_TO_NAME[id] || "Unknown";
+
+// ---- resolver ----
 const _posNorm = (x) => {
   if (x == null) return null;
-  if (typeof x === "number") return POS_CODE_TO_NAME[x] || null;
+  if (typeof x === "number") return getPositionName(x);
   if (typeof x === "string") {
     const s = x.trim().toUpperCase();
     if (!s) return null;
-    // handle "ST,CAM,RW" or "ST | CAM | RW"
     const first = s.split(/[,\|/]+/)[0]?.trim();
     return first || null;
   }
   if (Array.isArray(x)) {
-    // arrays of numbers or strings
     for (const v of x) {
       const t = _posNorm(v);
       if (t) return t;
@@ -108,7 +97,6 @@ const _posNorm = (x) => {
     return null;
   }
   if (typeof x === "object") {
-    // nested shapes
     return (
       _posNorm(x.name) ||
       _posNorm(x.shortName) ||
@@ -136,7 +124,9 @@ const resolvePosition = (pd, fallbackObj) => {
     pd?.positionName,
     pd?.preferredPosition1Name,
     pd?.shortPosition,
-    // arrays / lists
+    pd?.positionShort,
+    pd?.positionFull,
+    pd?.positionLong,
     pd?.positions,
     pd?.preferredPositions,
     pd?.alternativePositions,
@@ -144,9 +134,7 @@ const resolvePosition = (pd, fallbackObj) => {
     pd?.playablePositions,
     pd?.positionsList,
     pd?.positionList,
-    // sometimes a comma string
     pd?.displayPositions,
-    // fallbacks from the search-result object
     fallbackObj?.position,
     fallbackObj?.position_name,
     fallbackObj?.position_short,
@@ -163,11 +151,11 @@ const resolvePosition = (pd, fallbackObj) => {
 
 // Color coding for attributes based on value (0-100)
 const getAttributeColor = (value) => {
-  if (value >= 90) return "text-green-400"; // Dark green
-  if (value >= 80) return "text-green-300"; // Light green  
-  if (value >= 70) return "text-yellow-300"; // Yellow
-  if (value >= 60) return "text-orange-300"; // Amber
-  return "text-red-400"; // Red
+  if (value >= 90) return "text-green-400";
+  if (value >= 80) return "text-green-300";
+  if (value >= 70) return "text-yellow-300";
+  if (value >= 60) return "text-orange-300";
+  return "text-red-400";
 };
 
 // Search box component
@@ -317,16 +305,16 @@ const PlayerDetail = ({ player, onBack }) => {
         : `${player.name} (${player.rating})`),
     position: resolvePosition(playerData, player),
     club: playerData?.club?.name || player.club || "Unknown",
-    clubImage: playerData?.club?.imagePath 
-      ? `https://game-assets.fut.gg/cdn-cgi/image/quality=100,format=auto,width=40/${playerData.club.imagePath}` 
+    clubImage: playerData?.club?.imagePath
+      ? `https://game-assets.fut.gg/cdn-cgi/image/quality=100,format=auto,width=40/${playerData.club.imagePath}`
       : "",
     nation: playerData?.nation?.name || player.nation || "Unknown",
-    nationImage: playerData?.nation?.imagePath 
-      ? `https://game-assets.fut.gg/cdn-cgi/image/quality=100,format=auto,width=40/${playerData.nation.imagePath}` 
+    nationImage: playerData?.nation?.imagePath
+      ? `https://game-assets.fut.gg/cdn-cgi/image/quality=100,format=auto,width=40/${playerData.nation.imagePath}`
       : "",
     league: playerData?.league?.name || "Unknown League",
-    leagueImage: playerData?.league?.imagePath 
-      ? `https://game-assets.fut.gg/cdn-cgi/image/quality=100,format=auto,width=40/${playerData.league.imagePath}` 
+    leagueImage: playerData?.league?.imagePath
+      ? `https://game-assets.fut.gg/cdn-cgi/image/quality=100,format=auto,width=40/${playerData.league.imagePath}`
       : "",
     cardImage: playerData?.futggCardImagePath
       ? `https://game-assets.fut.gg/cdn-cgi/image/quality=90,format=auto,width=500/${playerData.futggCardImagePath}`
@@ -382,11 +370,15 @@ const PlayerDetail = ({ player, onBack }) => {
 
   return (
     <div className="w-full max-w-6xl mx-auto bg-[#0f172a]">
-      <button onClick={onBack} className="mb-6 px-4 py-2 text-blue-400 hover:text-blue-300 font-medium transition-colors">
+      <button
+        onClick={onBack}
+        className="mb-6 px-4 py-2 text-blue-400 hover:text-blue-300 font-medium transition-colors"
+      >
         ← Back to Search
       </button>
 
       <div className="bg-[#1e293b] border border-gray-700 text-white rounded-xl p-6">
+        {/* card + info */}
         <div className="flex flex-col lg:flex-row items-start gap-6 mb-6">
           <div className="relative">
             <img
@@ -395,7 +387,6 @@ const PlayerDetail = ({ player, onBack }) => {
               className="w-48 h-64 object-cover rounded-lg"
               referrerPolicy="no-referrer"
               onError={(e) => {
-                // retry once via proxy, then fallback to whatever you already had
                 if (!e.target.dataset.triedProxy) {
                   e.target.dataset.triedProxy = "1";
                   e.target.src = buildProxy(d.cardImage);
@@ -440,102 +431,13 @@ const PlayerDetail = ({ player, onBack }) => {
 
               <div className="bg-[#334155] rounded-lg p-3">
                 <div className="text-gray-400 text-sm mb-1">AcceleRATE</div>
-                <div className="font-medium text-green-400 text-xs leading-tight">{d.accelerateType.replace(/_/g, ' ')}</div>
+                <div className="font-medium text-green-400 text-xs leading-tight">
+                  {d.accelerateType.replace(/_/g, " ")}
+                </div>
               </div>
             </div>
 
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-              <div className="text-center bg-[#334155] rounded-lg p-3">
-                <div className="w-8 h-8 mx-auto mb-2 flex items-center justify-center">
-                  {d.clubImage ? (
-                    <img 
-                      src={d.clubImage} 
-                      alt={d.club} 
-                      className="w-8 h-8 object-contain"
-                      referrerPolicy="no-referrer"
-                      onLoad={() => console.log('Club image loaded:', d.clubImage)}
-                      onError={(e) => {
-                        // try proxy once, then your existing placeholder
-                        if (!e.target.dataset.triedProxy) {
-                          e.target.dataset.triedProxy = "1";
-                          e.target.src = buildProxy(d.clubImage);
-                          return;
-                        }
-                        console.log('Club image failed to load:', d.clubImage);
-                        e.target.style.display = 'none';
-                        e.target.parentNode.innerHTML = '<div class="w-8 h-8 bg-gray-600 rounded flex items-center justify-center text-xs">CLUB</div>';
-                      }}
-                    />
-                  ) : (
-                    <div className="w-8 h-8 bg-gray-600 rounded flex items-center justify-center text-xs">
-                      CLUB
-                    </div>
-                  )}
-                </div>
-                <div className="text-sm text-gray-400 mb-1">Club</div>
-                <div className="font-medium text-sm">{d.club}</div>
-              </div>
-
-              <div className="text-center bg-[#334155] rounded-lg p-3">
-                <div className="w-8 h-6 mx-auto mb-2 flex items-center justify-center">
-                  {d.nationImage ? (
-                    <img 
-                      src={d.nationImage} 
-                      alt={d.nation} 
-                      className="w-8 h-6 object-contain"
-                      referrerPolicy="no-referrer"
-                      onLoad={() => console.log('Nation image loaded:', d.nationImage)}
-                      onError={(e) => {
-                        if (!e.target.dataset.triedProxy) {
-                          e.target.dataset.triedProxy = "1";
-                          e.target.src = buildProxy(d.nationImage);
-                          return;
-                        }
-                        console.log('Nation image failed to load:', d.nationImage);
-                        e.target.style.display = 'none';
-                        e.target.parentNode.innerHTML = '<div class="w-8 h-6 bg-gray-600 rounded flex items-center justify-center text-xs">NAT</div>';
-                      }}
-                    />
-                  ) : (
-                    <div className="w-8 h-6 bg-gray-600 rounded flex items-center justify-center text-xs">
-                      NAT
-                    </div>
-                  )}
-                </div>
-                <div className="text-sm text-gray-400 mb-1">Nation</div>
-                <div className="font-medium text-sm">{d.nation}</div>
-              </div>
-
-              <div className="text-center bg-[#334155] rounded-lg p-3">
-                <div className="w-8 h-8 mx-auto mb-2 flex items-center justify-center">
-                  {d.leagueImage ? (
-                    <img 
-                      src={d.leagueImage} 
-                      alt={d.league} 
-                      className="w-8 h-8 object-contain"
-                      referrerPolicy="no-referrer"
-                      onLoad={() => console.log('League image loaded:', d.leagueImage)}
-                      onError={(e) => {
-                        if (!e.target.dataset.triedProxy) {
-                          e.target.dataset.triedProxy = "1";
-                          e.target.src = buildProxy(d.leagueImage);
-                          return;
-                        }
-                        console.log('League image failed to load:', d.leagueImage);
-                        e.target.style.display = 'none';
-                        e.target.parentNode.innerHTML = '<div class="w-8 h-8 bg-gray-600 rounded flex items-center justify-center text-xs">LEG</div>';
-                      }}
-                    />
-                  ) : (
-                    <div className="w-8 h-8 bg-gray-600 rounded flex items-center justify-center text-xs">
-                      LEG
-                    </div>
-                  )}
-                </div>
-                <div className="text-sm text-gray-400 mb-1">League</div>
-                <div className="font-medium text-sm">{d.league}</div>
-              </div>
-
               <div className="text-center bg-[#334155] rounded-lg p-3">
                 <Target className="w-6 h-6 mx-auto mb-2 text-red-400" />
                 <div className="text-sm text-gray-400 mb-1">Position</div>
@@ -543,43 +445,26 @@ const PlayerDetail = ({ player, onBack }) => {
               </div>
             </div>
 
+            {/* Stats */}
             <div className="bg-[#334155] rounded-lg p-4 mb-4">
               <h3 className="font-semibold mb-3 text-lg">Player Stats</h3>
               <div className="grid grid-cols-3 md:grid-cols-6 gap-4">
                 {Object.entries(d.stats).map(([stat, value]) => (
                   <div key={stat} className="text-center">
-                    <div className={`text-2xl font-bold ${getAttributeColor(value)}`}>{value}</div>
+                    <div
+                      className={`text-2xl font-bold ${getAttributeColor(value)}`}
+                    >
+                      {value}
+                    </div>
                     <div className="text-xs text-gray-400 capitalize">{stat}</div>
                   </div>
                 ))}
               </div>
             </div>
-
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-              <div className="text-center bg-[#334155] rounded-lg p-3">
-                <div className="text-lg font-semibold text-yellow-400">
-                  {"⭐".repeat(d.skillMoves)}
-                </div>
-                <div className="text-xs text-gray-400">Skill Moves</div>
-              </div>
-              <div className="text-center bg-[#334155] rounded-lg p-3">
-                <div className="text-lg font-semibold text-yellow-400">
-                  {"⚽".repeat(d.weakFoot)}
-                </div>
-                <div className="text-xs text-gray-400">Weak Foot</div>
-              </div>
-              <div className="text-center bg-[#334155] rounded-lg p-3">
-                <div className="text-sm font-semibold text-green-400">{d.age ? `${d.age} years` : 'Unknown'}</div>
-                <div className="text-xs text-gray-400">Age</div>
-              </div>
-              <div className="text-center bg-[#334155] rounded-lg p-3">
-                <div className="text-sm font-semibold text-blue-400">{d.foot}</div>
-                <div className="text-xs text-gray-400">Preferred Foot</div>
-              </div>
-            </div>
           </div>
         </div>
 
+        {/* Detailed attributes */}
         <div className="bg-[#334155] rounded-lg p-4 mb-4">
           <h3 className="font-semibold mb-3 text-lg">Detailed Attributes</h3>
           <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 text-sm">
@@ -593,36 +478,14 @@ const PlayerDetail = ({ player, onBack }) => {
                     <span className="text-gray-300 capitalize text-xs">
                       {attr.replace(/([A-Z])/g, " $1").trim()}
                     </span>
-                    <span className={`font-semibold ${getAttributeColor(value)}`}>{value}</span>
+                    <span className={`font-semibold ${getAttributeColor(value)}`}>
+                      {value}
+                    </span>
                   </div>
                 )
             )}
           </div>
         </div>
-
-        {priceData?.auctions?.length > 0 && (
-          <div className="bg-[#334155] rounded-lg p-4">
-            <h3 className="font-semibold mb-3 text-lg">Recent Sales</h3>
-            <div className="space-y-2">
-              {priceData.auctions.slice(0, 5).map((a, idx) => (
-                <div key={idx} className="flex justify-between items-center text-sm bg-[#475569] rounded px-3 py-2">
-                  <span className="text-gray-400">
-                    {a.soldDate ? new Date(a.soldDate).toLocaleString() : "—"}
-                  </span>
-                  <span className="font-medium text-yellow-400">
-                    {a.soldPrice ? a.soldPrice.toLocaleString() : "N/A"}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {priceData?.updatedAt && (
-          <div className="text-center text-gray-400 text-xs mt-4">
-            Price updated: {new Date(priceData.updatedAt).toLocaleString()}
-          </div>
-        )}
       </div>
     </div>
   );
@@ -644,7 +507,10 @@ export default function PlayerSearch() {
             </p>
           </div>
         ) : (
-          <PlayerDetail player={selectedPlayer} onBack={() => setSelectedPlayer(null)} />
+          <PlayerDetail
+            player={selectedPlayer}
+            onBack={() => setSelectedPlayer(null)}
+          />
         )}
       </div>
     </div>
