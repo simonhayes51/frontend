@@ -1,49 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Search, TrendingUp, TrendingDown, Minus, Loader2, Users, MapPin, Target } from 'lucide-react';
 
-// Mock data - replace with your actual database data
-const mockPlayers = [
-  {
-    id: 1,
-    name: "Konaté",
-    rating: 98,
-    version: "Shapeshifters",
-    card_id: "84123758",
-    image_url: "https://game-assets.fut.gg/cdn-cgi/image/quality=90,format=auto,width=300/2025/futgg-player-item-card/25-84123758.a926a90ac4ac01c2423c5b6a5c65d1022fedc3a3789d4d55ce77b79daf094b33.webp",
-    player_slug: "konate-98",
-    club: "Liverpool",
-    nation: "France",
-    position: "GK",
-    player_url: "/player/konate-98"
-  },
-  {
-    id: 2,
-    name: "Konaté",
-    rating: 85,
-    version: "Base",
-    card_id: "50583941", 
-    image_url: "https://game-assets.fut.gg/cdn-cgi/image/quality=90,format=auto,width=300/2025/futgg-player-item-card/25-50583941.webp",
-    player_slug: "konate-85",
-    club: "Liverpool",
-    nation: "France", 
-    position: "CB",
-    player_url: "/player/konate-85"
-  },
-  {
-    id: 3,
-    name: "Mbappé",
-    rating: 97,
-    version: "TOTY",
-    card_id: "100855415",
-    image_url: "https://game-assets.fut.gg/cdn-cgi/image/quality=90,format=auto,width=300/2025/futgg-player-item-card/25-100855415.webp",
-    player_slug: "mbappe-97",
-    club: "Paris Saint-Germain",
-    nation: "France",
-    position: "ST",
-    player_url: "/player/mbappe-97"
-  }
-];
-
 // Enhanced data fetching functions
 const fetchPlayerDefinition = async (cardId) => {
   try {
@@ -85,7 +42,7 @@ const getWorkRate = (workRateId) => {
   return workRates[workRateId] || 'Medium';
 };
 
-// Price fetching function (existing)
+// Price fetching function
 const fetchPlayerPrice = async (cardId) => {
   try {
     const response = await fetch(`https://www.fut.gg/api/fut/player-prices/25/${cardId}`, {
@@ -113,23 +70,58 @@ const fetchPlayerPrice = async (cardId) => {
   return null;
 };
 
+// Search players from your backend API
+const searchPlayers = async (query) => {
+  if (!query.trim()) return [];
+  
+  try {
+    const response = await fetch(`/api/search-players?q=${encodeURIComponent(query)}`);
+    if (response.ok) {
+      const data = await response.json();
+      return data.players || [];
+    }
+  } catch (error) {
+    console.error('Search failed:', error);
+  }
+  return [];
+};
+
 // Search component
 const PlayerSearch = ({ onPlayerSelect }) => {
   const [query, setQuery] = useState('');
+  const [results, setResults] = useState([]);
+  const [loading, setLoading] = useState(false);
   const [showResults, setShowResults] = useState(false);
 
-  const filteredPlayers = useMemo(() => {
-    if (!query.trim()) return [];
+  const handleSearch = async (searchQuery) => {
+    if (!searchQuery.trim()) {
+      setResults([]);
+      setShowResults(false);
+      return;
+    }
     
-    return mockPlayers.filter(player =>
-      player.name.toLowerCase().includes(query.toLowerCase())
-    ).slice(0, 8); // Limit results
+    setLoading(true);
+    const players = await searchPlayers(searchQuery);
+    setResults(players);
+    setLoading(false);
+    setShowResults(true);
+  };
+
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      handleSearch(query);
+    }, 300); // Debounce search by 300ms
+
+    return () => clearTimeout(timeoutId);
   }, [query]);
 
   return (
     <div className="relative w-full max-w-md mx-auto">
       <div className="relative">
         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+        {loading && (
+          <Loader2 className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5 animate-spin" />
+        )}
         <input
           type="text"
           placeholder="Search players (e.g. Konaté, Mbappé)..."
@@ -137,15 +129,14 @@ const PlayerSearch = ({ onPlayerSelect }) => {
           value={query}
           onChange={(e) => {
             setQuery(e.target.value);
-            setShowResults(true);
           }}
           onFocus={() => setShowResults(true)}
         />
       </div>
 
-      {showResults && filteredPlayers.length > 0 && (
+      {showResults && results.length > 0 && (
         <div className="absolute z-10 w-full mt-2 bg-white border border-gray-200 rounded-lg shadow-lg max-h-96 overflow-y-auto">
-          {filteredPlayers.map((player) => (
+          {results.map((player) => (
             <button
               key={`${player.card_id}-${player.rating}`}
               className="w-full px-4 py-3 text-left hover:bg-gray-50 border-b border-gray-100 last:border-b-0 focus:outline-none focus:bg-blue-50"
@@ -170,6 +161,12 @@ const PlayerSearch = ({ onPlayerSelect }) => {
               </div>
             </button>
           ))}
+        </div>
+      )}
+
+      {showResults && !loading && query && results.length === 0 && (
+        <div className="absolute z-10 w-full mt-2 bg-white border border-gray-200 rounded-lg shadow-lg p-4 text-center text-gray-500">
+          No players found for "{query}"
         </div>
       )}
     </div>
@@ -261,8 +258,8 @@ const PlayerDetail = ({ player, onBack }) => {
     nationImage: playerData?.nation?.imageUrl || `/api/placeholder/50/50`,
     league: playerData?.league?.name || 'Unknown League',
     leagueImage: playerData?.league?.imageUrl || `/api/placeholder/50/50`,
-    cardImage: playerData?.futggCardImagePath ? `https://game-assets.fut.gg/${playerData.futggCardImagePath}` : player.image_url,
-    simpleCardImage: playerData?.simpleCardImagePath ? `https://game-assets.fut.gg/${playerData.simpleCardImagePath}` : player.image_url,
+    cardImage: playerData?.futggCardImagePath ? `https://game-assets.fut.gg/cdn-cgi/image/quality=90,format=auto,width=500/${playerData.futggCardImagePath}` : player.image_url,
+    simpleCardImage: playerData?.simpleCardImagePath ? `https://game-assets.fut.gg/cdn-cgi/image/quality=90,format=auto,width=300/${playerData.simpleCardImagePath}` : player.image_url,
     rating: playerData?.overall || player.rating,
     version: playerData?.rarity?.name || player.version || 'Base',
     rarityColor: playerData?.rarity?.dominantColor || '000000',
@@ -358,8 +355,8 @@ const PlayerDetail = ({ player, onBack }) => {
             
             <div className="flex items-center gap-4 mb-4 text-gray-300">
               {displayData.age && <span>{displayData.age} years old</span>}
-              <span>{displayData.height}cm</span>
-              <span>{displayData.weight}kg</span>
+              {displayData.height && <span>{displayData.height}cm</span>}
+              {displayData.weight && <span>{displayData.weight}kg</span>}
               <span>{displayData.foot} footed</span>
             </div>
             
@@ -509,87 +506,14 @@ const PlayerDetail = ({ player, onBack }) => {
     </div>
   );
 };
-        </div>
-        
-        {/* Work Rates */}
-        {displayData.workRates.attacking && (
-          <div className="bg-gray-800 rounded-lg p-4 mb-4">
-            <h3 className="font-semibold mb-2">Work Rates</h3>
-            <div className="flex gap-4">
-              <span>⚡ Attacking: {displayData.workRates.attacking}</span>
-              <span>🛡️ Defensive: {displayData.workRates.defensive}</span>
-            </div>
-          </div>
-        )}
-
-        {/* Traits */}
-        {displayData.traits.length > 0 && (
-          <div className="bg-gray-800 rounded-lg p-4 mb-4">
-            <h3 className="font-semibold mb-2">Traits</h3>
-            <div className="flex flex-wrap gap-2">
-              {displayData.traits.map((trait, index) => (
-                <span key={index} className="bg-blue-600 px-2 py-1 rounded text-sm">
-                  {trait}
-                </span>
-              ))}
-            </div>
-          </div>
-        )}
-        
-        {/* Recent Sales */}
-        {priceData?.auctions && priceData.auctions.length > 0 && (
-          <div className="bg-gray-800 rounded-lg p-4">
-            <h3 className="font-semibold mb-3 text-lg">Recent Sales</h3>
-            <div className="space-y-2">
-              {priceData.auctions.slice(0, 5).map((auction, index) => (
-                <div key={index} className="flex justify-between items-center text-sm">
-                  <span className="text-gray-400">
-                    {new Date(auction.soldDate).toLocaleString()}
-                  </span>
-                  <span className="font-medium text-yellow-400">
-                    {formatPrice(auction.soldPrice)} 🪙
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-        
-        {priceData?.updatedAt && (
-          <div className="text-center text-gray-400 text-xs mt-4">
-            Price updated: {new Date(priceData.updatedAt).toLocaleString()}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-};
 
 // Main app component
 const FutPlayerSearch = () => {
   const [selectedPlayer, setSelectedPlayer] = useState(null);
-  const [debugMode, setDebugMode] = useState(false);
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="container mx-auto">
-        {/* Debug toggle */}
-        <button 
-          onClick={() => setDebugMode(!debugMode)}
-          className="mb-4 px-3 py-1 bg-gray-200 text-gray-800 rounded text-sm"
-        >
-          {debugMode ? 'Hide Debug' : 'Show Debug'}
-        </button>
-        
-        {debugMode && (
-          <div className="mb-4 p-4 bg-yellow-100 rounded">
-            <h3 className="font-bold">Debug Info:</h3>
-            <p>Mock players loaded: {mockPlayers.length}</p>
-            <p>Selected player: {selectedPlayer ? selectedPlayer.name : 'None'}</p>
-            <p>Mock players: {JSON.stringify(mockPlayers.map(p => ({name: p.name, rating: p.rating, card_id: p.card_id})), null, 2)}</p>
-          </div>
-        )}
-        
         {!selectedPlayer ? (
           <div className="text-center py-20">
             <h1 className="text-4xl font-bold text-gray-800 mb-8">
@@ -599,22 +523,6 @@ const FutPlayerSearch = () => {
             <p className="text-gray-600 mt-4">
               Search by player surname to see all ratings and live prices
             </p>
-            
-            {/* Quick test buttons */}
-            <div className="mt-8">
-              <h3 className="text-lg font-semibold mb-4">Quick Test:</h3>
-              <div className="flex gap-4 justify-center">
-                {mockPlayers.map(player => (
-                  <button
-                    key={player.id}
-                    onClick={() => setSelectedPlayer(player)}
-                    className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-                  >
-                    {player.name} ({player.rating})
-                  </button>
-                ))}
-              </div>
-            </div>
           </div>
         ) : (
           <PlayerDetail 
