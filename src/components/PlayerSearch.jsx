@@ -83,6 +83,83 @@ const getPositionName = (id) =>
     16: "LW",
   }[id] || "Unknown");
 
+// ---- robust position resolver ----
+const POS_CODE_TO_NAME = {
+  0:"GK",1:"RWB",2:"RB",3:"CB",4:"LB",5:"LWB",6:"CDM",7:"RM",8:"CM",9:"LM",
+  10:"CAM",11:"RF",12:"CF",13:"LF",14:"RW",15:"ST",16:"LW"
+};
+
+const _posNorm = (x) => {
+  if (x == null) return null;
+  if (typeof x === "number") return POS_CODE_TO_NAME[x] || null;
+  if (typeof x === "string") {
+    const s = x.trim().toUpperCase();
+    if (!s) return null;
+    // handle "ST,CAM,RW" or "ST | CAM | RW"
+    const first = s.split(/[,\|/]+/)[0]?.trim();
+    return first || null;
+  }
+  if (Array.isArray(x)) {
+    // arrays of numbers or strings
+    for (const v of x) {
+      const t = _posNorm(v);
+      if (t) return t;
+    }
+    return null;
+  }
+  if (typeof x === "object") {
+    // nested shapes
+    return (
+      _posNorm(x.name) ||
+      _posNorm(x.shortName) ||
+      _posNorm(x.short) ||
+      _posNorm(x.code) ||
+      _posNorm(x.position) ||
+      _posNorm(x.id)
+    );
+  }
+  return null;
+};
+
+const resolvePosition = (pd, fallbackObj) => {
+  const cands = [
+    pd?.position,
+    pd?.preferredPosition1,
+    pd?.preferredPosition2,
+    pd?.preferredPosition3,
+    pd?.mainPosition,
+    pd?.primaryPosition,
+    pd?.bestPosition,
+    pd?.basePosition,
+    pd?.defaultPosition,
+    pd?.positionId,
+    pd?.positionName,
+    pd?.preferredPosition1Name,
+    pd?.shortPosition,
+    // arrays / lists
+    pd?.positions,
+    pd?.preferredPositions,
+    pd?.alternativePositions,
+    pd?.altPositions,
+    pd?.playablePositions,
+    pd?.positionsList,
+    pd?.positionList,
+    // sometimes a comma string
+    pd?.displayPositions,
+    // fallbacks from the search-result object
+    fallbackObj?.position,
+    fallbackObj?.position_name,
+    fallbackObj?.position_short,
+    fallbackObj?.pos,
+    fallbackObj?.positions,
+  ];
+
+  for (const c of cands) {
+    const t = _posNorm(c);
+    if (t) return t;
+  }
+  return "Unknown";
+
 // ---- position resolver (drop this near your helpers) ----
 const resolvePosition = (pd, fallback) => {
   const candidates = [
@@ -270,7 +347,7 @@ const PlayerDetail = ({ player, onBack }) => {
       (playerData?.firstName && playerData?.lastName
         ? `${playerData.firstName} ${playerData.lastName}`
         : `${player.name} (${player.rating})`),
-    position: resolvePosition(playerData, player?.position),
+     position: resolvePosition(playerData, player),
     club: playerData?.club?.name || player.club || "Unknown",
     clubImage: playerData?.club?.imagePath 
       ? `https://game-assets.fut.gg/cdn-cgi/image/quality=100,format=auto,width=40/${playerData.club.imagePath}` 
