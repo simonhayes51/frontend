@@ -99,38 +99,44 @@ const DesktopSidebar = () => {
                   ${collapsed ? "w-16 px-2" : "w-64 p-4"}`}
     >
       {/* Header / brand + toggle (fixed) */}
-      <div className="flex items-center space-x-3 mb-8">
-        {/* Thin gradient ring + big logo */}
-        <div className="w-10 h-10 rounded-full p-[2px] bg-gradient-to-r from-green-400/80 to-blue-500/80">
-          <img
-            src="/server-logo.png"
-            alt="Server Logo"
-            className="w-full h-full rounded-full object-contain block"
-            onError={(e) => {
-              e.currentTarget.src =
-                'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="white" d="M12 2L13.09 8.26L22 9L13.09 15.74L12 22L10.91 15.74L2 9L10.91 8.26L12 2Z"/></svg>';
-            }}
-          />
-        </div>
+<div className="flex items-center mb-3 shrink-0">
+  {/* Logo: non-shrinking, square, thin gradient ring */}
+  <div
+    className={`rounded-full p-[2px] bg-gradient-to-r from-green-400/80 to-blue-500/80 
+                overflow-hidden shrink-0 aspect-square 
+                ${collapsed ? "w-8 mx-auto" : "w-10 mr-2"}`}
+  >
+    <img
+      src="/server-logo.png"
+      alt="Server Logo"
+      className="w-full h-full rounded-full object-cover block"
+      onError={(e) => {
+        e.currentTarget.src =
+          'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="white" d="M12 2L13.09 8.26L22 9L13.09 15.74L12 22L10.91 15.74L2 9L10.91 8.26L12 2Z"/></svg>';
+      }}
+    />
+  </div>
+
+  {/* Brand text (hidden when collapsed) */}
         {!collapsed && (
           <div className="min-w-0">
             <h1 className="text-sm font-semibold text-white truncate">FUT Dashboard</h1>
             <p className="text-[11px] text-gray-400 truncate">Trading Platform</p>
           </div>
         )}
+      
+        {/* Toggle button */}
         <button
           onClick={() => setCollapsed((c) => !c)}
-          className="ml-auto p-1.5 rounded-md hover:bg-gray-800/70 text-gray-300"
+          className={`ml-auto p-1.5 rounded-md hover:bg-gray-800/70 text-gray-300 ${collapsed ? "mr-1" : ""}`}
           title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
           aria-label="Toggle sidebar"
         >
           {collapsed ? (
-            // chevron-right
             <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
               <path strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M9 18l6-6-6-6" />
             </svg>
           ) : (
-            // chevron-left
             <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
               <path strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M15 18l-6-6 6-6" />
             </svg>
