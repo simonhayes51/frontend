@@ -134,38 +134,34 @@ const SearchBox = ({ onPlayerSelect }) => {
       </div>
 
       {showResults && results.length > 0 && (
-        <div className="absolute z-10 w-full mt-2 bg-white border border-gray-200 rounded-lg shadow-lg max-h-96 overflow-y-auto">
-          {results.map((player) => {
-            const cid = player.card_id || player.id; // handle either key
-            return (
-              <button
-                key={`${cid}-${player.rating}`}
-                className="w-full px-4 py-3 text-left hover:bg-gray-50 border-b border-gray-100 last:border-b-0 focus:outline-none focus:bg-blue-50"
-                onClick={() => {
-                  onPlayerSelect(player);
-                  setShowResults(false);
-                  setQuery("");
-                }}
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-16 bg-gradient-to-b from-yellow-400 to-yellow-600 rounded-lg flex items-center justify-center text-white font-bold text-sm">
-                    {player.rating}
-                  </div>
-                  <div>
-                    <div className="font-semibold text-gray-900">
-                      {player.name} ({player.rating})
-                    </div>
-                    <div className="text-sm text-gray-600">
-                      {(player.version || "Base")} • {(player.club || "Unknown")} •{" "}
-                      {(player.position || "—")}
-                    </div>
-                  </div>
-                </div>
-              </button>
-            );
-          })}
+  <div className="absolute z-10 w-full mt-2 bg-white border border-gray-200 rounded-lg shadow-lg max-h-96 overflow-y-auto">
+    {results.map((player) => (
+      <button
+        key={`${player.card_id}-${player.rating}`}
+        className="w-full px-4 py-3 text-left hover:bg-gray-50 border-b border-gray-100 last:border-b-0 focus:outline-none focus:bg-blue-50"
+        onClick={() => {
+          onPlayerSelect(player);
+          setShowResults(false);
+          setQuery('');
+        }}
+      >
+        <div className="flex items-center gap-3">
+          <div className="w-12 h-16 bg-gradient-to-b from-yellow-400 to-yellow-600 rounded-lg flex items-center justify-center text-white font-bold text-sm">
+            {player.rating}
+          </div>
+          <div>
+            <div className="font-semibold text-gray-900">
+              {player.name} ({player.rating})
+            </div>
+            <div className="text-sm text-gray-600">
+              {player.version} • {player.club} • {player.position}
+            </div>
+          </div>
         </div>
-      )}
+      </button>
+    ))}
+  </div>
+)}
 
       {showResults && !loading && query && results.length === 0 && (
         <div className="absolute z-10 w-full mt-2 bg-white border border-gray-200 rounded-lg shadow-lg p-4 text-center text-gray-500">
