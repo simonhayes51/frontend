@@ -83,6 +83,39 @@ const getPositionName = (id) =>
     16: "LW",
   }[id] || "Unknown");
 
+// ---- position resolver (drop this near your helpers) ----
+const resolvePosition = (pd, fallback) => {
+  const candidates = [
+    pd?.position,
+    pd?.preferredPosition1,
+    pd?.preferredPosition2,
+    pd?.preferredPosition3,
+    pd?.mainPosition,
+    pd?.primaryPosition,
+    pd?.bestPosition,
+    pd?.positionId,
+    Array.isArray(pd?.positions) ? pd.positions[0] : null,
+    Array.isArray(pd?.preferredPositions) ? pd.preferredPositions[0] : null,
+    pd?.positionName,
+    pd?.preferredPosition1Name,
+  ];
+
+  const normalize = (x) => {
+    if (x == null) return null;
+    if (typeof x === "string") return x.trim().toUpperCase() || null;
+    if (typeof x === "number") return getPositionName(x);
+    if (typeof x === "object") return normalize(x.name ?? x.position ?? x.id);
+    return null;
+  };
+
+  for (const c of candidates) {
+    const t = normalize(c);
+    if (t) return t;
+  }
+  const fb = normalize(fallback);
+  return fb || "Unknown";
+};
+
 // Color coding for attributes based on value (0-100)
 const getAttributeColor = (value) => {
   if (value >= 90) return "text-green-400"; // Dark green
@@ -237,7 +270,7 @@ const PlayerDetail = ({ player, onBack }) => {
       (playerData?.firstName && playerData?.lastName
         ? `${playerData.firstName} ${playerData.lastName}`
         : `${player.name} (${player.rating})`),
-    position: getPositionName(playerData?.position || playerData?.preferredPosition1) || "Unknown",
+    position: resolvePosition(playerData, player?.position),
     club: playerData?.club?.name || player.club || "Unknown",
     clubImage: playerData?.club?.imagePath 
       ? `https://game-assets.fut.gg/cdn-cgi/image/quality=100,format=auto,width=40/${playerData.club.imagePath}` 
