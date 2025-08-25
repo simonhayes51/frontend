@@ -234,7 +234,7 @@ const PlayerDetail = ({ player, onBack }) => {
       (playerData?.firstName && playerData?.lastName
         ? `${playerData.firstName} ${playerData.lastName}`
         : `${player.name} (${player.rating})`),
-    position: getPositionName(playerData?.position) || player.position,
+    position: getPositionName(playerData?.position || playerData?.preferredPosition1) || "Unknown",
     club: playerData?.club?.name || player.club || "Unknown",
     clubImage: playerData?.club?.imageUrl || "",
     nation: playerData?.nation?.name || player.nation || "Unknown",
@@ -305,11 +305,8 @@ const PlayerDetail = ({ player, onBack }) => {
             <img
               src={d.cardImage}
               alt={d.fullName}
-              className="w-48 h-64 object-cover rounded-lg shadow-lg border border-gray-600"
+              className="w-48 h-64 object-cover rounded-lg shadow-lg"
             />
-            <div className="absolute top-2 left-2 bg-black/75 text-white px-2 py-1 rounded text-lg font-bold">
-              {d.rating}
-            </div>
             <div className="absolute top-2 right-2 bg-black/75 text-white px-2 py-1 rounded text-xs">
               {d.version}
             </div>
@@ -348,64 +345,67 @@ const PlayerDetail = ({ player, onBack }) => {
 
               <div className="bg-[#334155] rounded-lg p-3">
                 <div className="text-gray-400 text-sm mb-1">AcceleRATE</div>
-                <div className="font-medium text-green-400 text-xs leading-tight">{d.accelerateType}</div>
+                <div className="font-medium text-green-400 text-xs leading-tight">{d.accelerateType.replace(/_/g, ' ')}</div>
               </div>
             </div>
 
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
               <div className="text-center bg-[#334155] rounded-lg p-3">
-                {d.clubImage ? (
+                {d.clubImage && (
                   <img 
                     src={d.clubImage} 
                     alt={d.club} 
                     className="w-8 h-8 object-contain mx-auto mb-2"
                     onError={(e) => {
                       e.target.style.display = 'none';
-                      e.target.nextSibling.style.display = 'block';
                     }}
                   />
-                ) : null}
-                <div className="w-8 h-8 mx-auto mb-2 bg-gray-600 rounded flex items-center justify-center text-xs" style={{display: d.clubImage ? 'none' : 'flex'}}>
-                  CLUB
-                </div>
+                )}
+                {!d.clubImage && (
+                  <div className="w-8 h-8 mx-auto mb-2 bg-gray-600 rounded flex items-center justify-center text-xs">
+                    CLUB
+                  </div>
+                )}
                 <div className="text-sm text-gray-400 mb-1">Club</div>
                 <div className="font-medium text-sm">{d.club}</div>
               </div>
 
               <div className="text-center bg-[#334155] rounded-lg p-3">
-                {d.nationImage ? (
+                {d.nationImage && (
                   <img 
                     src={d.nationImage} 
                     alt={d.nation} 
                     className="w-8 h-6 object-contain mx-auto mb-2"
                     onError={(e) => {
                       e.target.style.display = 'none';
-                      e.target.nextSibling.style.display = 'block';
                     }}
                   />
-                ) : null}
-                <div className="w-8 h-6 mx-auto mb-2 bg-gray-600 rounded flex items-center justify-center text-xs" style={{display: d.nationImage ? 'none' : 'flex'}}>
-                  NAT
-                </div>
+                )}
+                {!d.nationImage && (
+                  <div className="w-8 h-6 mx-auto mb-2 bg-gray-600 rounded flex items-center justify-center text-xs">
+                    NAT
+                  </div>
+                )}
                 <div className="text-sm text-gray-400 mb-1">Nation</div>
                 <div className="font-medium text-sm">{d.nation}</div>
               </div>
 
               <div className="text-center bg-[#334155] rounded-lg p-3">
-                {d.leagueImage ? (
+                {d.leagueImage && (
                   <img 
                     src={d.leagueImage} 
                     alt={d.league} 
                     className="w-8 h-8 object-contain mx-auto mb-2"
                     onError={(e) => {
                       e.target.style.display = 'none';
-                      e.target.nextSibling.style.display = 'block';
                     }}
                   />
-                ) : null}
-                <div className="w-8 h-8 mx-auto mb-2 bg-gray-600 rounded flex items-center justify-center text-xs" style={{display: d.leagueImage ? 'none' : 'flex'}}>
-                  LEG
-                </div>
+                )}
+                {!d.leagueImage && (
+                  <div className="w-8 h-8 mx-auto mb-2 bg-gray-600 rounded flex items-center justify-center text-xs">
+                    LEG
+                  </div>
+                )}
                 <div className="text-sm text-gray-400 mb-1">League</div>
                 <div className="font-medium text-sm">{d.league}</div>
               </div>
@@ -422,7 +422,7 @@ const PlayerDetail = ({ player, onBack }) => {
               <div className="grid grid-cols-3 md:grid-cols-6 gap-4">
                 {Object.entries(d.stats).map(([stat, value]) => (
                   <div key={stat} className="text-center">
-                    <div className="text-2xl font-bold text-green-400">{value}</div>
+                    <div className={`text-2xl font-bold ${getAttributeColor(value)}`}>{value}</div>
                     <div className="text-xs text-gray-400 capitalize">{stat}</div>
                   </div>
                 ))}
