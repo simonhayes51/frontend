@@ -160,7 +160,7 @@ const DesktopSidebar = () => {
       </div>
 
       {/* Scrollable middle (nav + quick stats). If collapsed, hide stats to save space */}
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto custom-scrollbar">
         {/* Navigation */}
         <nav className={`${collapsed ? "px-1" : "px-1.5"} space-y-1`}>
           {!collapsed && (
