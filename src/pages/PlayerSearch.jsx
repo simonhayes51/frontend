@@ -1,8 +1,8 @@
 import React from 'react';
-import FutPlayerSearch from '../components/FutPlayerSearch';
+import PlayerSearch from '../components/PlayerSearch';
 
 const PlayerSearch = () => {
-  return <FutPlayerSearch />;
+  return <PlayerSearch />;
 };
 
 export default PlayerSearch;
