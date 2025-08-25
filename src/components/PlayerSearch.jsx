@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { Search, TrendingUp, TrendingDown, Minus, Loader2, Target } from "lucide-react";
 
-// --- Config: backend base (optional). Set VITE_API_URL to your backend URL.
-// Example: VITE_API_URL="https://backend-production-xxxx.up.railway.app"
+// Config: backend base (set VITE_API_URL to your backend URL)
+// Example: VITE_API_URL="https://backend-production-1f1a.up.railway.app"
 const API_BASE = import.meta.env.VITE_API_URL || "";
 
 /* =========================
@@ -15,7 +15,7 @@ const searchPlayers = async (query) => {
   try {
     const r = await fetch(
       `${API_BASE}/api/search-players?q=${encodeURIComponent(query)}`,
-      { credentials: "include" } // send session cookie
+      { credentials: "include" }
     );
     if (!r.ok) return [];
     const data = await r.json();
@@ -26,11 +26,12 @@ const searchPlayers = async (query) => {
   }
 };
 
-// FUT.GG: player definition
-// Change these functions in your React component:
+// FUT.GG: player definition via your backend proxy
 const fetchPlayerDefinition = async (cardId) => {
   try {
-    const response = await fetch(`/api/fut-player-definition/${cardId}`);
+    const response = await fetch(`${API_BASE}/api/fut-player-definition/${cardId}`, {
+      credentials: "include"
+    });
     if (response.ok) {
       const data = await response.json();
       return data.data;
@@ -41,9 +42,12 @@ const fetchPlayerDefinition = async (cardId) => {
   return null;
 };
 
+// FUT.GG: player price via your backend proxy
 const fetchPlayerPrice = async (cardId) => {
   try {
-    const response = await fetch(`/api/fut-player-price/${cardId}`);
+    const response = await fetch(`${API_BASE}/api/fut-player-price/${cardId}`, {
+      credentials: "include"
+    });
     if (response.ok) {
       const data = await response.json();
       return {
@@ -58,6 +62,7 @@ const fetchPlayerPrice = async (cardId) => {
   }
   return null;
 };
+
 /* =========================
    Small helpers
    ========================= */
@@ -129,35 +134,35 @@ const SearchBox = ({ onPlayerSelect }) => {
       </div>
 
       {showResults && results.length > 0 && (
-  <div className="absolute z-10 w-full mt-2 bg-white border border-gray-200 rounded-lg shadow-lg max-h-96 overflow-y-auto">
-    {results.map((player) => (
-      <button
-        key={`${player.card_id}-${player.rating}`}
-        className="w-full px-4 py-3 text-left hover:bg-gray-50 border-b border-gray-100 last:border-b-0 focus:outline-none focus:bg-blue-50"
-        onClick={() => {
-          onPlayerSelect(player);
-          setShowResults(false);
-          setQuery('');
-        }}
-      >
-        <div className="flex items-center gap-3">
-          <div className="w-12 h-16 bg-gradient-to-b from-yellow-400 to-yellow-600 rounded-lg flex items-center justify-center text-white font-bold text-sm">
-            {player.rating}
-          </div>
-          <div>
-            <div className="font-semibold text-gray-900">
-              {player.name} ({player.rating})
-            </div>
-          </div>
+        <div className="absolute z-10 w-full mt-2 bg-white border border-gray-200 rounded-lg shadow-lg max-h-96 overflow-y-auto">
+          {results.map((player) => (
+            <button
+              key={`${player.card_id}-${player.rating}`}
+              className="w-full px-4 py-3 text-left hover:bg-gray-50 border-b border-gray-100 last:border-b-0 focus:outline-none focus:bg-blue-50"
+              onClick={() => {
+                onPlayerSelect(player);
+                setShowResults(false);
+                setQuery('');
+              }}
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-16 bg-gradient-to-b from-yellow-400 to-yellow-600 rounded-lg flex items-center justify-center text-white font-bold text-sm">
+                  {player.rating}
+                </div>
+                <div>
+                  <div className="font-semibold text-gray-900">
+                    {player.name} ({player.rating})
+                  </div>
+                </div>
+              </div>
+            </button>
+          ))}
         </div>
-      </button>
-    ))}
-  </div>
-)}
+      )}
 
       {showResults && !loading && query && results.length === 0 && (
         <div className="absolute z-10 w-full mt-2 bg-white border border-gray-200 rounded-lg shadow-lg p-4 text-center text-gray-500">
-          No players found for “{query}”
+          No players found for "{query}"
         </div>
       )}
     </div>
