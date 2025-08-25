@@ -125,8 +125,8 @@ const SearchBox = ({ onPlayerSelect }) => {
         )}
         <input
           type="text"
-          placeholder="Search players (e.g. Messi, Mbappé)…"
-          className="w-full pl-10 pr-4 py-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none text-lg"
+          placeholder="Search players (e.g. Messi, Mbappé)..."
+          className="w-full pl-10 pr-4 py-3 bg-[#1e293b] border border-gray-600 rounded-lg focus:border-blue-500 focus:outline-none text-lg text-white placeholder-gray-400"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onFocus={() => setShowResults(true)}
@@ -134,11 +134,11 @@ const SearchBox = ({ onPlayerSelect }) => {
       </div>
 
       {showResults && results.length > 0 && (
-        <div className="absolute z-10 w-full mt-2 bg-white border border-gray-200 rounded-lg shadow-lg max-h-96 overflow-y-auto">
+        <div className="absolute z-10 w-full mt-2 bg-[#1e293b] border border-gray-600 rounded-lg shadow-lg max-h-96 overflow-y-auto">
           {results.map((player) => (
             <button
               key={`${player.card_id}-${player.rating}`}
-              className="w-full px-4 py-3 text-left hover:bg-gray-50 border-b border-gray-100 last:border-b-0 focus:outline-none focus:bg-blue-50"
+              className="w-full px-4 py-3 text-left hover:bg-[#334155] border-b border-gray-700 last:border-b-0 focus:outline-none focus:bg-blue-500/20"
               onClick={() => {
                 onPlayerSelect(player);
                 setShowResults(false);
@@ -150,7 +150,7 @@ const SearchBox = ({ onPlayerSelect }) => {
                   {player.rating}
                 </div>
                 <div>
-                  <div className="font-semibold text-gray-900">
+                  <div className="font-semibold text-white">
                     {player.name} ({player.rating})
                   </div>
                 </div>
@@ -161,7 +161,7 @@ const SearchBox = ({ onPlayerSelect }) => {
       )}
 
       {showResults && !loading && query && results.length === 0 && (
-        <div className="absolute z-10 w-full mt-2 bg-white border border-gray-200 rounded-lg shadow-lg p-4 text-center text-gray-500">
+        <div className="absolute z-10 w-full mt-2 bg-[#1e293b] border border-gray-600 rounded-lg shadow-lg p-4 text-center text-gray-400">
           No players found for "{query}"
         </div>
       )}
@@ -307,18 +307,18 @@ const PlayerDetail = ({ player, onBack }) => {
   };
 
   return (
-    <div className="w-full max-w-6xl mx-auto bg-white">
-      <button onClick={onBack} className="mb-6 px-4 py-2 text-blue-600 hover:text-blue-800 font-medium">
+    <div className="w-full max-w-6xl mx-auto bg-[#0f172a]">
+      <button onClick={onBack} className="mb-6 px-4 py-2 text-blue-400 hover:text-blue-300 font-medium transition-colors">
         ← Back to Search
       </button>
 
-      <div className="bg-gradient-to-br from-gray-900 to-gray-800 text-white rounded-xl p-6">
+      <div className="bg-[#1e293b] border border-gray-700 text-white rounded-xl p-6">
         <div className="flex flex-col lg:flex-row items-start gap-6 mb-6">
           <div className="relative">
             <img
               src={d.cardImage}
               alt={d.fullName}
-              className="w-48 h-64 object-cover rounded-lg shadow-lg"
+              className="w-48 h-64 object-cover rounded-lg shadow-lg border border-gray-600"
               style={{ backgroundColor: `#${d.rarityColor}` }}
             />
             <div className="absolute top-2 left-2 bg-black/75 text-white px-2 py-1 rounded text-lg font-bold">
@@ -333,7 +333,7 @@ const PlayerDetail = ({ player, onBack }) => {
             <h1 className="text-4xl font-bold mb-2">{d.fullName}</h1>
 
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-              <div>
+              <div className="bg-[#334155] rounded-lg p-3">
                 <div className="text-gray-400 text-sm mb-1">💰 Price</div>
                 <div className="text-2xl font-bold text-yellow-400">
                   {loading ? (
@@ -347,7 +347,7 @@ const PlayerDetail = ({ player, onBack }) => {
               </div>
 
               {priceRange && (
-                <div>
+                <div className="bg-[#334155] rounded-lg p-3">
                   <div className="text-gray-400 text-sm mb-1">📊 Range</div>
                   <div className="font-medium">
                     {formatPrice(priceRange.min)} - {formatPrice(priceRange.max)}
@@ -355,19 +355,19 @@ const PlayerDetail = ({ player, onBack }) => {
                 </div>
               )}
 
-              <div>
+              <div className="bg-[#334155] rounded-lg p-3">
                 <div className="text-gray-400 text-sm mb-1">📈 Trend</div>
                 <PriceTrend auctions={priceData?.auctions} />
               </div>
 
-              <div>
+              <div className="bg-[#334155] rounded-lg p-3">
                 <div className="text-gray-400 text-sm mb-1">⚡ AcceleRATE</div>
                 <div className="font-medium text-green-400">{d.accelerateType}</div>
               </div>
             </div>
 
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-              <div className="text-center bg-gray-800 rounded-lg p-3">
+              <div className="text-center bg-[#334155] rounded-lg p-3">
                 {d.clubImage ? (
                   <img src={d.clubImage} alt={d.club} className="w-8 h-8 object-contain mx-auto mb-2" />
                 ) : (
@@ -377,7 +377,7 @@ const PlayerDetail = ({ player, onBack }) => {
                 <div className="font-medium text-sm">{d.club}</div>
               </div>
 
-              <div className="text-center bg-gray-800 rounded-lg p-3">
+              <div className="text-center bg-[#334155] rounded-lg p-3">
                 {d.nationImage ? (
                   <img src={d.nationImage} alt={d.nation} className="w-8 h-6 object-contain mx-auto mb-2" />
                 ) : (
@@ -387,7 +387,7 @@ const PlayerDetail = ({ player, onBack }) => {
                 <div className="font-medium text-sm">{d.nation}</div>
               </div>
 
-              <div className="text-center bg-gray-800 rounded-lg p-3">
+              <div className="text-center bg-[#334155] rounded-lg p-3">
                 {d.leagueImage ? (
                   <img src={d.leagueImage} alt={d.league} className="w-8 h-8 object-contain mx-auto mb-2" />
                 ) : (
@@ -397,7 +397,7 @@ const PlayerDetail = ({ player, onBack }) => {
                 <div className="font-medium text-sm">{d.league}</div>
               </div>
 
-              <div className="text-center bg-gray-800 rounded-lg p-3">
+              <div className="text-center bg-[#334155] rounded-lg p-3">
                 <Target className="w-6 h-6 mx-auto mb-2 text-red-400" />
                 <div className="text-sm text-gray-400 mb-1">Position</div>
                 <div className="font-medium">{d.position}</div>
@@ -405,7 +405,7 @@ const PlayerDetail = ({ player, onBack }) => {
             </div>
 
             {/* Face stats */}
-            <div className="bg-gray-800 rounded-lg p-4 mb-4">
+            <div className="bg-[#334155] rounded-lg p-4 mb-4">
               <h3 className="font-semibold mb-3 text-lg">Player Stats</h3>
               <div className="grid grid-cols-3 md:grid-cols-6 gap-4">
                 {Object.entries(d.stats).map(([stat, value]) => (
@@ -419,23 +419,23 @@ const PlayerDetail = ({ player, onBack }) => {
 
             {/* Skills & work rates */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-              <div className="text-center bg-gray-800 rounded-lg p-3">
+              <div className="text-center bg-[#334155] rounded-lg p-3">
                 <div className="text-lg font-semibold text-yellow-400">
                   {"⭐".repeat(d.skillMoves)}
                 </div>
                 <div className="text-xs text-gray-400">Skill Moves</div>
               </div>
-              <div className="text-center bg-gray-800 rounded-lg p-3">
+              <div className="text-center bg-[#334155] rounded-lg p-3">
                 <div className="text-lg font-semibold text-yellow-400">
                   {"⚽".repeat(d.weakFoot)}
                 </div>
                 <div className="text-xs text-gray-400">Weak Foot</div>
               </div>
-              <div className="text-center bg-gray-800 rounded-lg p-3">
+              <div className="text-center bg-[#334155] rounded-lg p-3">
                 <div className="text-sm font-semibold text-red-400">{d.attackingWorkRate}</div>
                 <div className="text-xs text-gray-400">Attacking</div>
               </div>
-              <div className="text-center bg-gray-800 rounded-lg p-3">
+              <div className="text-center bg-[#334155] rounded-lg p-3">
                 <div className="text-sm font-semibold text-blue-400">{d.defensiveWorkRate}</div>
                 <div className="text-xs text-gray-400">Defensive</div>
               </div>
@@ -444,7 +444,7 @@ const PlayerDetail = ({ player, onBack }) => {
         </div>
 
         {/* Detailed attributes */}
-        <div className="bg-gray-800 rounded-lg p-4 mb-4">
+        <div className="bg-[#334155] rounded-lg p-4 mb-4">
           <h3 className="font-semibold mb-3 text-lg">Detailed Attributes</h3>
           <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 text-sm">
             {Object.entries(d.attributes).map(
@@ -452,7 +452,7 @@ const PlayerDetail = ({ player, onBack }) => {
                 value > 0 && (
                   <div
                     key={attr}
-                    className="flex justify-between items-center bg-gray-700 rounded px-2 py-1"
+                    className="flex justify-between items-center bg-[#475569] rounded px-2 py-1"
                   >
                     <span className="text-gray-300 capitalize text-xs">
                       {attr.replace(/([A-Z])/g, " $1").trim()}
@@ -466,11 +466,11 @@ const PlayerDetail = ({ player, onBack }) => {
 
         {/* Recent sales */}
         {priceData?.auctions?.length > 0 && (
-          <div className="bg-gray-800 rounded-lg p-4">
+          <div className="bg-[#334155] rounded-lg p-4">
             <h3 className="font-semibold mb-3 text-lg">Recent Sales</h3>
             <div className="space-y-2">
               {priceData.auctions.slice(0, 5).map((a, idx) => (
-                <div key={idx} className="flex justify-between items-center text-sm">
+                <div key={idx} className="flex justify-between items-center text-sm bg-[#475569] rounded px-3 py-2">
                   <span className="text-gray-400">
                     {a.soldDate ? new Date(a.soldDate).toLocaleString() : "—"}
                   </span>
@@ -501,14 +501,14 @@ export default function PlayerSearch() {
   const [selectedPlayer, setSelectedPlayer] = useState(null);
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
+    <div className="min-h-screen bg-[#0f172a] text-white p-6">
       <div className="container mx-auto">
         {!selectedPlayer ? (
           <div className="text-center py-20">
-            <h1 className="text-4xl font-bold text-gray-800 mb-8">FUT Player Search</h1>
+            <h1 className="text-4xl font-bold text-white mb-8">Player Search</h1>
             <SearchBox onPlayerSelect={setSelectedPlayer} />
-            <p className="text-gray-600 mt-4">
-              Search by player surname to see all ratings and live prices
+            <p className="text-gray-400 mt-4">
+              Search by player name to view live market data and detailed stats
             </p>
           </div>
         ) : (
