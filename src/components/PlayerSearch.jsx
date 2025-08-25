@@ -236,11 +236,14 @@ const PlayerDetail = ({ player, onBack }) => {
         : `${player.name} (${player.rating})`),
     position: getPositionName(playerData?.position || playerData?.preferredPosition1) || "Unknown",
     club: playerData?.club?.name || player.club || "Unknown",
-    clubImage: playerData?.club?.imageUrl || "",
+    clubImage: playerData?.club?.imageUrl || 
+               (playerData?.club?.imagePath ? `https://game-assets.fut.gg/cdn-cgi/image/quality=100,format=auto,width=80/${playerData.club.imagePath}` : ""),
     nation: playerData?.nation?.name || player.nation || "Unknown",
-    nationImage: playerData?.nation?.imageUrl || "",
+    nationImage: playerData?.nation?.imageUrl || 
+                 (playerData?.nation?.imagePath ? `https://game-assets.fut.gg/cdn-cgi/image/quality=100,format=auto,width=80/${playerData.nation.imagePath}` : ""),
     league: playerData?.league?.name || "Unknown League",
-    leagueImage: playerData?.league?.imageUrl || "",
+    leagueImage: playerData?.league?.imageUrl || 
+                 (playerData?.league?.imagePath ? `https://game-assets.fut.gg/cdn-cgi/image/quality=100,format=auto,width=80/${playerData.league.imagePath}` : ""),
     cardImage: playerData?.futggCardImagePath
       ? `https://game-assets.fut.gg/cdn-cgi/image/quality=90,format=auto,width=500/${playerData.futggCardImagePath}`
       : player.image_url,
