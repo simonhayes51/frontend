@@ -308,7 +308,7 @@ const PlayerDetail = ({ player, onBack }) => {
             <img
               src={d.cardImage}
               alt={d.fullName}
-              className="w-48 h-64 object-cover rounded-lg shadow-lg"
+              className="w-48 h-64 object-cover rounded-lg"
             />
             <div className="absolute top-2 right-2 bg-black/75 text-white px-2 py-1 rounded text-xs">
               {d.version}
@@ -354,61 +354,73 @@ const PlayerDetail = ({ player, onBack }) => {
 
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
               <div className="text-center bg-[#334155] rounded-lg p-3">
-                {d.clubImage && (
-                  <img 
-                    src={d.clubImage} 
-                    alt={d.club} 
-                    className="w-8 h-8 object-contain mx-auto mb-2"
-                    onError={(e) => {
-                      e.target.style.display = 'none';
-                    }}
-                  />
-                )}
-                {!d.clubImage && (
-                  <div className="w-8 h-8 mx-auto mb-2 bg-gray-600 rounded flex items-center justify-center text-xs">
-                    CLUB
-                  </div>
-                )}
+                <div className="w-8 h-8 mx-auto mb-2 flex items-center justify-center">
+                  {d.clubImage ? (
+                    <img 
+                      src={d.clubImage} 
+                      alt={d.club} 
+                      className="w-8 h-8 object-contain"
+                      onLoad={() => console.log('Club image loaded:', d.clubImage)}
+                      onError={(e) => {
+                        console.log('Club image failed to load:', d.clubImage);
+                        e.target.style.display = 'none';
+                        e.target.parentNode.innerHTML = '<div class="w-8 h-8 bg-gray-600 rounded flex items-center justify-center text-xs">CLUB</div>';
+                      }}
+                    />
+                  ) : (
+                    <div className="w-8 h-8 bg-gray-600 rounded flex items-center justify-center text-xs">
+                      CLUB
+                    </div>
+                  )}
+                </div>
                 <div className="text-sm text-gray-400 mb-1">Club</div>
                 <div className="font-medium text-sm">{d.club}</div>
               </div>
 
               <div className="text-center bg-[#334155] rounded-lg p-3">
-                {d.nationImage && (
-                  <img 
-                    src={d.nationImage} 
-                    alt={d.nation} 
-                    className="w-8 h-6 object-contain mx-auto mb-2"
-                    onError={(e) => {
-                      e.target.style.display = 'none';
-                    }}
-                  />
-                )}
-                {!d.nationImage && (
-                  <div className="w-8 h-6 mx-auto mb-2 bg-gray-600 rounded flex items-center justify-center text-xs">
-                    NAT
-                  </div>
-                )}
+                <div className="w-8 h-6 mx-auto mb-2 flex items-center justify-center">
+                  {d.nationImage ? (
+                    <img 
+                      src={d.nationImage} 
+                      alt={d.nation} 
+                      className="w-8 h-6 object-contain"
+                      onLoad={() => console.log('Nation image loaded:', d.nationImage)}
+                      onError={(e) => {
+                        console.log('Nation image failed to load:', d.nationImage);
+                        e.target.style.display = 'none';
+                        e.target.parentNode.innerHTML = '<div class="w-8 h-6 bg-gray-600 rounded flex items-center justify-center text-xs">NAT</div>';
+                      }}
+                    />
+                  ) : (
+                    <div className="w-8 h-6 bg-gray-600 rounded flex items-center justify-center text-xs">
+                      NAT
+                    </div>
+                  )}
+                </div>
                 <div className="text-sm text-gray-400 mb-1">Nation</div>
                 <div className="font-medium text-sm">{d.nation}</div>
               </div>
 
               <div className="text-center bg-[#334155] rounded-lg p-3">
-                {d.leagueImage && (
-                  <img 
-                    src={d.leagueImage} 
-                    alt={d.league} 
-                    className="w-8 h-8 object-contain mx-auto mb-2"
-                    onError={(e) => {
-                      e.target.style.display = 'none';
-                    }}
-                  />
-                )}
-                {!d.leagueImage && (
-                  <div className="w-8 h-8 mx-auto mb-2 bg-gray-600 rounded flex items-center justify-center text-xs">
-                    LEG
-                  </div>
-                )}
+                <div className="w-8 h-8 mx-auto mb-2 flex items-center justify-center">
+                  {d.leagueImage ? (
+                    <img 
+                      src={d.leagueImage} 
+                      alt={d.league} 
+                      className="w-8 h-8 object-contain"
+                      onLoad={() => console.log('League image loaded:', d.leagueImage)}
+                      onError={(e) => {
+                        console.log('League image failed to load:', d.leagueImage);
+                        e.target.style.display = 'none';
+                        e.target.parentNode.innerHTML = '<div class="w-8 h-8 bg-gray-600 rounded flex items-center justify-center text-xs">LEG</div>';
+                      }}
+                    />
+                  ) : (
+                    <div className="w-8 h-8 bg-gray-600 rounded flex items-center justify-center text-xs">
+                      LEG
+                    </div>
+                  )}
+                </div>
                 <div className="text-sm text-gray-400 mb-1">League</div>
                 <div className="font-medium text-sm">{d.league}</div>
               </div>
