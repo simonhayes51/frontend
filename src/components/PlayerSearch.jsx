@@ -153,9 +153,6 @@ const SearchBox = ({ onPlayerSelect }) => {
             <div className="font-semibold text-gray-900">
               {player.name} ({player.rating})
             </div>
-            <div className="text-sm text-gray-600">
-              {player.version} • {player.club} • {player.position}
-            </div>
           </div>
         </div>
       </button>
