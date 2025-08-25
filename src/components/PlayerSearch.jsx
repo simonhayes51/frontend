@@ -59,27 +59,6 @@ const fetchPlayerPrice = async (cardId) => {
   return null;
 };
 
-// FUT.GG: player price
-const fetchPlayerPrice = async (cardId) => {
-  try {
-    const r = await fetch(
-      `https://www.fut.gg/api/fut/player-prices/25/${cardId}`,
-      { headers: { Accept: "application/json" } }
-    );
-    if (!r.ok) return null;
-    const data = await r.json();
-    return {
-      current: data.data?.currentPrice?.price ?? null,
-      isExtinct: data.data?.currentPrice?.isExtinct ?? false,
-      updatedAt: data.data?.currentPrice?.priceUpdatedAt ?? null,
-      auctions: data.data?.completedAuctions ?? [],
-    };
-  } catch (e) {
-    console.error("Failed to fetch price:", e);
-    return null;
-  }
-};
-
 /* =========================
    Small helpers
    ========================= */
