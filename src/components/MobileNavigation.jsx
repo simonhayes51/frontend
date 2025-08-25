@@ -12,14 +12,14 @@ const MobileNavigation = () => {
     { path: '/', label: 'Dashboard', icon: '📊' },
     { path: '/add-trade', label: 'Add Trade', icon: '➕' },
     { path: '/trades', label: 'Trades', icon: '📋' },
-    { path: '/pricecheck', label: 'Price Check', icon: '💰' },
+    { path: '/player-search', label: 'Players', icon: '🔍' },
     { path: '/analytics', label: 'Analytics', icon: '📈' },
     { path: '/profile', label: 'Profile', icon: '👤' }
   ];
 
   return (
     <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-gray-900 border-t border-gray-700 z-50">
-      <div className="grid grid-cols-5 h-16">
+      <div className="grid grid-cols-5 h-12">
         {navItems.map(({ path, label, icon }) => (
           <Link
             key={path}
