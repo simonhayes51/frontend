@@ -1,4 +1,62 @@
-import React, { useState, useEffect } from "react";
+<div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+              <div className="text-center bg-[#334155] rounded-lg p-3">
+                {d.clubImage ? (
+                  <img 
+                    src={d.clubImage} 
+                    alt={d.club} 
+                    className="w-8 h-8 object-contain mx-auto mb-2"
+                    onError={(e) => {
+                      e.target.style.display = 'none';
+                      e.target.nextSibling.style.display = 'block';
+                    }}
+                  />
+                ) : null}
+                <div className="w-8 h-8 mx-auto mb-2 bg-gray-600 rounded flex items-center justify-center text-xs" style={{display: d.clubImage ? 'none' : 'flex'}}>
+                  CLUB
+                </div>
+                <div className="text-sm text-gray-400 mb-1">Club</div>
+                <div className="font-medium text-sm">{d.club}</div>
+              </div>
+
+              <div className="text-center bg-[#334155] rounded-lg p-3">
+                {d.nationImage ? (
+                  <img 
+                    src={d.nationImage} 
+                    alt={d.nation} 
+                    className="w-8 h-6 object-contain mx-auto mb-2"
+                    onError={(e) => {
+                      e.target.style.display = 'none';
+                      e.target.nextSibling.style.display = 'block';
+                    }}
+                  />
+                ) : null}
+                <div className="w-8 h-6 mx-auto mb-2 bg-gray-600 rounded flex items-center justify-center text-xs" style={{display: d.nationImage ? 'none' : 'flex'}}>
+                  NAT
+                </div>
+                <div className="text-sm text-gray-400 mb-1">Nation</div>
+                <div className="font-medium text-sm">{d.nation}</div>
+              </div>
+
+              <div className="text-center bg-[#334155] rounded-lg p-3">
+                {d.leagueImage ? (
+                  <img 
+                    src={d.leagueImage} 
+                    alt={d.league} 
+                    className="w-8 h-8 object-contain mx-auto mb-2"
+                    onError={(e) => {
+                      e.target.style.display = 'none';
+                      e.target.nextSibling.style.display = 'block';
+                    }}
+                  />
+                ) : null}
+                <div className="w-8 h-8 mx-auto mb-2 bg-gray-600 rounded flex items-center justify-center text-xs" style={{display: d.leagueImage ? 'none' : 'flex'}}>
+                  LEG
+                </div>
+                <div className="text-sm text-gray-400 mb-1">League</div>
+                <div className="font-medium text-sm">{d.league}</div>
+              </div>
+
+              import React, { useState, useEffect } from "react";
 import { Search, TrendingUp, TrendingDown, Minus, Loader2, Target } from "lucide-react";
 
 // Config: backend base (set VITE_API_URL to your backend URL)
@@ -89,6 +147,15 @@ const getPositionName = (id) =>
   }[id] || "Unknown");
 
 const getWorkRate = (id) => ({ 0: "Low", 1: "Medium", 2: "High" }[id] || "Medium");
+
+// Color coding for attributes based on value (0-100)
+const getAttributeColor = (value) => {
+  if (value >= 90) return "text-green-400"; // Dark green
+  if (value >= 80) return "text-green-300"; // Light green  
+  if (value >= 70) return "text-yellow-300"; // Yellow
+  if (value >= 60) return "text-orange-300"; // Amber
+  return "text-red-400"; // Red
+};
 
 /* =========================
    Search box (typeahead)
@@ -319,7 +386,6 @@ const PlayerDetail = ({ player, onBack }) => {
               src={d.cardImage}
               alt={d.fullName}
               className="w-48 h-64 object-cover rounded-lg shadow-lg border border-gray-600"
-              style={{ backgroundColor: `#${d.rarityColor}` }}
             />
             <div className="absolute top-2 left-2 bg-black/75 text-white px-2 py-1 rounded text-lg font-bold">
               {d.rating}
@@ -334,14 +400,14 @@ const PlayerDetail = ({ player, onBack }) => {
 
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
               <div className="bg-[#334155] rounded-lg p-3">
-                <div className="text-gray-400 text-sm mb-1">💰 Price</div>
+                <div className="text-gray-400 text-sm mb-1">Price</div>
                 <div className="text-2xl font-bold text-yellow-400">
                   {loading ? (
                     <Loader2 className="w-6 h-6 animate-spin inline" />
                   ) : priceData?.isExtinct ? (
                     "Extinct"
                   ) : (
-                    `${formatPrice(priceData?.current)} 🪙`
+                    `${formatPrice(priceData?.current)}`
                   )}
                 </div>
               </div>
@@ -369,30 +435,57 @@ const PlayerDetail = ({ player, onBack }) => {
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
               <div className="text-center bg-[#334155] rounded-lg p-3">
                 {d.clubImage ? (
-                  <img src={d.clubImage} alt={d.club} className="w-8 h-8 object-contain mx-auto mb-2" />
-                ) : (
-                  <div className="w-8 h-8 mx-auto mb-2" />
-                )}
+                  <img 
+                    src={d.clubImage} 
+                    alt={d.club} 
+                    className="w-8 h-8 object-contain mx-auto mb-2"
+                    onError={(e) => {
+                      e.target.style.display = 'none';
+                      e.target.nextSibling.style.display = 'block';
+                    }}
+                  />
+                ) : null}
+                <div className="w-8 h-8 mx-auto mb-2 bg-gray-600 rounded flex items-center justify-center text-xs" style={{display: d.clubImage ? 'none' : 'flex'}}>
+                  CLUB
+                </div>
                 <div className="text-sm text-gray-400 mb-1">Club</div>
                 <div className="font-medium text-sm">{d.club}</div>
               </div>
 
               <div className="text-center bg-[#334155] rounded-lg p-3">
                 {d.nationImage ? (
-                  <img src={d.nationImage} alt={d.nation} className="w-8 h-6 object-contain mx-auto mb-2" />
-                ) : (
-                  <div className="w-8 h-6 mx-auto mb-2" />
-                )}
+                  <img 
+                    src={d.nationImage} 
+                    alt={d.nation} 
+                    className="w-8 h-6 object-contain mx-auto mb-2"
+                    onError={(e) => {
+                      e.target.style.display = 'none';
+                      e.target.nextSibling.style.display = 'block';
+                    }}
+                  />
+                ) : null}
+                <div className="w-8 h-6 mx-auto mb-2 bg-gray-600 rounded flex items-center justify-center text-xs" style={{display: d.nationImage ? 'none' : 'flex'}}>
+                  NAT
+                </div>
                 <div className="text-sm text-gray-400 mb-1">Nation</div>
                 <div className="font-medium text-sm">{d.nation}</div>
               </div>
 
               <div className="text-center bg-[#334155] rounded-lg p-3">
                 {d.leagueImage ? (
-                  <img src={d.leagueImage} alt={d.league} className="w-8 h-8 object-contain mx-auto mb-2" />
-                ) : (
-                  <div className="w-8 h-8 mx-auto mb-2" />
-                )}
+                  <img 
+                    src={d.leagueImage} 
+                    alt={d.league} 
+                    className="w-8 h-8 object-contain mx-auto mb-2"
+                    onError={(e) => {
+                      e.target.style.display = 'none';
+                      e.target.nextSibling.style.display = 'block';
+                    }}
+                  />
+                ) : null}
+                <div className="w-8 h-8 mx-auto mb-2 bg-gray-600 rounded flex items-center justify-center text-xs" style={{display: d.leagueImage ? 'none' : 'flex'}}>
+                  LEG
+                </div>
                 <div className="text-sm text-gray-400 mb-1">League</div>
                 <div className="font-medium text-sm">{d.league}</div>
               </div>
