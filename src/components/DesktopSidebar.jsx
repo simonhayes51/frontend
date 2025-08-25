@@ -99,12 +99,13 @@ const DesktopSidebar = () => {
                   ${collapsed ? "w-16 px-2" : "w-64 p-4"}`}
     >
       {/* Header / brand + toggle (fixed) */}
-      <div className="flex items-center gap-2 mb-3 shrink-0">
-        <div className="w-8 h-8 bg-gradient-to-r from-green-400 to-blue-500 rounded-full flex items-center justify-center">
+      <div className="flex items-center space-x-3 mb-8">
+        {/* Thin gradient ring + big logo */}
+        <div className="w-10 h-10 rounded-full p-[2px] bg-gradient-to-r from-green-400/80 to-blue-500/80">
           <img
             src="/server-logo.png"
             alt="Server Logo"
-            className="w-5 h-5 rounded-full"
+            className="w-full h-full rounded-full object-contain block"
             onError={(e) => {
               e.currentTarget.src =
                 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="white" d="M12 2L13.09 8.26L22 9L13.09 15.74L12 22L10.91 15.74L2 9L10.91 8.26L12 2Z"/></svg>';
