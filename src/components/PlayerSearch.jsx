@@ -4,7 +4,7 @@ import { Search, TrendingUp, TrendingDown, Minus, Loader2, Target } from "lucide
 // Config: backend base (set VITE_API_URL to your backend URL)
 const API_BASE = import.meta.env.VITE_API_URL || "";
 
-// 🔹 tiny helper to build the proxy URL
+// Tiny helper to build the proxy URL
 const buildProxy = (url) => `${API_BASE}/img?url=${encodeURIComponent(url)}`;
 
 // DB search via your backend
@@ -28,7 +28,7 @@ const searchPlayers = async (query) => {
 const fetchPlayerDefinition = async (cardId) => {
   try {
     const response = await fetch(`${API_BASE}/api/fut-player-definition/${cardId}`, {
-      credentials: "include"
+      credentials: "include",
     });
     if (response.ok) {
       const data = await response.json();
@@ -44,7 +44,7 @@ const fetchPlayerDefinition = async (cardId) => {
 const fetchPlayerPrice = async (cardId) => {
   try {
     const response = await fetch(`${API_BASE}/api/fut-player-price/${cardId}`, {
-      credentials: "include"
+      credentials: "include",
     });
     if (response.ok) {
       const data = await response.json();
@@ -79,15 +79,14 @@ const POS_CODE_TO_NAME = {
 
 const getPositionName = (id) => POS_CODE_TO_NAME[id] || "Unknown";
 
-// ---- resolver ----
+// ---- position resolver ----
 const _posNorm = (x) => {
   if (x == null) return null;
   if (typeof x === "number") return getPositionName(x);
   if (typeof x === "string") {
     const s = x.trim().toUpperCase();
     if (!s) return null;
-    const first = s.split(/[,\|/]+/)[0]?.trim();
-    return first || null;
+    return s.split(/[,\|/]+/)[0]?.trim() || null; // handle "ST,CAM" etc.
   }
   if (Array.isArray(x)) {
     for (const v of x) {
@@ -141,7 +140,6 @@ const resolvePosition = (pd, fallbackObj) => {
     fallbackObj?.pos,
     fallbackObj?.positions,
   ];
-
   for (const c of cands) {
     const t = _posNorm(c);
     if (t) return t;
@@ -149,7 +147,7 @@ const resolvePosition = (pd, fallbackObj) => {
   return "Unknown";
 };
 
-// Color coding for attributes based on value (0-100)
+// Color coding for attributes (0-100)
 const getAttributeColor = (value) => {
   if (value >= 90) return "text-green-400";
   if (value >= 80) return "text-green-300";
@@ -207,7 +205,7 @@ const SearchBox = ({ onPlayerSelect }) => {
               onClick={() => {
                 onPlayerSelect(player);
                 setShowResults(false);
-                setQuery('');
+                setQuery("");
               }}
             >
               <div className="flex items-center gap-3">
@@ -378,7 +376,6 @@ const PlayerDetail = ({ player, onBack }) => {
       </button>
 
       <div className="bg-[#1e293b] border border-gray-700 text-white rounded-xl p-6">
-        {/* card + info */}
         <div className="flex flex-col lg:flex-row items-start gap-6 mb-6">
           <div className="relative">
             <img
@@ -401,6 +398,7 @@ const PlayerDetail = ({ player, onBack }) => {
           <div className="flex-1">
             <h1 className="text-4xl font-bold mb-2">{d.fullName}</h1>
 
+            {/* Price / Range / Trend / Accelerate */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
               <div className="bg-[#334155] rounded-lg p-3">
                 <div className="text-gray-400 text-sm mb-1">💰 Price</div>
@@ -437,7 +435,99 @@ const PlayerDetail = ({ player, onBack }) => {
               </div>
             </div>
 
+            {/* Club / Nation / League / Position */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+              {/* Club */}
+              <div className="text-center bg-[#334155] rounded-lg p-3">
+                <div className="w-8 h-8 mx-auto mb-2 flex items-center justify-center">
+                  {d.clubImage ? (
+                    <img
+                      src={d.clubImage}
+                      alt={d.club}
+                      className="w-8 h-8 object-contain"
+                      referrerPolicy="no-referrer"
+                      onError={(e) => {
+                        if (!e.target.dataset.triedProxy) {
+                          e.target.dataset.triedProxy = "1";
+                          e.target.src = buildProxy(d.clubImage);
+                          return;
+                        }
+                        e.target.style.display = "none";
+                        e.target.parentNode.innerHTML =
+                          '<div class="w-8 h-8 bg-gray-600 rounded flex items-center justify-center text-xs">CLUB</div>';
+                      }}
+                    />
+                  ) : (
+                    <div className="w-8 h-8 bg-gray-600 rounded flex items-center justify-center text-xs">
+                      CLUB
+                    </div>
+                  )}
+                </div>
+                <div className="text-sm text-gray-400 mb-1">Club</div>
+                <div className="font-medium text-sm">{d.club}</div>
+              </div>
+
+              {/* Nation */}
+              <div className="text-center bg-[#334155] rounded-lg p-3">
+                <div className="w-8 h-6 mx-auto mb-2 flex items-center justify-center">
+                  {d.nationImage ? (
+                    <img
+                      src={d.nationImage}
+                      alt={d.nation}
+                      className="w-8 h-6 object-contain"
+                      referrerPolicy="no-referrer"
+                      onError={(e) => {
+                        if (!e.target.dataset.triedProxy) {
+                          e.target.dataset.triedProxy = "1";
+                          e.target.src = buildProxy(d.nationImage);
+                          return;
+                        }
+                        e.target.style.display = "none";
+                        e.target.parentNode.innerHTML =
+                          '<div class="w-8 h-6 bg-gray-600 rounded flex items-center justify-center text-xs">NAT</div>';
+                      }}
+                    />
+                  ) : (
+                    <div className="w-8 h-6 bg-gray-600 rounded flex items-center justify-center text-xs">
+                      NAT
+                    </div>
+                  )}
+                </div>
+                <div className="text-sm text-gray-400 mb-1">Nation</div>
+                <div className="font-medium text-sm">{d.nation}</div>
+              </div>
+
+              {/* League */}
+              <div className="text-center bg-[#334155] rounded-lg p-3">
+                <div className="w-8 h-8 mx-auto mb-2 flex items-center justify-center">
+                  {d.leagueImage ? (
+                    <img
+                      src={d.leagueImage}
+                      alt={d.league}
+                      className="w-8 h-8 object-contain"
+                      referrerPolicy="no-referrer"
+                      onError={(e) => {
+                        if (!e.target.dataset.triedProxy) {
+                          e.target.dataset.triedProxy = "1";
+                          e.target.src = buildProxy(d.leagueImage);
+                          return;
+                        }
+                        e.target.style.display = "none";
+                        e.target.parentNode.innerHTML =
+                          '<div class="w-8 h-8 bg-gray-600 rounded flex items-center justify-center text-xs">LEG</div>';
+                      }}
+                    />
+                  ) : (
+                    <div className="w-8 h-8 bg-gray-600 rounded flex items-center justify-center text-xs">
+                      LEG
+                    </div>
+                  )}
+                </div>
+                <div className="text-sm text-gray-400 mb-1">League</div>
+                <div className="font-medium text-sm">{d.league}</div>
+              </div>
+
+              {/* Position */}
               <div className="text-center bg-[#334155] rounded-lg p-3">
                 <Target className="w-6 h-6 mx-auto mb-2 text-red-400" />
                 <div className="text-sm text-gray-400 mb-1">Position</div>
@@ -445,15 +535,13 @@ const PlayerDetail = ({ player, onBack }) => {
               </div>
             </div>
 
-            {/* Stats */}
+            {/* Player Stats */}
             <div className="bg-[#334155] rounded-lg p-4 mb-4">
               <h3 className="font-semibold mb-3 text-lg">Player Stats</h3>
               <div className="grid grid-cols-3 md:grid-cols-6 gap-4">
                 {Object.entries(d.stats).map(([stat, value]) => (
                   <div key={stat} className="text-center">
-                    <div
-                      className={`text-2xl font-bold ${getAttributeColor(value)}`}
-                    >
+                    <div className={`text-2xl font-bold ${getAttributeColor(value)}`}>
                       {value}
                     </div>
                     <div className="text-xs text-gray-400 capitalize">{stat}</div>
@@ -461,10 +549,36 @@ const PlayerDetail = ({ player, onBack }) => {
                 ))}
               </div>
             </div>
+
+            {/* Skill / Weak Foot / Age / Preferred Foot */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+              <div className="text-center bg-[#334155] rounded-lg p-3">
+                <div className="text-lg font-semibold text-yellow-400">
+                  {"⭐".repeat(d.skillMoves)}
+                </div>
+                <div className="text-xs text-gray-400">Skill Moves</div>
+              </div>
+              <div className="text-center bg-[#334155] rounded-lg p-3">
+                <div className="text-lg font-semibold text-yellow-400">
+                  {"⚽".repeat(d.weakFoot)}
+                </div>
+                <div className="text-xs text-gray-400">Weak Foot</div>
+              </div>
+              <div className="text-center bg-[#334155] rounded-lg p-3">
+                <div className="text-sm font-semibold text-green-400">
+                  {d.age ? `${d.age} years` : "Unknown"}
+                </div>
+                <div className="text-xs text-gray-400">Age</div>
+              </div>
+              <div className="text-center bg-[#334155] rounded-lg p-3">
+                <div className="text-sm font-semibold text-blue-400">{d.foot}</div>
+                <div className="text-xs text-gray-400">Preferred Foot</div>
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* Detailed attributes */}
+        {/* Detailed Attributes */}
         <div className="bg-[#334155] rounded-lg p-4 mb-4">
           <h3 className="font-semibold mb-3 text-lg">Detailed Attributes</h3>
           <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 text-sm">
@@ -486,6 +600,33 @@ const PlayerDetail = ({ player, onBack }) => {
             )}
           </div>
         </div>
+
+        {priceData?.auctions?.length > 0 && (
+          <div className="bg-[#334155] rounded-lg p-4">
+            <h3 className="font-semibold mb-3 text-lg">Recent Sales</h3>
+            <div className="space-y-2">
+              {priceData.auctions.slice(0, 5).map((a, idx) => (
+                <div
+                  key={idx}
+                  className="flex justify-between items-center text-sm bg-[#475569] rounded px-3 py-2"
+                >
+                  <span className="text-gray-400">
+                    {a.soldDate ? new Date(a.soldDate).toLocaleString() : "—"}
+                  </span>
+                  <span className="font-medium text-yellow-400">
+                    {a.soldPrice ? a.soldPrice.toLocaleString() : "N/A"}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {priceData?.updatedAt && (
+          <div className="text-center text-gray-400 text-xs mt-4">
+            Price updated: {new Date(priceData.updatedAt).toLocaleString()}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -507,10 +648,7 @@ export default function PlayerSearch() {
             </p>
           </div>
         ) : (
-          <PlayerDetail
-            player={selectedPlayer}
-            onBack={() => setSelectedPlayer(null)}
-          />
+          <PlayerDetail player={selectedPlayer} onBack={() => setSelectedPlayer(null)} />
         )}
       </div>
     </div>
