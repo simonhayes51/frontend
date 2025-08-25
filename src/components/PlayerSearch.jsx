@@ -401,13 +401,19 @@ const PlayerDetail = ({ player, onBack }) => {
             {/* Price / Range / Trend / Accelerate */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
               <div className="bg-[#334155] rounded-lg p-3">
-                <div className="text-gray-400 text-sm mb-1">💰 Price</div>
+                <div className="text-gray-400 text-sm mb-1">Price</div>
                 <div className="text-2xl font-bold text-yellow-400">
                   {loading ? (
                     <Loader2 className="w-6 h-6 animate-spin inline" />
                   ) : priceData?.isExtinct ? (
                     "Extinct"
                   ) : (
+                    <>
+                    <img
+                      src="https://cdn2.futbin.com/https%3A%2F%2Fcdn.futbin.com%2Fdesign%2Fimg%2Fcoins_big.png?fm=png&ixlib=java-2.1.0&w=40&s=cad4ceb684da7f0b778fdeb1d4065fb1"
+                      alt="Coins"
+                      className="w-5 h-5 object-contain"
+                    />
                     formatPrice(priceData?.current)
                   )}
                 </div>
@@ -560,7 +566,7 @@ const PlayerDetail = ({ player, onBack }) => {
               </div>
               <div className="text-center bg-[#334155] rounded-lg p-3">
                 <div className="text-lg font-semibold text-yellow-400">
-                  {"⚽".repeat(d.weakFoot)}
+                  {"⭐".repeat(d.weakFoot)}
                 </div>
                 <div className="text-xs text-gray-400">Weak Foot</div>
               </div>
