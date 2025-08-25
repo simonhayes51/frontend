@@ -1,71 +1,8 @@
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-              <div className="text-center bg-[#334155] rounded-lg p-3">
-                {d.clubImage ? (
-                  <img 
-                    src={d.clubImage} 
-                    alt={d.club} 
-                    className="w-8 h-8 object-contain mx-auto mb-2"
-                    onError={(e) => {
-                      e.target.style.display = 'none';
-                      e.target.nextSibling.style.display = 'block';
-                    }}
-                  />
-                ) : null}
-                <div className="w-8 h-8 mx-auto mb-2 bg-gray-600 rounded flex items-center justify-center text-xs" style={{display: d.clubImage ? 'none' : 'flex'}}>
-                  CLUB
-                </div>
-                <div className="text-sm text-gray-400 mb-1">Club</div>
-                <div className="font-medium text-sm">{d.club}</div>
-              </div>
-
-              <div className="text-center bg-[#334155] rounded-lg p-3">
-                {d.nationImage ? (
-                  <img 
-                    src={d.nationImage} 
-                    alt={d.nation} 
-                    className="w-8 h-6 object-contain mx-auto mb-2"
-                    onError={(e) => {
-                      e.target.style.display = 'none';
-                      e.target.nextSibling.style.display = 'block';
-                    }}
-                  />
-                ) : null}
-                <div className="w-8 h-6 mx-auto mb-2 bg-gray-600 rounded flex items-center justify-center text-xs" style={{display: d.nationImage ? 'none' : 'flex'}}>
-                  NAT
-                </div>
-                <div className="text-sm text-gray-400 mb-1">Nation</div>
-                <div className="font-medium text-sm">{d.nation}</div>
-              </div>
-
-              <div className="text-center bg-[#334155] rounded-lg p-3">
-                {d.leagueImage ? (
-                  <img 
-                    src={d.leagueImage} 
-                    alt={d.league} 
-                    className="w-8 h-8 object-contain mx-auto mb-2"
-                    onError={(e) => {
-                      e.target.style.display = 'none';
-                      e.target.nextSibling.style.display = 'block';
-                    }}
-                  />
-                ) : null}
-                <div className="w-8 h-8 mx-auto mb-2 bg-gray-600 rounded flex items-center justify-center text-xs" style={{display: d.leagueImage ? 'none' : 'flex'}}>
-                  LEG
-                </div>
-                <div className="text-sm text-gray-400 mb-1">League</div>
-                <div className="font-medium text-sm">{d.league}</div>
-              </div>
-
-              import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { Search, TrendingUp, TrendingDown, Minus, Loader2, Target } from "lucide-react";
 
 // Config: backend base (set VITE_API_URL to your backend URL)
-// Example: VITE_API_URL="https://backend-production-1f1a.up.railway.app"
 const API_BASE = import.meta.env.VITE_API_URL || "";
-
-/* =========================
-   Fetch helpers
-   ========================= */
 
 // DB search via your backend
 const searchPlayers = async (query) => {
@@ -121,10 +58,7 @@ const fetchPlayerPrice = async (cardId) => {
   return null;
 };
 
-/* =========================
-   Small helpers
-   ========================= */
-
+// Helper functions
 const getPositionName = (id) =>
   ({
     0: "GK",
@@ -146,8 +80,6 @@ const getPositionName = (id) =>
     16: "LW",
   }[id] || "Unknown");
 
-const getWorkRate = (id) => ({ 0: "Low", 1: "Medium", 2: "High" }[id] || "Medium");
-
 // Color coding for attributes based on value (0-100)
 const getAttributeColor = (value) => {
   if (value >= 90) return "text-green-400"; // Dark green
@@ -157,10 +89,7 @@ const getAttributeColor = (value) => {
   return "text-red-400"; // Red
 };
 
-/* =========================
-   Search box (typeahead)
-   ========================= */
-
+// Search box component
 const SearchBox = ({ onPlayerSelect }) => {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState([]);
@@ -236,10 +165,7 @@ const SearchBox = ({ onPlayerSelect }) => {
   );
 };
 
-/* =========================
-   Price trend chip
-   ========================= */
-
+// Price trend component
 const PriceTrend = ({ auctions }) => {
   if (!auctions || auctions.length < 2) return null;
   const [a, b] = auctions.slice(0, 2);
@@ -270,10 +196,7 @@ const PriceTrend = ({ auctions }) => {
   );
 };
 
-/* =========================
-   Detail view
-   ========================= */
-
+// Player detail component
 const PlayerDetail = ({ player, onBack }) => {
   const [priceData, setPriceData] = useState(null);
   const [playerData, setPlayerData] = useState(null);
@@ -323,11 +246,8 @@ const PlayerDetail = ({ player, onBack }) => {
       : player.image_url,
     rating: playerData?.overall ?? player.rating,
     version: playerData?.rarity?.name || player.version || "Base",
-    rarityColor: playerData?.rarity?.dominantColor || "000000",
     skillMoves: playerData?.skillMoves ?? 3,
     weakFoot: playerData?.weakFoot ?? 3,
-    attackingWorkRate: getWorkRate(playerData?.attackingWorkrate),
-    defensiveWorkRate: getWorkRate(playerData?.defensiveWorkrate),
     age: playerData?.dateOfBirth
       ? new Date().getFullYear() - new Date(playerData.dateOfBirth).getFullYear()
       : null,
@@ -414,7 +334,7 @@ const PlayerDetail = ({ player, onBack }) => {
 
               {priceRange && (
                 <div className="bg-[#334155] rounded-lg p-3">
-                  <div className="text-gray-400 text-sm mb-1">📊 Range</div>
+                  <div className="text-gray-400 text-sm mb-1">Range</div>
                   <div className="font-medium">
                     {formatPrice(priceRange.min)} - {formatPrice(priceRange.max)}
                   </div>
@@ -422,13 +342,13 @@ const PlayerDetail = ({ player, onBack }) => {
               )}
 
               <div className="bg-[#334155] rounded-lg p-3">
-                <div className="text-gray-400 text-sm mb-1">📈 Trend</div>
+                <div className="text-gray-400 text-sm mb-1">Trend</div>
                 <PriceTrend auctions={priceData?.auctions} />
               </div>
 
               <div className="bg-[#334155] rounded-lg p-3">
-                <div className="text-gray-400 text-sm mb-1">⚡ AcceleRATE</div>
-                <div className="font-medium text-green-400">{d.accelerateType}</div>
+                <div className="text-gray-400 text-sm mb-1">AcceleRATE</div>
+                <div className="font-medium text-green-400 text-xs leading-tight">{d.accelerateType}</div>
               </div>
             </div>
 
@@ -497,7 +417,6 @@ const PlayerDetail = ({ player, onBack }) => {
               </div>
             </div>
 
-            {/* Face stats */}
             <div className="bg-[#334155] rounded-lg p-4 mb-4">
               <h3 className="font-semibold mb-3 text-lg">Player Stats</h3>
               <div className="grid grid-cols-3 md:grid-cols-6 gap-4">
@@ -510,7 +429,6 @@ const PlayerDetail = ({ player, onBack }) => {
               </div>
             </div>
 
-            {/* Skills & work rates */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
               <div className="text-center bg-[#334155] rounded-lg p-3">
                 <div className="text-lg font-semibold text-yellow-400">
@@ -525,18 +443,17 @@ const PlayerDetail = ({ player, onBack }) => {
                 <div className="text-xs text-gray-400">Weak Foot</div>
               </div>
               <div className="text-center bg-[#334155] rounded-lg p-3">
-                <div className="text-sm font-semibold text-red-400">{d.attackingWorkRate}</div>
-                <div className="text-xs text-gray-400">Attacking</div>
+                <div className="text-sm font-semibold text-green-400">{d.age ? `${d.age} years` : 'Unknown'}</div>
+                <div className="text-xs text-gray-400">Age</div>
               </div>
               <div className="text-center bg-[#334155] rounded-lg p-3">
-                <div className="text-sm font-semibold text-blue-400">{d.defensiveWorkRate}</div>
-                <div className="text-xs text-gray-400">Defensive</div>
+                <div className="text-sm font-semibold text-blue-400">{d.foot}</div>
+                <div className="text-xs text-gray-400">Preferred Foot</div>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Detailed attributes */}
         <div className="bg-[#334155] rounded-lg p-4 mb-4">
           <h3 className="font-semibold mb-3 text-lg">Detailed Attributes</h3>
           <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 text-sm">
@@ -550,14 +467,13 @@ const PlayerDetail = ({ player, onBack }) => {
                     <span className="text-gray-300 capitalize text-xs">
                       {attr.replace(/([A-Z])/g, " $1").trim()}
                     </span>
-                    <span className="font-semibold text-green-400">{value}</span>
+                    <span className={`font-semibold ${getAttributeColor(value)}`}>{value}</span>
                   </div>
                 )
             )}
           </div>
         </div>
 
-        {/* Recent sales */}
         {priceData?.auctions?.length > 0 && (
           <div className="bg-[#334155] rounded-lg p-4">
             <h3 className="font-semibold mb-3 text-lg">Recent Sales</h3>
@@ -568,7 +484,7 @@ const PlayerDetail = ({ player, onBack }) => {
                     {a.soldDate ? new Date(a.soldDate).toLocaleString() : "—"}
                   </span>
                   <span className="font-medium text-yellow-400">
-                    {a.soldPrice ? a.soldPrice.toLocaleString() : "N/A"} 🪙
+                    {a.soldPrice ? a.soldPrice.toLocaleString() : "N/A"}
                   </span>
                 </div>
               ))}
@@ -586,10 +502,7 @@ const PlayerDetail = ({ player, onBack }) => {
   );
 };
 
-/* =========================
-   Page export
-   ========================= */
-
+// Main component
 export default function PlayerSearch() {
   const [selectedPlayer, setSelectedPlayer] = useState(null);
 
