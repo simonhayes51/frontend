@@ -412,7 +412,7 @@ const PlayerDetail = ({ player, onBack }) => {
                     <img
                       src="https://cdn2.futbin.com/https%3A%2F%2Fcdn.futbin.com%2Fdesign%2Fimg%2Fcoins_big.png?fm=png&ixlib=java-2.1.0&w=40&s=cad4ceb684da7f0b778fdeb1d4065fb1"
                       alt="Coins"
-                      className="w-5 h-5 object-contain"
+                      className="w-5 h-5 object-fit"
                     />
                     {formatPrice(priceData?.current)}
                   </>
