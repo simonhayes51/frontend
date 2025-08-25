@@ -27,19 +27,36 @@ const searchPlayers = async (query) => {
 };
 
 // FUT.GG: player definition
+// Change these functions in your React component:
 const fetchPlayerDefinition = async (cardId) => {
   try {
-    const r = await fetch(
-      `https://www.fut.gg/api/fut/player-item-definitions/25/${cardId}/`,
-      { headers: { Accept: "application/json" } }
-    );
-    if (!r.ok) return null;
-    const data = await r.json();
-    return data?.data || null;
-  } catch (e) {
-    console.error("Failed to fetch player definition:", e);
-    return null;
+    const response = await fetch(`/api/fut-player-definition/${cardId}`);
+    if (response.ok) {
+      const data = await response.json();
+      return data.data; // Return the player definition data
+    }
+  } catch (error) {
+    console.error('Failed to fetch player definition:', error);
   }
+  return null;
+};
+
+const fetchPlayerPrice = async (cardId) => {
+  try {
+    const response = await fetch(`/api/fut-player-price/${cardId}`);
+    if (response.ok) {
+      const data = await response.json();
+      return {
+        current: data.data?.currentPrice?.price || null,
+        isExtinct: data.data?.currentPrice?.isExtinct || false,
+        updatedAt: data.data?.currentPrice?.priceUpdatedAt || null,
+        auctions: data.data?.completedAuctions || []
+      };
+    }
+  } catch (error) {
+    console.error('Failed to fetch price:', error);
+  }
+  return null;
 };
 
 // FUT.GG: player price
