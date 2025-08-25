@@ -414,7 +414,8 @@ const PlayerDetail = ({ player, onBack }) => {
                       alt="Coins"
                       className="w-5 h-5 object-contain"
                     />
-                    formatPrice(priceData?.current)
+                    {formatPrice(priceData?.current)}
+                  </>
                   )}
                 </div>
               </div>
