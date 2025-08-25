@@ -10,13 +10,11 @@ function Layout() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900">
-      {!isMobile && (
-        <div className="hidden md:block fixed left-0 top-0 h-screen z-40">
-          <DesktopSidebar />
-        </div>
-      )}
+      {/* Sidebar (Desktop only) */}
+      {!isMobile && <DesktopSidebar />}
 
-      <main className={isMobile ? 'pb-20' : 'ml-64'}>
+      {/* Main content shifts by current sidebar width */}
+      <main className={isMobile ? 'pb-20' : 'ml-[var(--sidebar-width)] transition-all duration-200'}>
         <Outlet />
       </main>
 
@@ -25,4 +23,4 @@ function Layout() {
   );
 }
 
-export default Layout;  // 👈 default export required by `import Layout from "./components/Layout"`
+export default Layout;
