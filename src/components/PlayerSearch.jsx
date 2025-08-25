@@ -1,290 +1,286 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { Search, TrendingUp, TrendingDown, Minus, Loader2, Users, MapPin, Target } from 'lucide-react';
+import React, { useState, useEffect } from "react";
+import { Search, TrendingUp, TrendingDown, Minus, Loader2, Target } from "lucide-react";
 
-// Enhanced data fetching functions
-const fetchPlayerDefinition = async (cardId) => {
-  try {
-    const response = await fetch(`https://www.fut.gg/api/fut/player-item-definitions/25/${cardId}/`, {
-      headers: {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-        "Accept": "application/json, text/plain, */*", 
-        "Accept-Language": "en-GB,en;q=0.9",
-        "Referer": "https://www.fut.gg/",
-        "Origin": "https://www.fut.gg"
-      }
-    });
-    
-    if (response.ok) {
-      const data = await response.json();
-      return data.data; // Return the player definition data
-    }
-  } catch (error) {
-    console.error('Failed to fetch player definition:', error);
-  }
-  return null;
-};
+// --- Config: backend base (optional). Set VITE_API_URL to your backend URL.
+// Example: VITE_API_URL="https://backend-production-xxxx.up.railway.app"
+const API_BASE = import.meta.env.VITE_API_URL || "";
 
-// Position mapping for display
-const getPositionName = (positionId) => {
-  const positions = {
-    0: 'GK', 1: 'RWB', 2: 'RB', 3: 'CB', 4: 'LB', 5: 'LWB',
-    6: 'CDM', 7: 'RM', 8: 'CM', 9: 'LM', 10: 'CAM',
-    11: 'RF', 12: 'CF', 13: 'LF', 14: 'RW', 15: 'ST', 16: 'LW'
-  };
-  return positions[positionId] || 'Unknown';
-};
+/* =========================
+   Fetch helpers
+   ========================= */
 
-// Work rate mapping
-const getWorkRate = (workRateId) => {
-  const workRates = {
-    0: 'Low', 1: 'Medium', 2: 'High'
-  };
-  return workRates[workRateId] || 'Medium';
-};
-
-// Price fetching function
-const fetchPlayerPrice = async (cardId) => {
-  try {
-    const response = await fetch(`https://www.fut.gg/api/fut/player-prices/25/${cardId}`, {
-      headers: {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-        "Accept": "application/json, text/plain, */*",
-        "Accept-Language": "en-GB,en;q=0.9",
-        "Referer": "https://www.fut.gg/",
-        "Origin": "https://www.fut.gg"
-      }
-    });
-    
-    if (response.ok) {
-      const data = await response.json();
-      return {
-        current: data.data?.currentPrice?.price || null,
-        isExtinct: data.data?.currentPrice?.isExtinct || false,
-        updatedAt: data.data?.currentPrice?.priceUpdatedAt || null,
-        auctions: data.data?.completedAuctions || []
-      };
-    }
-  } catch (error) {
-    console.error('Failed to fetch price:', error);
-  }
-  return null;
-};
-
-// Search players from your backend API
+// DB search via your backend
 const searchPlayers = async (query) => {
   if (!query.trim()) return [];
-  
   try {
-    const response = await fetch(`/api/search-players?q=${encodeURIComponent(query)}`);
-    if (response.ok) {
-      const data = await response.json();
-      return data.players || [];
-    }
-  } catch (error) {
-    console.error('Search failed:', error);
+    const r = await fetch(
+      `${API_BASE}/api/search-players?q=${encodeURIComponent(query)}`,
+      { credentials: "include" } // send session cookie
+    );
+    if (!r.ok) return [];
+    const data = await r.json();
+    return data.players || [];
+  } catch (e) {
+    console.error("Search failed:", e);
+    return [];
   }
-  return [];
 };
 
-// Search component
-const PlayerSearch = ({ onPlayerSelect }) => {
-  const [query, setQuery] = useState('');
+// FUT.GG: player definition
+const fetchPlayerDefinition = async (cardId) => {
+  try {
+    const r = await fetch(
+      `https://www.fut.gg/api/fut/player-item-definitions/25/${cardId}/`,
+      { headers: { Accept: "application/json" } }
+    );
+    if (!r.ok) return null;
+    const data = await r.json();
+    return data?.data || null;
+  } catch (e) {
+    console.error("Failed to fetch player definition:", e);
+    return null;
+  }
+};
+
+// FUT.GG: player price
+const fetchPlayerPrice = async (cardId) => {
+  try {
+    const r = await fetch(
+      `https://www.fut.gg/api/fut/player-prices/25/${cardId}`,
+      { headers: { Accept: "application/json" } }
+    );
+    if (!r.ok) return null;
+    const data = await r.json();
+    return {
+      current: data.data?.currentPrice?.price ?? null,
+      isExtinct: data.data?.currentPrice?.isExtinct ?? false,
+      updatedAt: data.data?.currentPrice?.priceUpdatedAt ?? null,
+      auctions: data.data?.completedAuctions ?? [],
+    };
+  } catch (e) {
+    console.error("Failed to fetch price:", e);
+    return null;
+  }
+};
+
+/* =========================
+   Small helpers
+   ========================= */
+
+const getPositionName = (id) =>
+  ({
+    0: "GK",
+    1: "RWB",
+    2: "RB",
+    3: "CB",
+    4: "LB",
+    5: "LWB",
+    6: "CDM",
+    7: "RM",
+    8: "CM",
+    9: "LM",
+    10: "CAM",
+    11: "RF",
+    12: "CF",
+    13: "LF",
+    14: "RW",
+    15: "ST",
+    16: "LW",
+  }[id] || "Unknown");
+
+const getWorkRate = (id) => ({ 0: "Low", 1: "Medium", 2: "High" }[id] || "Medium");
+
+/* =========================
+   Search box (typeahead)
+   ========================= */
+
+const SearchBox = ({ onPlayerSelect }) => {
+  const [query, setQuery] = useState("");
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
   const [showResults, setShowResults] = useState(false);
 
-  const handleSearch = async (searchQuery) => {
-    if (!searchQuery.trim()) {
-      setResults([]);
-      setShowResults(false);
-      return;
-    }
-    
-    setLoading(true);
-    const players = await searchPlayers(searchQuery);
-    setResults(players);
-    setLoading(false);
-    setShowResults(true);
-  };
-
   useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      handleSearch(query);
-    }, 300); // Debounce search by 300ms
-
-    return () => clearTimeout(timeoutId);
+    const t = setTimeout(async () => {
+      if (!query.trim()) {
+        setResults([]);
+        setShowResults(false);
+        return;
+      }
+      setLoading(true);
+      const players = await searchPlayers(query);
+      setResults(players);
+      setLoading(false);
+      setShowResults(true);
+    }, 300);
+    return () => clearTimeout(t);
   }, [query]);
 
   return (
     <div className="relative w-full max-w-md mx-auto">
       <div className="relative">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
         {loading && (
-          <Loader2 className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5 animate-spin" />
+          <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5 animate-spin" />
         )}
         <input
           type="text"
-          placeholder="Search players (e.g. Messi, Mbappé)..."
+          placeholder="Search players (e.g. Messi, Mbappé)…"
           className="w-full pl-10 pr-4 py-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none text-lg"
           value={query}
-          onChange={(e) => {
-            setQuery(e.target.value);
-          }}
+          onChange={(e) => setQuery(e.target.value)}
           onFocus={() => setShowResults(true)}
         />
       </div>
 
       {showResults && results.length > 0 && (
         <div className="absolute z-10 w-full mt-2 bg-white border border-gray-200 rounded-lg shadow-lg max-h-96 overflow-y-auto">
-          {results.map((player) => (
-            <button
-              key={`${player.card_id}-${player.rating}`}
-              className="w-full px-4 py-3 text-left hover:bg-gray-50 border-b border-gray-100 last:border-b-0 focus:outline-none focus:bg-blue-50"
-              onClick={() => {
-                onPlayerSelect(player);
-                setShowResults(false);
-                setQuery('');
-              }}
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-16 bg-gradient-to-b from-yellow-400 to-yellow-600 rounded-lg flex items-center justify-center text-white font-bold text-sm">
-                  {player.rating}
-                </div>
-                <div>
-                  <div className="font-semibold text-gray-900">
-                    {player.name} ({player.rating})
+          {results.map((player) => {
+            const cid = player.card_id || player.id; // handle either key
+            return (
+              <button
+                key={`${cid}-${player.rating}`}
+                className="w-full px-4 py-3 text-left hover:bg-gray-50 border-b border-gray-100 last:border-b-0 focus:outline-none focus:bg-blue-50"
+                onClick={() => {
+                  onPlayerSelect(player);
+                  setShowResults(false);
+                  setQuery("");
+                }}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-16 bg-gradient-to-b from-yellow-400 to-yellow-600 rounded-lg flex items-center justify-center text-white font-bold text-sm">
+                    {player.rating}
                   </div>
-                  <div className="text-sm text-gray-600">
-                    {player.version} • {player.club} • {player.position}
+                  <div>
+                    <div className="font-semibold text-gray-900">
+                      {player.name} ({player.rating})
+                    </div>
+                    <div className="text-sm text-gray-600">
+                      {(player.version || "Base")} • {(player.club || "Unknown")} •{" "}
+                      {(player.position || "—")}
+                    </div>
                   </div>
                 </div>
-              </div>
-            </button>
-          ))}
+              </button>
+            );
+          })}
         </div>
       )}
 
       {showResults && !loading && query && results.length === 0 && (
         <div className="absolute z-10 w-full mt-2 bg-white border border-gray-200 rounded-lg shadow-lg p-4 text-center text-gray-500">
-          No players found for "{query}"
+          No players found for “{query}”
         </div>
       )}
     </div>
   );
 };
 
-// Price trend component
+/* =========================
+   Price trend chip
+   ========================= */
+
 const PriceTrend = ({ auctions }) => {
   if (!auctions || auctions.length < 2) return null;
+  const [a, b] = auctions.slice(0, 2);
+  const cur = a?.soldPrice;
+  const prev = b?.soldPrice;
+  if (!cur || !prev) return null;
 
-  const recent = auctions.slice(0, 2);
-  const current = recent[0]?.soldPrice;
-  const previous = recent[1]?.soldPrice;
-  
-  if (!current || !previous) return null;
-
-  const change = current - previous;
-  const changePercent = ((change / previous) * 100).toFixed(2);
-  const isPositive = change > 0;
-  const isNegative = change < 0;
+  const change = cur - prev;
+  const pct = ((change / prev) * 100).toFixed(2);
 
   return (
     <div className="flex items-center gap-2 text-sm">
-      {isPositive && <TrendingUp className="w-4 h-4 text-green-500" />}
-      {isNegative && <TrendingDown className="w-4 h-4 text-red-500" />}
-      {!isPositive && !isNegative && <Minus className="w-4 h-4 text-gray-400" />}
-      
-      <span className={`font-medium ${
-        isPositive ? 'text-green-600' : 
-        isNegative ? 'text-red-600' : 
-        'text-gray-600'
-      }`}>
-        {changePercent}% ({isPositive ? '+' : ''}{change.toLocaleString()})
+      {change > 0 ? (
+        <TrendingUp className="w-4 h-4 text-green-500" />
+      ) : change < 0 ? (
+        <TrendingDown className="w-4 h-4 text-red-500" />
+      ) : (
+        <Minus className="w-4 h-4 text-gray-400" />
+      )}
+      <span
+        className={`font-medium ${
+          change > 0 ? "text-green-600" : change < 0 ? "text-red-600" : "text-gray-600"
+        }`}
+      >
+        {pct}% {change > 0 ? `(+${change.toLocaleString()})` : `(${change.toLocaleString()})`}
       </span>
     </div>
   );
 };
 
-// Player detail component
+/* =========================
+   Detail view
+   ========================= */
+
 const PlayerDetail = ({ player, onBack }) => {
   const [priceData, setPriceData] = useState(null);
   const [playerData, setPlayerData] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  const cardId = player.card_id || player.id;
+
   useEffect(() => {
-    const loadPlayerData = async () => {
+    (async () => {
       setLoading(true);
-      
-      // Fetch both price and player definition data concurrently
-      const [priceInfo, playerInfo] = await Promise.all([
-        fetchPlayerPrice(player.card_id),
-        fetchPlayerDefinition(player.card_id)
+      const [priceInfo, defInfo] = await Promise.all([
+        fetchPlayerPrice(cardId),
+        fetchPlayerDefinition(cardId),
       ]);
-      
       setPriceData(priceInfo);
-      setPlayerData(playerInfo);
+      setPlayerData(defInfo);
       setLoading(false);
-    };
-    
-    loadPlayerData();
-  }, [player.card_id]);
+    })();
+  }, [cardId]);
 
-  const formatPrice = (price) => {
-    if (!price) return 'N/A';
-    return price.toLocaleString();
-  };
+  const formatPrice = (p) => (p ? p.toLocaleString() : "N/A");
 
-  const getPriceRange = (auctions) => {
-    if (!auctions || auctions.length === 0) return null;
-    const prices = auctions.map(a => a.soldPrice).filter(Boolean);
-    if (prices.length === 0) return null;
-    
-    const min = Math.min(...prices);
-    const max = Math.max(...prices);
-    return { min, max };
-  };
+  const priceRange =
+    priceData?.auctions?.length
+      ? (() => {
+          const prices = priceData.auctions.map((a) => a.soldPrice).filter(Boolean);
+          if (!prices.length) return null;
+          return { min: Math.min(...prices), max: Math.max(...prices) };
+        })()
+      : null;
 
-  const priceRange = getPriceRange(priceData?.auctions);
-
-  // Use fetched player data if available, otherwise fallback to basic data
-  const displayData = {
-    fullName: playerData?.commonName || `${playerData?.firstName} ${playerData?.lastName}` || `${player.name} (${player.rating})`,
-    firstName: playerData?.firstName || player.name.split(' ')[0],
-    lastName: playerData?.lastName || player.name,
+  const d = {
+    fullName:
+      playerData?.commonName ||
+      (playerData?.firstName && playerData?.lastName
+        ? `${playerData.firstName} ${playerData.lastName}`
+        : `${player.name} (${player.rating})`),
     position: getPositionName(playerData?.position) || player.position,
-    club: playerData?.club?.name || player.club,
-    clubImage: playerData?.club?.imageUrl || `/api/placeholder/50/50`,
-    nation: playerData?.nation?.name || player.nation,
-    nationImage: playerData?.nation?.imageUrl || `/api/placeholder/50/50`,
-    league: playerData?.league?.name || 'Unknown League',
-    leagueImage: playerData?.league?.imageUrl || `/api/placeholder/50/50`,
-    cardImage: playerData?.futggCardImagePath ? `https://game-assets.fut.gg/cdn-cgi/image/quality=90,format=auto,width=500/${playerData.futggCardImagePath}` : player.image_url,
-    simpleCardImage: playerData?.simpleCardImagePath ? `https://game-assets.fut.gg/cdn-cgi/image/quality=90,format=auto,width=300/${playerData.simpleCardImagePath}` : player.image_url,
-    rating: playerData?.overall || player.rating,
-    version: playerData?.rarity?.name || player.version || 'Base',
-    rarityColor: playerData?.rarity?.dominantColor || '000000',
-    height: playerData?.height || null,
-    weight: playerData?.weight || null,
-    skillMoves: playerData?.skillMoves || 3,
-    weakFoot: playerData?.weakFoot || 3,
+    club: playerData?.club?.name || player.club || "Unknown",
+    clubImage: playerData?.club?.imageUrl || "",
+    nation: playerData?.nation?.name || player.nation || "Unknown",
+    nationImage: playerData?.nation?.imageUrl || "",
+    league: playerData?.league?.name || "Unknown League",
+    leagueImage: playerData?.league?.imageUrl || "",
+    cardImage: playerData?.futggCardImagePath
+      ? `https://game-assets.fut.gg/cdn-cgi/image/quality=90,format=auto,width=500/${playerData.futggCardImagePath}`
+      : player.image_url,
+    rating: playerData?.overall ?? player.rating,
+    version: playerData?.rarity?.name || player.version || "Base",
+    rarityColor: playerData?.rarity?.dominantColor || "000000",
+    skillMoves: playerData?.skillMoves ?? 3,
+    weakFoot: playerData?.weakFoot ?? 3,
     attackingWorkRate: getWorkRate(playerData?.attackingWorkrate),
     defensiveWorkRate: getWorkRate(playerData?.defensiveWorkrate),
-    age: playerData?.dateOfBirth ? new Date().getFullYear() - new Date(playerData.dateOfBirth).getFullYear() : null,
-    foot: playerData?.foot === 1 ? 'Right' : playerData?.foot === 2 ? 'Left' : 'Right',
-    accelerateType: playerData?.accelerateType || 'Controlled',
-    shirtNumber: playerData?.shirtNumber || null,
-    
-    // Face stats (FIFA's 6 main stats)
+    age: playerData?.dateOfBirth
+      ? new Date().getFullYear() - new Date(playerData.dateOfBirth).getFullYear()
+      : null,
+    foot: playerData?.foot === 2 ? "Left" : "Right",
+    accelerateType: playerData?.accelerateType || "Controlled",
     stats: {
       pace: playerData?.facePace || 0,
       shooting: playerData?.faceShooting || 0,
       passing: playerData?.facePassing || 0,
       dribbling: playerData?.faceDribbling || 0,
       defending: playerData?.faceDefending || 0,
-      physicality: playerData?.facePhysicality || 0
+      physicality: playerData?.facePhysicality || 0,
     },
-
-    // Individual attributes for detailed view
     attributes: {
       acceleration: playerData?.attributeAcceleration || 0,
       sprintSpeed: playerData?.attributeSprintSpeed || 0,
@@ -313,16 +309,13 @@ const PlayerDetail = ({ player, onBack }) => {
       slidingTackle: playerData?.attributeSlidingTackle || 0,
       volleys: playerData?.attributeVolleys || 0,
       curve: playerData?.attributeCurve || 0,
-      penalties: playerData?.attributePenalties || 0
-    }
+      penalties: playerData?.attributePenalties || 0,
+    },
   };
 
   return (
     <div className="w-full max-w-6xl mx-auto bg-white">
-      <button
-        onClick={onBack}
-        className="mb-6 px-4 py-2 text-blue-600 hover:text-blue-800 font-medium"
-      >
+      <button onClick={onBack} className="mb-6 px-4 py-2 text-blue-600 hover:text-blue-800 font-medium">
         ← Back to Search
       </button>
 
@@ -330,36 +323,22 @@ const PlayerDetail = ({ player, onBack }) => {
         <div className="flex flex-col lg:flex-row items-start gap-6 mb-6">
           <div className="relative">
             <img
-              src={displayData.cardImage}
-              alt={displayData.fullName}
+              src={d.cardImage}
+              alt={d.fullName}
               className="w-48 h-64 object-cover rounded-lg shadow-lg"
-              style={{ backgroundColor: `#${displayData.rarityColor}` }}
+              style={{ backgroundColor: `#${d.rarityColor}` }}
             />
-            <div className="absolute top-2 left-2 bg-black bg-opacity-75 text-white px-2 py-1 rounded text-lg font-bold">
-              {displayData.rating}
+            <div className="absolute top-2 left-2 bg-black/75 text-white px-2 py-1 rounded text-lg font-bold">
+              {d.rating}
             </div>
-            <div className="absolute top-2 right-2 bg-black bg-opacity-75 text-white px-2 py-1 rounded text-xs">
-              {displayData.version}
+            <div className="absolute top-2 right-2 bg-black/75 text-white px-2 py-1 rounded text-xs">
+              {d.version}
             </div>
-            {displayData.shirtNumber && (
-              <div className="absolute bottom-2 left-2 bg-black bg-opacity-75 text-white px-2 py-1 rounded text-sm">
-                #{displayData.shirtNumber}
-              </div>
-            )}
           </div>
-          
+
           <div className="flex-1">
-            <h1 className="text-4xl font-bold mb-2">
-              {displayData.fullName}
-            </h1>
-            
-            <div className="flex items-center gap-4 mb-4 text-gray-300">
-              {displayData.age && <span>{displayData.age} years old</span>}
-              {displayData.height && <span>{displayData.height}cm</span>}
-              {displayData.weight && <span>{displayData.weight}kg</span>}
-              <span>{displayData.foot} footed</span>
-            </div>
-            
+            <h1 className="text-4xl font-bold mb-2">{d.fullName}</h1>
+
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
               <div>
                 <div className="text-gray-400 text-sm mb-1">💰 Price</div>
@@ -367,13 +346,13 @@ const PlayerDetail = ({ player, onBack }) => {
                   {loading ? (
                     <Loader2 className="w-6 h-6 animate-spin inline" />
                   ) : priceData?.isExtinct ? (
-                    'Extinct'
+                    "Extinct"
                   ) : (
                     `${formatPrice(priceData?.current)} 🪙`
                   )}
                 </div>
               </div>
-              
+
               {priceRange && (
                 <div>
                   <div className="text-gray-400 text-sm mb-1">📊 Range</div>
@@ -382,7 +361,7 @@ const PlayerDetail = ({ player, onBack }) => {
                   </div>
                 </div>
               )}
-              
+
               <div>
                 <div className="text-gray-400 text-sm mb-1">📈 Trend</div>
                 <PriceTrend auctions={priceData?.auctions} />
@@ -390,47 +369,53 @@ const PlayerDetail = ({ player, onBack }) => {
 
               <div>
                 <div className="text-gray-400 text-sm mb-1">⚡ AcceleRATE</div>
-                <div className="font-medium text-green-400">{displayData.accelerateType}</div>
-              </div>
-            </div>
-            
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-              <div className="text-center bg-gray-800 rounded-lg p-3">
-                <div className="flex items-center justify-center gap-2 mb-2">
-                  <img src={displayData.clubImage} alt={displayData.club} className="w-8 h-8 object-contain" />
-                </div>
-                <div className="text-sm text-gray-400 mb-1">Club</div>
-                <div className="font-medium text-sm">{displayData.club}</div>
-              </div>
-              
-              <div className="text-center bg-gray-800 rounded-lg p-3">
-                <div className="flex items-center justify-center gap-2 mb-2">
-                  <img src={displayData.nationImage} alt={displayData.nation} className="w-8 h-6 object-contain" />
-                </div>
-                <div className="text-sm text-gray-400 mb-1">Nation</div>
-                <div className="font-medium text-sm">{displayData.nation}</div>
-              </div>
-              
-              <div className="text-center bg-gray-800 rounded-lg p-3">
-                <div className="flex items-center justify-center gap-2 mb-2">
-                  <img src={displayData.leagueImage} alt={displayData.league} className="w-8 h-8 object-contain" />
-                </div>
-                <div className="text-sm text-gray-400 mb-1">League</div>
-                <div className="font-medium text-sm">{displayData.league}</div>
-              </div>
-              
-              <div className="text-center bg-gray-800 rounded-lg p-3">
-                <Target className="w-6 h-6 mx-auto mb-2 text-red-400" />
-                <div className="text-sm text-gray-400 mb-1">Position</div>
-                <div className="font-medium">{displayData.position}</div>
+                <div className="font-medium text-green-400">{d.accelerateType}</div>
               </div>
             </div>
 
-            {/* Face Stats (Main 6 stats) */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+              <div className="text-center bg-gray-800 rounded-lg p-3">
+                {d.clubImage ? (
+                  <img src={d.clubImage} alt={d.club} className="w-8 h-8 object-contain mx-auto mb-2" />
+                ) : (
+                  <div className="w-8 h-8 mx-auto mb-2" />
+                )}
+                <div className="text-sm text-gray-400 mb-1">Club</div>
+                <div className="font-medium text-sm">{d.club}</div>
+              </div>
+
+              <div className="text-center bg-gray-800 rounded-lg p-3">
+                {d.nationImage ? (
+                  <img src={d.nationImage} alt={d.nation} className="w-8 h-6 object-contain mx-auto mb-2" />
+                ) : (
+                  <div className="w-8 h-6 mx-auto mb-2" />
+                )}
+                <div className="text-sm text-gray-400 mb-1">Nation</div>
+                <div className="font-medium text-sm">{d.nation}</div>
+              </div>
+
+              <div className="text-center bg-gray-800 rounded-lg p-3">
+                {d.leagueImage ? (
+                  <img src={d.leagueImage} alt={d.league} className="w-8 h-8 object-contain mx-auto mb-2" />
+                ) : (
+                  <div className="w-8 h-8 mx-auto mb-2" />
+                )}
+                <div className="text-sm text-gray-400 mb-1">League</div>
+                <div className="font-medium text-sm">{d.league}</div>
+              </div>
+
+              <div className="text-center bg-gray-800 rounded-lg p-3">
+                <Target className="w-6 h-6 mx-auto mb-2 text-red-400" />
+                <div className="text-sm text-gray-400 mb-1">Position</div>
+                <div className="font-medium">{d.position}</div>
+              </div>
+            </div>
+
+            {/* Face stats */}
             <div className="bg-gray-800 rounded-lg p-4 mb-4">
               <h3 className="font-semibold mb-3 text-lg">Player Stats</h3>
               <div className="grid grid-cols-3 md:grid-cols-6 gap-4">
-                {Object.entries(displayData.stats).map(([stat, value]) => (
+                {Object.entries(d.stats).map(([stat, value]) => (
                   <div key={stat} className="text-center">
                     <div className="text-2xl font-bold text-green-400">{value}</div>
                     <div className="text-xs text-gray-400 capitalize">{stat}</div>
@@ -439,64 +424,72 @@ const PlayerDetail = ({ player, onBack }) => {
               </div>
             </div>
 
-            {/* Skills & Work Rates */}
+            {/* Skills & work rates */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
               <div className="text-center bg-gray-800 rounded-lg p-3">
-                <div className="text-lg font-semibold text-yellow-400">{'⭐'.repeat(displayData.skillMoves)}</div>
+                <div className="text-lg font-semibold text-yellow-400">
+                  {"⭐".repeat(d.skillMoves)}
+                </div>
                 <div className="text-xs text-gray-400">Skill Moves</div>
               </div>
               <div className="text-center bg-gray-800 rounded-lg p-3">
-                <div className="text-lg font-semibold text-yellow-400">{'⚽'.repeat(displayData.weakFoot)}</div>
+                <div className="text-lg font-semibold text-yellow-400">
+                  {"⚽".repeat(d.weakFoot)}
+                </div>
                 <div className="text-xs text-gray-400">Weak Foot</div>
               </div>
               <div className="text-center bg-gray-800 rounded-lg p-3">
-                <div className="text-sm font-semibold text-red-400">{displayData.attackingWorkRate}</div>
+                <div className="text-sm font-semibold text-red-400">{d.attackingWorkRate}</div>
                 <div className="text-xs text-gray-400">Attacking</div>
               </div>
               <div className="text-center bg-gray-800 rounded-lg p-3">
-                <div className="text-sm font-semibold text-blue-400">{displayData.defensiveWorkRate}</div>
+                <div className="text-sm font-semibold text-blue-400">{d.defensiveWorkRate}</div>
                 <div className="text-xs text-gray-400">Defensive</div>
               </div>
             </div>
           </div>
         </div>
-        
-        {/* Detailed Attributes */}
+
+        {/* Detailed attributes */}
         <div className="bg-gray-800 rounded-lg p-4 mb-4">
           <h3 className="font-semibold mb-3 text-lg">Detailed Attributes</h3>
           <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 text-sm">
-            {Object.entries(displayData.attributes).map(([attr, value]) => (
-              value > 0 && (
-                <div key={attr} className="flex justify-between items-center bg-gray-700 rounded px-2 py-1">
-                  <span className="text-gray-300 capitalize text-xs">
-                    {attr.replace(/([A-Z])/g, ' $1').trim()}
-                  </span>
-                  <span className="font-semibold text-green-400">{value}</span>
-                </div>
-              )
-            ))}
+            {Object.entries(d.attributes).map(
+              ([attr, value]) =>
+                value > 0 && (
+                  <div
+                    key={attr}
+                    className="flex justify-between items-center bg-gray-700 rounded px-2 py-1"
+                  >
+                    <span className="text-gray-300 capitalize text-xs">
+                      {attr.replace(/([A-Z])/g, " $1").trim()}
+                    </span>
+                    <span className="font-semibold text-green-400">{value}</span>
+                  </div>
+                )
+            )}
           </div>
         </div>
-        
-        {/* Recent Sales */}
-        {priceData?.auctions && priceData.auctions.length > 0 && (
+
+        {/* Recent sales */}
+        {priceData?.auctions?.length > 0 && (
           <div className="bg-gray-800 rounded-lg p-4">
             <h3 className="font-semibold mb-3 text-lg">Recent Sales</h3>
             <div className="space-y-2">
-              {priceData.auctions.slice(0, 5).map((auction, index) => (
-                <div key={index} className="flex justify-between items-center text-sm">
+              {priceData.auctions.slice(0, 5).map((a, idx) => (
+                <div key={idx} className="flex justify-between items-center text-sm">
                   <span className="text-gray-400">
-                    {new Date(auction.soldDate).toLocaleString()}
+                    {a.soldDate ? new Date(a.soldDate).toLocaleString() : "—"}
                   </span>
                   <span className="font-medium text-yellow-400">
-                    {formatPrice(auction.soldPrice)} 🪙
+                    {a.soldPrice ? a.soldPrice.toLocaleString() : "N/A"} 🪙
                   </span>
                 </div>
               ))}
             </div>
           </div>
         )}
-        
+
         {priceData?.updatedAt && (
           <div className="text-center text-gray-400 text-xs mt-4">
             Price updated: {new Date(priceData.updatedAt).toLocaleString()}
@@ -507,8 +500,11 @@ const PlayerDetail = ({ player, onBack }) => {
   );
 };
 
-// Main app component
-const FutPlayerSearch = () => {
+/* =========================
+   Page export
+   ========================= */
+
+export default function PlayerSearch() {
   const [selectedPlayer, setSelectedPlayer] = useState(null);
 
   return (
@@ -516,23 +512,16 @@ const FutPlayerSearch = () => {
       <div className="container mx-auto">
         {!selectedPlayer ? (
           <div className="text-center py-20">
-            <h1 className="text-4xl font-bold text-gray-800 mb-8">
-              FUT Player Search
-            </h1>
-            <PlayerSearch onPlayerSelect={setSelectedPlayer} />
+            <h1 className="text-4xl font-bold text-gray-800 mb-8">FUT Player Search</h1>
+            <SearchBox onPlayerSelect={setSelectedPlayer} />
             <p className="text-gray-600 mt-4">
               Search by player surname to see all ratings and live prices
             </p>
           </div>
         ) : (
-          <PlayerDetail 
-            player={selectedPlayer} 
-            onBack={() => setSelectedPlayer(null)} 
-          />
+          <PlayerDetail player={selectedPlayer} onBack={() => setSelectedPlayer(null)} />
         )}
       </div>
     </div>
   );
-};
-
-export default FutPlayerSearch;
+}
