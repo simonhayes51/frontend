@@ -7,6 +7,10 @@ import ErrorBoundary from "./components/ErrorBoundary";
 import Layout from "./components/Layout";
 import Loading from "./components/Loading";
 import PrivateRoute from "./components/PrivateRoute";
+import PlayerSearch from './pages/PlayerSearch';
+
+// Add this route
+<Route path="/player-search" element={<PlayerSearch />} />
 
 // Lazy load components for better performance
 const Dashboard = lazy(() => import("./pages/Dashboard"));
