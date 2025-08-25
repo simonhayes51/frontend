@@ -19,7 +19,7 @@ const MobileNavigation = () => {
 
   return (
     <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-gray-900 border-t border-gray-700 z-50">
-      <div className="grid grid-cols-5 h-12">
+      <div className="grid grid-cols-6 h-12">
         {navItems.map(({ path, label, icon }) => (
           <Link
             key={path}
