@@ -7,6 +7,8 @@ import ErrorBoundary from "./components/ErrorBoundary";
 import Layout from "./components/Layout";
 import Loading from "./components/Loading";
 import PrivateRoute from "./components/PrivateRoute";
+import Landing from "./pages/Landing"
+<Route path="/" element={<Landing />} />
 
 // Direct import for the page (default export)
 import PlayerSearch from "./pages/PlayerSearch";
