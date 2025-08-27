@@ -1,45 +1,133 @@
+// src/components/squad/Pitch.jsx
 import React from "react";
 
-// A simple pitch with adjustable orientation (horizontal or vertical).
-// We don't rotate the DOM; we change the aspect ratio and let the parent
-// compute slot left/top with an orientation mapping.
+/**
+ * Accurate vertical football pitch.
+ * Dimensions are proportional to 105m x 68m.
+ * We render inside an "inner" area (the white lines inset).
+ */
+export default function Pitch({ children }) {
+  // proportions as percentages of the INNER area
+  const PEN_BOX_W = 59.3;   // 40.32m / 68m
+  const PEN_BOX_H = 15.7;   // 16.5m / 105m
+  const GOAL_BOX_W = 26.9;  // 18.32m / 68m
+  const GOAL_BOX_H = 5.24;  // 5.5m / 105m
+  const SPOT_Y = 10.48;     // 11m / 105m from goal line
+  const ARC_D = 26.9;       // diameter from 2*9.15m / 68m (≈26.9% of width)
+  const CC_D = 26.9;        // center circle diameter uses same 9.15m radius
 
-export default function Pitch({ children, orientation = "horizontal" }) {
-  const isVertical = orientation === "vertical";
+  const line = "border border-[#2c463d]/80";
+  const faint = "bg-[#2c463d]/80";
 
   return (
-    <div
-      className={[
-        "relative w-full rounded-[28px] border border-[#2a5846] bg-[#0e3b2c]",
-        isVertical ? "aspect-[9/16]" : "aspect-[16/9]",
-        "shadow-[inset_0_0_0_2px_rgba(255,255,255,0.06)]",
-      ].join(" ")}
-    >
-      {/* touchlines */}
-      <div className="absolute inset-[16px] rounded-[22px] border border-[#3f7a63]/70" />
-      {/* halfway line */}
-      <div className="absolute inset-x-[16px] top-1/2 -translate-y-1/2 h-px bg-[#3f7a63]/70" />
-      {/* center circle */}
-      <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full border border-[#3f7a63]/70 w-32 h-32" />
-      {/* penalty boxes (rough, symmetric) */}
-      {!isVertical ? (
-        <>
-          {/* left box */}
-          <div className="absolute left-[16px] top-1/2 -translate-y-1/2 w-[18%] h-[40%] border border-[#3f7a63]/70 rounded-[14px]" />
-          {/* right box */}
-          <div className="absolute right-[16px] top-1/2 -translate-y-1/2 w-[18%] h-[40%] border border-[#3f7a63]/70 rounded-[14px]" />
-        </>
-      ) : (
-        <>
-          {/* top box */}
-          <div className="absolute top-[16px] left-1/2 -translate-x-1/2 h-[18%] w-[40%] border border-[#3f7a63]/70 rounded-[14px]" />
-          {/* bottom box */}
-          <div className="absolute bottom-[16px] left-1/2 -translate-x-1/2 h-[18%] w-[40%] border border-[#3f7a63]/70 rounded-[14px]" />
-        </>
-      )}
+    <div className="relative w-full aspect-[9/16] rounded-[28px] overflow-hidden border border-[#162521] bg-[#0c1412]">
+      {/* gentle grass tint */}
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(18,58,46,.22),transparent_60%)] pointer-events-none" />
 
-      {/* players go here */}
-      {children}
+      {/* INNER play area (all % below are relative to this box) */}
+      <div className={`absolute inset-[16px] rounded-[22px] ${line}`}>
+        {/* halfway line */}
+        <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-px bg-[#2c463d]/70" />
+
+        {/* center circle */}
+        <div
+          className={`absolute rounded-full ${line}`}
+          style={{
+            width: `${CC_D}%`,
+            height: `${CC_D}%`,
+            left: "50%",
+            top: "50%",
+            transform: "translate(-50%, -50%)",
+          }}
+        />
+        {/* center spot */}
+        <div
+          className={`absolute rounded-full ${faint}`}
+          style={{
+            width: 6, height: 6,
+            left: "50%", top: "50%",
+            transform: "translate(-50%, -50%)",
+            borderRadius: 9999,
+          }}
+        />
+
+        {/* --- TOP penalty area --- */}
+        <RectCentered widthPct={PEN_BOX_W} heightPct={PEN_BOX_H} topPct={0} className={line} />
+        {/* top goal area */}
+        <RectCentered widthPct={GOAL_BOX_W} heightPct={GOAL_BOX_H} topPct={0} className={line} />
+        {/* top penalty spot */}
+        <DotAt yPct={SPOT_Y} className={faint} />
+        {/* top penalty arc (visible below the box line) */}
+        <ArcAt
+          yPct={SPOT_Y}
+          diameterPct={ARC_D}
+          clip="bottom"
+          className={line}
+        />
+
+        {/* --- BOTTOM penalty area --- */}
+        <RectCentered widthPct={PEN_BOX_W} heightPct={PEN_BOX_H} bottomPct={0} className={line} />
+        {/* bottom goal area */}
+        <RectCentered widthPct={GOAL_BOX_W} heightPct={GOAL_BOX_H} bottomPct={0} className={line} />
+        {/* bottom penalty spot */}
+        <DotAt yPct={100 - SPOT_Y} className={faint} />
+        {/* bottom penalty arc (visible above the box line) */}
+        <ArcAt
+          yPct={100 - SPOT_Y}
+          diameterPct={ARC_D}
+          clip="top"
+          className={line}
+        />
+
+        {/* children (players) */}
+        {children}
+      </div>
     </div>
   );
+}
+
+/* -------- helpers (all % are relative to INNER box) -------- */
+
+function RectCentered({ widthPct, heightPct, topPct, bottomPct, className = "" }) {
+  const style = {
+    width: `${widthPct}%`,
+    height: `${heightPct}%`,
+    left: "50%",
+    transform: "translateX(-50%)",
+    ...(topPct !== undefined ? { top: `${topPct}%` } : {}),
+    ...(bottomPct !== undefined ? { bottom: `${bottomPct}%` } : {}),
+  };
+  return <div className={`absolute rounded-[14px] ${className}`} style={style} />;
+}
+
+function DotAt({ yPct, className = "" }) {
+  return (
+    <div
+      className={`absolute ${className}`}
+      style={{
+        width: 6,
+        height: 6,
+        left: "50%",
+        top: `${yPct}%`,
+        transform: "translate(-50%, -50%)",
+        borderRadius: 9999,
+      }}
+    />
+  );
+}
+
+/**
+ * Penalty arc at given Y (penalty spot). `clip` trims which half is visible.
+ * clip = "bottom" shows the lower semicircle (top penalty), "top" shows upper semicircle (bottom penalty).
+ */
+function ArcAt({ yPct, diameterPct, clip = "bottom", className = "" }) {
+  const style = {
+    width: `${diameterPct}%`,
+    height: `${diameterPct}%`,
+    left: "50%",
+    top: `${yPct}%`,
+    transform: "translate(-50%, -50%)",
+    clipPath: clip === "bottom" ? "inset(50% 0 0 0)" : "inset(0 0 50% 0)",
+  };
+  return <div className={`absolute rounded-full ${className}`} style={style} />;
 }
