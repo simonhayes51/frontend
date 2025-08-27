@@ -1,4 +1,3 @@
-// src/pages/Overview.jsx
 import React, { useEffect, useState } from "react";
 import axios from "../axios";
 
@@ -28,24 +27,21 @@ const Overview = () => {
     fetchData();
   }, []);
 
-  const cardCls =
-    "bg-white text-gray-900 border border-slate-200 dark:bg-zinc-900 dark:text-white dark:border-neutral-800 p-6 rounded-2xl shadow-md";
-
   return (
     <div className="grid gap-6 md:grid-cols-3">
-      <div className={cardCls}>
+      <div className="bg-zinc-900 p-6 rounded-2xl shadow-md">
         <h2 className="text-xl font-semibold mb-2">💰 Net Profit</h2>
         <p className="text-3xl font-bold text-lime">
           {loading ? "Loading..." : summary.netProfit.toLocaleString()}
         </p>
       </div>
-      <div className={cardCls}>
+      <div className="bg-zinc-900 p-6 rounded-2xl shadow-md">
         <h2 className="text-xl font-semibold mb-2">🧾 EA Tax Paid</h2>
         <p className="text-3xl font-bold text-lime">
           {loading ? "Loading..." : summary.taxPaid.toLocaleString()}
         </p>
       </div>
-      <div className={cardCls}>
+      <div className="bg-zinc-900 p-6 rounded-2xl shadow-md">
         <h2 className="text-xl font-semibold mb-2">🏦 Starting Balance</h2>
         <p className="text-3xl font-bold text-lime">
           {loading ? "Loading..." : summary.startingBalance.toLocaleString()}
