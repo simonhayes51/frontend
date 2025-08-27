@@ -3,9 +3,8 @@ import Pitch from '../components/squad/Pitch';
 import PlayerTile from '../components/squad/PlayerTile';
 import { FORMATIONS } from '../components/squad/formations';
 import { computeChemistry } from '../components/squad/chemistry';
-import { searchPlayers, SAMPLE_PLAYERS } from '../api/squadApi';
+import { searchPlayers, enrichPlayer } from '../api/squadApi';
 import '../styles/squad.css';
-
 const cls = (...xs) => xs.filter(Boolean).join(' ');
 
 export default function SquadBuilder() {
@@ -40,11 +39,11 @@ export default function SquadBuilder() {
     return ps.reduce((a, p) => a + (p.price || 0), 0);
   }, [placed]);
 
-  const [results, setResults] = useState(SAMPLE_PLAYERS);
+  const [results, setResults] = useState([]);
   useEffect(() => {
     let cancel = false;
     (async () => {
-      if (!search.trim()) { setResults(SAMPLE_PLAYERS); return; }
+      if (!search.trim()) { setResults([]); return; }
       const data = await searchPlayers(search);
       if (!cancel) setResults(data);
     })();
@@ -54,8 +53,11 @@ export default function SquadBuilder() {
   function handleDrop(e, slotKey) {
     e.preventDefault();
     const id = Number(e.dataTransfer.getData('text/plain'));
-    const p = (results.find(x => x.id === id) || SAMPLE_PLAYERS.find(x => x.id === id)) || null;
-    setPlaced(prev => ({ ...prev, [slotKey]: p }));
+    const base = results.find(x => x.id === id) || null;
+    if (!base) return;
+    enrichPlayer(base).then((full) => {
+      setPlaced(prev => ({ ...prev, [slotKey]: full }));
+    });
     setSearchOpen(null);
   }
 
@@ -184,7 +186,11 @@ export default function SquadBuilder() {
                     <PlayerTile player={p} />
                     <button
                       className="ml-2 rounded-lg bg-lime-400 text-black text-xs font-bold px-2 py-1"
-                      onClick={() => searchOpen ? setPlaced(prev => ({ ...prev, [searchOpen]: p })) : null}
+                      onClick={async () => {
+                        if (!searchOpen) return;
+                        const full = await enrichPlayer(p);
+                        setPlaced(prev => ({ ...prev, [searchOpen]: full }));
+                      }}
                     >Add</button>
                   </div>
                 </div>
