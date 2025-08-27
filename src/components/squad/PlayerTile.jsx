@@ -1,101 +1,93 @@
 import React from "react";
 
-const API_BASE = import.meta.env.VITE_API_URL || "";
-const buildProxy = (url) => `${API_BASE}/img?url=${encodeURIComponent(url)}`;
+const cls = (...xs) => xs.filter(Boolean).join(" ");
 
-function chemDot(chem = 0) {
-  const c = Math.max(0, Math.min(3, Number(chem) || 0));
-  const color =
-    c >= 3 ? "bg-emerald-400" :
-    c === 2 ? "bg-emerald-300" :
-    c === 1 ? "bg-amber-300" :
-              "bg-neutral-600";
+function ChemDiamonds({ chem = 0 }) {
+  const n = Math.max(0, Math.min(3, Number(chem) || 0));
   return (
-    <div
-      title={`Chem ${c}/3`}
-      className={`ml-auto w-2.5 h-2.5 rounded-full ${color} ring-2 ring-neutral-900 shrink-0`}
-    />
+    <div className="flex gap-[2px] mt-1">
+      {[0, 1, 2].map((i) => (
+        <div
+          key={i}
+          className={cls(
+            "w-3 h-3 rotate-45",
+            i < n ? "bg-lime-400" : "bg-neutral-700"
+          )}
+          style={{ clipPath: "polygon(50% 0,100% 50%,50% 100%,0 50%)" }}
+        />
+      ))}
+    </div>
   );
 }
 
 export default function PlayerTile({
   player,
   chem = 0,
+  size = "lg",
   draggable,
   onDragStart,
-  size = "lg", // "sm" | "lg"
-  rightSlot,   // extra action area (eg. Add button)
+  rightSlot,
 }) {
-  if (!player) return null;
-
-  const src = player.image_url;
-  const big = size === "lg";
+  const s = size === "lg" ? { w: 96, h: 128, img: 88 } : { w: 80, h: 110, img: 72 };
 
   return (
     <div
-      className={`flex items-center gap-3 ${big ? "p-2" : ""}`}
+      className="relative text-white select-none"
       draggable={draggable}
       onDragStart={onDragStart}
     >
-      {/* Card image (larger) */}
-      <div className={`relative ${big ? "w-14 h-18" : "w-12 h-16"} rounded-lg overflow-hidden bg-neutral-800 shrink-0`}>
-        {src ? (
-          <img
-            src={src}
-            alt={player.name}
-            className="w-full h-full object-cover"
-            referrerPolicy="no-referrer"
-            onError={(e) => {
-              const el = e.currentTarget;
-              if (!el.dataset.proxied && src) {
-                el.dataset.proxied = "1";
-                el.src = buildProxy(src);
-              } else {
-                el.style.display = "none";
-              }
-            }}
-          />
-        ) : (
-          <div className="w-full h-full grid place-items-center text-[10px] opacity-60">
-            No Img
+      {/* card body */}
+      <div
+        className="rounded-2xl bg-[#11151a] border border-neutral-700 shadow-xl overflow-hidden"
+        style={{ width: s.w, height: s.h }}
+      >
+        {/* image */}
+        <div className="relative" style={{ height: s.img }}>
+          {player?.image_url ? (
+            <img
+              src={player.image_url}
+              alt={player?.name || "card"}
+              className="w-full h-full object-cover"
+              referrerPolicy="no-referrer"
+              onError={(e) => (e.currentTarget.style.visibility = "hidden")}
+            />
+          ) : (
+            <div className="w-full h-full grid place-items-center text-xs text-neutral-400">
+              No image
+            </div>
+          )}
+          {/* rating pill */}
+          <div className="absolute top-1 left-1 rounded-lg px-1.5 py-[2px] text-[11px] font-black bg-black/70">
+            {player?.rating ?? "–"}
           </div>
-        )}
-        {/* Rating pill */}
-        <div className="absolute top-0 left-0 text-xs font-black bg-black/70 px-1.5 py-0.5 rounded-br">
-          {player.rating ?? "?"}
         </div>
-      </div>
-
-      {/* Info */}
-      <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-2">
-          <div className={`truncate ${big ? "text-sm" : "text-xs"} font-semibold`}>
-            {player.name}
-          </div>
-          {chemDot(chem)}
-        </div>
-
-        {/* positions */}
-        {player.positions?.length > 0 && (
-          <div className="mt-0.5 text-[11px] text-neutral-300">
-            {player.positions.join(" / ")}
-          </div>
-        )}
 
         {/* meta row */}
-        <div className="text-[11px] text-neutral-400 truncate">
-          {(player.club || "—")} · {(player.league || "—")} · {(player.nation || "—")}
-        </div>
-      </div>
-
-      {/* Right side */}
-      <div className="ml-auto flex items-center gap-2">
-        {player.price ? (
-          <div className="text-xs font-semibold text-yellow-300">
-            {player.price.toLocaleString()}c
+        <div className="px-2 py-1.5">
+          <div className="flex items-center gap-1">
+            <div className="text-[11px] font-bold truncate max-w-[70%]">
+              {player?.name || "—"}
+            </div>
+            {rightSlot}
           </div>
-        ) : null}
-        {rightSlot}
+
+          {/* position + price */}
+          <div className="mt-1 flex items-center justify-between">
+            <div className="text-[10px] uppercase tracking-wide text-neutral-300">
+              {(player?.positions?.[0] || player?.position || "—")}
+            </div>
+            <div className="flex items-center gap-1 text-[10px] text-yellow-300">
+              <img
+                src="https://cdn2.futbin.com/https%3A%2F%2Fcdn.futbin.com%2Fdesign%2Fimg%2Fcoins_big.png?fm=png&w=16"
+                className="w-3.5 h-3.5"
+              />
+              {(player?.price ?? 0).toLocaleString()}c
+            </div>
+          </div>
+
+          {/* chem diamonds */}
+          <ChemDiamonds chem={chem} />
+        </div>
       </div>
     </div>
   );
