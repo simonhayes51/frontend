@@ -2,6 +2,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { getWatchlist, addWatch, deleteWatch, refreshWatch } from "../api/watchlist";
 import { Link } from "react-router-dom";
+import PlayerAutocomplete from "../components/PlayerAutocomplete";
 
 // Tiny inline icons to keep deps minimal
 const Icon = {
@@ -24,6 +25,11 @@ const Icon = {
   Sort: (props) => (
     <svg className={`w-4 h-4 ${props.className||""}`} viewBox="0 0 24 24" fill="none" stroke="currentColor">
       <path strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M3 7h13M3 12h9M3 17h5" />
+    </svg>
+  ),
+  X: (props) => (
+    <svg className={`w-4 h-4 ${props.className||""}`} viewBox="0 0 24 24" fill="none" stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
     </svg>
   ),
 };
@@ -291,19 +297,37 @@ export default function Watchlist() {
             </div>
 
             <form onSubmit={handleAdd} className="space-y-4">
+              {/* Player (Autocomplete) */}
               <div>
-                <label className="block text-sm text-gray-300 mb-1">Player name</label>
-                <input
-                  className="w-full px-3 py-2 rounded-md bg-black/40 border border-[#2A2F36] text-white"
+                <label className="block text-sm text-gray-300 mb-1">Player</label>
+                <PlayerAutocomplete
                   value={form.player_name}
-                  onChange={(e) => setForm((f) => ({ ...f, player_name: e.target.value }))}
-                  placeholder="e.g., Bukayo Saka"
-                  required
+                  onChange={(text) => setForm((f) => ({ ...f, player_name: text }))}
+                  onSelect={(p) =>
+                    setForm((f) => ({ ...f, player_name: p.name, card_id: String(p.card_id) }))
+                  }
+                  placeholder="Type at least 2 letters…"
                 />
+                <p className="mt-1 text-[11px] text-gray-500">
+                  Pick a result to auto-fill the Card ID.
+                </p>
               </div>
 
+              {/* Card ID (editable, in case user pastes directly) */}
               <div>
-                <label className="block text-sm text-gray-300 mb-1">Card ID (EA/FUT.GG)</label>
+                <div className="flex items-center justify-between">
+                  <label className="block text-sm text-gray-300 mb-1">Card ID (EA/FUT.GG)</label>
+                  {form.card_id ? (
+                    <button
+                      type="button"
+                      onClick={() => setForm((f) => ({ ...f, card_id: "" }))}
+                      className="text-[11px] text-gray-400 hover:text-white inline-flex items-center gap-1"
+                      title="Clear ID"
+                    >
+                      <Icon.X /> Clear
+                    </button>
+                  ) : null}
+                </div>
                 <input
                   className="w-full px-3 py-2 rounded-md bg-black/40 border border-[#2A2F36] text-white"
                   value={form.card_id}
