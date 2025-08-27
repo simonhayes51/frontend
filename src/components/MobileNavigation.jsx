@@ -82,23 +82,23 @@ const MobileNavigation = () => {
       {/* Menu Toggle Button - Fixed position */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className={`fixed top-6 left-4 z-50 p-3 rounded-full shadow-lg transition-all duration-300 ${
+        className={`fixed top-4 left-4 z-50 p-2.5 rounded-full shadow-lg transition-all duration-300 ${
           isOpen 
             ? 'bg-white dark:bg-gray-800 text-gray-900 dark:text-white' 
             : 'bg-gray-900 text-white hover:bg-gray-800'
         }`}
         aria-label="Toggle menu"
       >
-        <div className="relative w-5 h-5">
+        <div className="relative w-4 h-4">
           {/* Hamburger/Close Icon Animation */}
-          <span className={`absolute h-0.5 w-5 bg-current transform transition-all duration-300 ${
-            isOpen ? 'rotate-45 top-2' : 'top-0'
+          <span className={`absolute h-0.5 w-4 bg-current transform transition-all duration-300 ${
+            isOpen ? 'rotate-45 top-1.5' : 'top-0'
           }`}></span>
-          <span className={`absolute h-0.5 w-5 bg-current transform transition-all duration-300 top-2 ${
+          <span className={`absolute h-0.5 w-4 bg-current transform transition-all duration-300 top-1.5 ${
             isOpen ? 'opacity-0' : 'opacity-100'
           }`}></span>
-          <span className={`absolute h-0.5 w-5 bg-current transform transition-all duration-300 ${
-            isOpen ? '-rotate-45 top-2' : 'top-4'
+          <span className={`absolute h-0.5 w-4 bg-current transform transition-all duration-300 ${
+            isOpen ? '-rotate-45 top-1.5' : 'top-3'
           }`}></span>
         </div>
       </button>
@@ -112,57 +112,57 @@ const MobileNavigation = () => {
       />
 
       {/* Slide Menu */}
-      <div className={`fixed top-0 left-0 h-full w-80 bg-white dark:bg-gray-900 shadow-2xl z-50 transform transition-transform duration-300 ease-out ${
+      <div className={`fixed top-0 left-0 h-full w-72 bg-white dark:bg-gray-900 shadow-2xl z-50 transform transition-transform duration-300 ease-out overflow-hidden ${
         isOpen ? 'translate-x-0' : '-translate-x-full'
       }`}>
         
         {/* Menu Header */}
-        <div className="bg-gradient-to-r from-purple-600 to-blue-600 p-6 pt-16">
-          <div className="flex items-center space-x-4">
-            <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
-              <span className="text-2xl">⚡</span>
+        <div className="bg-gradient-to-r from-purple-600 to-blue-600 p-4 pt-12">
+          <div className="flex items-center space-x-3">
+            <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
+              <span className="text-xl">⚡</span>
             </div>
             <div>
-              <h2 className="text-white font-bold text-lg">Trading App</h2>
-              <p className="text-white/80 text-sm">EA FC Trading Dashboard</p>
+              <h2 className="text-white font-bold text-base">Trading App</h2>
+              <p className="text-white/80 text-xs">EA FC Trading Dashboard</p>
             </div>
           </div>
         </div>
 
         {/* Navigation Items */}
-        <div className="flex-1 py-6 overflow-y-auto">
-          <nav className="px-4 space-y-2">
+        <div className="flex-1 py-4 overflow-y-auto max-h-[calc(100vh-180px)]">
+          <nav className="px-3 space-y-1">
             {navigationItems.map(({ path, label, icon, description, isSpecial }) => {
               const active = isActive(path);
               return (
                 <Link
                   key={path}
                   to={path}
-                  className={`group flex items-center space-x-4 px-4 py-4 rounded-2xl transition-all duration-200 ${
+                  className={`group flex items-center space-x-3 px-3 py-3 rounded-xl transition-all duration-200 ${
                     isSpecial
-                      ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white shadow-lg hover:shadow-xl hover:scale-[1.02]'
+                      ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white shadow-md hover:shadow-lg hover:scale-[1.01]'
                       : active
                         ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 shadow-sm'
                         : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white'
                   }`}
                 >
                   {/* Icon Container */}
-                  <div className={`p-3 rounded-xl transition-all duration-200 ${
+                  <div className={`p-2 rounded-lg transition-all duration-200 ${
                     isSpecial
                       ? 'bg-white/20'
                       : active 
-                        ? 'bg-purple-200 dark:bg-purple-800 group-hover:scale-110' 
-                        : 'bg-gray-100 dark:bg-gray-700 group-hover:bg-gray-200 dark:group-hover:bg-gray-600 group-hover:scale-110'
+                        ? 'bg-purple-200 dark:bg-purple-800' 
+                        : 'bg-gray-100 dark:bg-gray-700 group-hover:bg-gray-200 dark:group-hover:bg-gray-600'
                   }`}>
-                    <span className="text-xl">{icon}</span>
+                    <span className="text-base">{icon}</span>
                   </div>
                   
                   {/* Content */}
                   <div className="flex-1 min-w-0">
-                    <p className={`font-semibold truncate ${isSpecial ? 'text-white' : ''}`}>
+                    <p className={`font-medium text-sm truncate ${isSpecial ? 'text-white' : ''}`}>
                       {label}
                     </p>
-                    <p className={`text-sm truncate ${
+                    <p className={`text-xs truncate ${
                       isSpecial 
                         ? 'text-white/80' 
                         : active 
@@ -175,30 +175,30 @@ const MobileNavigation = () => {
 
                   {/* Active Indicator */}
                   {active && !isSpecial && (
-                    <div className="w-2 h-2 bg-purple-600 dark:bg-purple-400 rounded-full"></div>
+                    <div className="w-1.5 h-1.5 bg-purple-600 dark:bg-purple-400 rounded-full"></div>
                   )}
                 </Link>
               );
             })}
           </nav>
+        </div>
 
-          {/* Menu Footer */}
-          <div className="mt-8 px-4">
-            <div className="bg-gray-50 dark:bg-gray-800 rounded-2xl p-4 border border-gray-200 dark:border-gray-700">
-              <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-gradient-to-br from-purple-400 to-purple-600 rounded-full flex items-center justify-center">
-                  <span className="text-white text-sm font-bold">U</span>
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium text-gray-900 dark:text-white text-sm truncate">User Profile</p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 truncate">Manage your account</p>
-                </div>
-                <button className="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors">
-                  <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                  </svg>
-                </button>
+        {/* Menu Footer */}
+        <div className="p-3 border-t border-gray-200 dark:border-gray-700">
+          <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-3 border border-gray-200 dark:border-gray-700">
+            <div className="flex items-center space-x-3">
+              <div className="w-8 h-8 bg-gradient-to-br from-purple-400 to-purple-600 rounded-full flex items-center justify-center">
+                <span className="text-white text-xs font-bold">U</span>
               </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-medium text-gray-900 dark:text-white text-xs truncate">User Profile</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 truncate">Manage account</p>
+              </div>
+              <button className="p-1.5 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors">
+                <svg className="w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
             </div>
           </div>
         </div>
