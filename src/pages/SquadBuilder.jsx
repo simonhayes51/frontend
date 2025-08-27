@@ -1,214 +1,302 @@
+// src/pages/SquadBuilder.jsx
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import Pitch from "../components/squad/Pitch";
 import PlayerTile from "../components/squad/PlayerTile";
 import { FORMATIONS } from "../components/squad/formations";
+import { VERTICAL_COORDS } from "../components/squad/formations_vertical";
 import { computeChemistry } from "../components/squad/chemistry";
 import { searchPlayers, enrichPlayer } from "../api/squadApi";
 import "../styles/squad.css";
 
 const cls = (...xs) => xs.filter(Boolean).join(" ");
 
+// --- helpers ---------------------------------------------------------------
+function rotateSlot(slot) {
+  // Fallback: rotate (x,y) -> (y, 100 - x)
+  return { ...slot, x: slot.y, y: 100 - slot.x };
+}
+function rotateFormationSlots(slots) {
+  return (slots || []).map(rotateSlot);
+}
+function getVerticalSlots(formationKey) {
+  return VERTICAL_COORDS[formationKey] || rotateFormationSlots(FORMATIONS[formationKey] || []);
+}
+
+// chem badge color (tiny dot)
+function chemDotClass(chem) {
+  if (chem >= 3) return "bg-lime-400";
+  if (chem === 2) return "bg-lime-300";
+  if (chem === 1) return "bg-amber-300";
+  return "bg-neutral-600";
+}
+
+// format coins
+const c = (n) => (typeof n === "number" ? `${n.toLocaleString()}c` : "—");
+
+// --- component -------------------------------------------------------------
 export default function SquadBuilder() {
   const [formationKey, setFormationKey] = useState("4-3-3");
-  const formation = FORMATIONS[formationKey];
+  const slots = useMemo(() => getVerticalSlots(formationKey), [formationKey]);
 
-  const [search, setSearch] = useState("");
-  const [searchOpen, setSearchOpen] = useState(null);
+  // placed players by slot key
+  const [placed, setPlaced] = useState(() => Object.fromEntries(slots.map((s) => [s.key, null])));
 
-  const [placed, setPlaced] = useState(() =>
-    Object.fromEntries(formation.map((s) => [s.key, null]))
-  );
+  // When formation changes, keep by same slot key if present
   useEffect(() => {
     setPlaced((prev) => {
       const next = {};
-      for (const slot of formation) next[slot.key] = prev[slot.key] || null;
+      for (const s of slots) next[s.key] = prev[s.key] || null;
       return next;
     });
-  }, [formationKey]);
+  }, [formationKey, slots]);
 
   const { perPlayerChem, teamChem } = useMemo(
-    () => computeChemistry(placed, formation),
-    [placed, formation]
+    () => computeChemistry(placed, slots),
+    [placed, slots]
   );
 
   const avgRating = useMemo(() => {
     const ps = Object.values(placed).filter(Boolean);
-    if (!ps.length) return 0;
-    return Math.round(ps.reduce((a, p) => a + (Number(p.rating) || 0), 0) / ps.length);
+    if (ps.length === 0) return "-";
+    return Math.round(ps.reduce((a, p) => a + (p.rating || 0), 0) / ps.length);
   }, [placed]);
 
   const squadPrice = useMemo(() => {
-    const ps = Object.values(placed).filter(Boolean);
-    return ps.reduce((a, p) => a + (Number(p.price) || 0), 0);
+    return Object.values(placed)
+      .filter(Boolean)
+      .reduce((a, p) => a + (p.price || 0), 0);
   }, [placed]);
 
-  // search (debounced & cached)
+  // --- search --------------------------------------------------------------
+  const [search, setSearch] = useState("");
   const [results, setResults] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const queryCache = useRef(new Map());
+  const [searchOpen, setSearchOpen] = useState(null); // which slot we’re adding to
+  const debounceRef = useRef();
+
   useEffect(() => {
-    let canceled = false;
-    const q = search.trim();
-    if (q.length < 1) {
+    clearTimeout(debounceRef.current);
+    if (!search.trim()) {
       setResults([]);
-      setLoading(false);
       return;
     }
-    const t = setTimeout(async () => {
-      if (queryCache.current.has(q)) {
-        setResults(queryCache.current.get(q));
-        return;
-      }
-      setLoading(true);
-      const data = await searchPlayers(q);
-      if (!canceled) {
-        queryCache.current.set(q, data);
-        setResults(data);
-        setLoading(false);
-      }
-    }, 250);
-    return () => {
-      canceled = true;
-      clearTimeout(t);
-    };
+    debounceRef.current = setTimeout(async () => {
+      const base = await searchPlayers(search);
+      setResults(base);
+    }, 350); // smooth, not twitchy
+    return () => clearTimeout(debounceRef.current);
   }, [search]);
 
-  // DnD
+  async function addPlayerToSlot(basePlayer, slotKey) {
+    const full = await enrichPlayer(basePlayer);
+    setPlaced((prev) => ({ ...prev, [slotKey]: full }));
+  }
+
+  // --- DnD -----------------------------------------------------------------
+  function handleDragStart(e, playerId) {
+    e.dataTransfer.setData("text/plain", String(playerId));
+  }
+
   function handleDrop(e, slotKey) {
     e.preventDefault();
     const id = Number(e.dataTransfer.getData("text/plain"));
     const base = results.find((x) => x.id === id) || null;
     if (!base) return;
-    enrichPlayer(base).then((full) => {
-      setPlaced((prev) => ({ ...prev, [slotKey]: full }));
-    });
+    addPlayerToSlot(base, slotKey);
     setSearchOpen(null);
   }
-  function handleDragStart(e, playerId) {
-    e.dataTransfer.setData("text/plain", String(playerId));
-  }
-  const clearSlot = (slotKey) => setPlaced((p) => ({ ...p, [slotKey]: null }));
 
+  function clearSlot(slotKey) {
+    setPlaced((prev) => ({ ...prev, [slotKey]: null }));
+  }
+
+  // --- shareable state -----------------------------------------------------
   function shareUrl() {
-    const state = { formationKey, placed };
+    const pruned = Object.fromEntries(
+      Object.entries(placed).map(([k, v]) => [
+        k,
+        v
+          ? {
+              id: v.id,
+              name: v.name,
+              rating: v.rating,
+              club: v.club,
+              nation: v.nation,
+              league: v.league,
+              positions: v.positions,
+              image_url: v.image_url,
+              price: v.price,
+              isIcon: v.isIcon,
+              isHero: v.isHero,
+            }
+          : null,
+      ])
+    );
+    const state = { formationKey, placed: pruned };
     const encoded = encodeURIComponent(btoa(JSON.stringify(state)));
     const url = new URL(window.location.href);
     url.searchParams.set("squad", encoded);
     return url.toString();
   }
 
-  // import from ?squad=
+  // Import if ?squad= is present
   useEffect(() => {
-    const url = new URL(window.location.href);
-    const encoded = url.searchParams.get("squad");
-    if (!encoded) return;
     try {
+      const url = new URL(window.location.href);
+      const encoded = url.searchParams.get("squad");
+      if (!encoded) return;
       const state = JSON.parse(atob(decodeURIComponent(encoded)));
-      if (state?.formationKey && FORMATIONS[state.formationKey])
+      if (state?.formationKey && (VERTICAL_COORDS[state.formationKey] || FORMATIONS[state.formationKey])) {
         setFormationKey(state.formationKey);
-      if (state?.placed) setPlaced(state.placed);
-    } catch {}
+      }
+      if (state?.placed && typeof state.placed === "object") {
+        setPlaced(state.placed);
+      }
+    } catch {
+      // ignore import errors
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // vertical mapping + gentle anti-overlap
-  const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
-  const slotsAdjusted = useMemo(() => {
-    const mapped = formation.map((s) => {
-      const x = s.y;          // left% <- y
-      const y = 100 - s.x;    // top%  <- 100 - x
-      return { key: s.key, pos: s.pos, x, y };
-    });
-    const threshold = 6;
-    const push = 2.2;
-    for (let i = 0; i < mapped.length; i++) {
-      for (let j = i + 1; j < mapped.length; j++) {
-        const a = mapped[i], b = mapped[j];
-        if (Math.abs(a.x - b.x) < threshold && Math.abs(a.y - b.y) < threshold) {
-          const dir = a.y <= b.y ? -1 : 1;
-          a.y = clamp(a.y + dir * push, 5, 95);
-          b.y = clamp(b.y - dir * push, 5, 95);
-        }
-      }
-    }
-    return mapped;
-  }, [formation]);
-
-  const validPos = (pl, pos) =>
-    !pl || !Array.isArray(pl.positions) || !pl.positions.length || pl.positions.includes(pos);
-
   return (
-    <div className="min-h-screen bg-[#0a0e11] text-neutral-100">
-      <header className="sticky top-0 z-10 border-b border-neutral-800 bg-[#0a0e11]/90 backdrop-blur">
-        <div className="mx-auto max-w-6xl px-4 py-3 flex items-center gap-3">
+    <div className="min-h-screen bg-neutral-950 text-neutral-50">
+      {/* Header */}
+      <header className="sticky top-0 z-20 border-b border-neutral-800 bg-neutral-950/90 backdrop-blur">
+        <div className="mx-auto max-w-[1400px] px-4 py-3 flex items-center gap-3">
           <div className="text-xl font-black tracking-tight">
             <span className="text-lime-400">FUT</span> Squad Builder
           </div>
-          <div className="ml-auto flex items-center flex-wrap gap-3">
+
+          <div className="ml-4">
             <select
-              className="bg-neutral-800 rounded-xl px-3 py-2 text-sm"
+              className="bg-neutral-900 rounded-xl px-3 py-2 text-sm border border-neutral-700"
               value={formationKey}
               onChange={(e) => setFormationKey(e.target.value)}
-              title="Formation"
             >
-              {Object.keys(FORMATIONS).map((k) => (
-                <option key={k} value={k}>{k}</option>
+              {Object.keys({ ...VERTICAL_COORDS, ...FORMATIONS }).map((k) => (
+                <option key={k} value={k}>
+                  {k}
+                </option>
               ))}
             </select>
-            <div className="rounded-xl bg-neutral-800 px-3 py-2 text-sm">Avg ⭐ {avgRating || "-"}</div>
-            <div className="rounded-xl bg-neutral-800 px-3 py-2 text-sm">Chem {teamChem}/33</div>
-            <div className="rounded-xl bg-neutral-800 px-3 py-2 text-sm">Price {squadPrice.toLocaleString()}c</div>
-            <button className="rounded-xl bg-lime-400 text-black font-semibold px-4 py-2"
-              onClick={() => navigator.clipboard.writeText(shareUrl())}>Share Link</button>
-            <button className="rounded-xl bg-neutral-800 px-4 py-2"
-              onClick={() => setPlaced(Object.fromEntries(formation.map((s) => [s.key, null])))}>Clear</button>
+          </div>
+
+          <div className="ml-auto flex items-center gap-3 text-sm">
+            <div className="rounded-xl bg-neutral-900 border border-neutral-700 px-3 py-2">
+              Avg ⭐ {avgRating}
+            </div>
+            <div className="rounded-xl bg-neutral-900 border border-neutral-700 px-3 py-2">
+              Chem {teamChem}/33
+            </div>
+            <div className="rounded-xl bg-neutral-900 border border-neutral-700 px-3 py-2">
+              Price {c(squadPrice)}
+            </div>
+            <button
+              className="rounded-xl bg-lime-400 text-black font-semibold px-4 py-2"
+              onClick={() => navigator.clipboard.writeText(shareUrl())}
+              title="Copy shareable link"
+            >
+              Share Link
+            </button>
+            <button
+              className="rounded-xl bg-neutral-900 border border-neutral-700 px-4 py-2"
+              onClick={() => setPlaced(Object.fromEntries(slots.map((s) => [s.key, null])))}
+            >
+              Clear
+            </button>
           </div>
         </div>
       </header>
 
-      {/* Pitch left, search right */}
-      <main className="mx-auto max-w-6xl px-4 py-6 grid grid-cols-12 gap-6">
+      {/* Body: Pitch + Search */}
+      <main className="mx-auto max-w-[1400px] px-4 py-6 grid grid-cols-12 gap-6">
         {/* Pitch */}
         <div className="col-span-8">
-          <Pitch>
-            {slotsAdjusted.map((slot) => {
+          <Pitch
+            orientation="vertical" // your Pitch can ignore this or use to draw lines
+            className="rounded-[28px] border border-neutral-800 bg-gradient-to-b from-emerald-950/40 to-emerald-900/20"
+          >
+            {slots.map((slot) => {
               const pl = placed[slot.key];
               const chem = pl ? perPlayerChem[pl.id] ?? 0 : 0;
-              const ok = validPos(pl, slot.pos);
+              const valid = pl ? pl.positions?.includes?.(slot.pos) : true;
+
               return (
                 <div
                   key={slot.key}
                   onDragOver={(e) => e.preventDefault()}
                   onDrop={(e) => handleDrop(e, slot.key)}
                   className="absolute"
-                  style={{ left: `${slot.x}%`, top: `${slot.y}%`, transform: "translate(-50%, -50%)" }}
+                  style={{
+                    left: `${slot.x}%`,
+                    top: `${slot.y}%`,
+                    transform: "translate(-50%, -50%)",
+                  }}
                 >
                   <div
                     className={cls(
-                      "p-1 rounded-2xl border",
-                      pl ? "border-transparent" : "bg-white/10 border-white/20"
+                      "w-[120px] rounded-2xl p-2 select-none cursor-pointer shadow-lg",
+                      pl
+                        ? "bg-neutral-950/75 border border-neutral-700"
+                        : "bg-white/5 border border-white/10 hover:bg-white/10"
                     )}
                     onClick={() => setSearchOpen(slot.key)}
-                    title={ok ? slot.pos : `${slot.pos} (out of position)`}
                   >
                     {pl ? (
                       <>
-                        <PlayerTile
-                          player={pl}
-                          chem={chem}
-                          size="lg"
-                          draggable
-                          onDragStart={(e) => handleDragStart(e, pl.id)}
-                        />
-                        <div className="mt-1 text-[10px] uppercase tracking-wide text-neutral-300 text-center">
-                          {slot.pos}
+                        <div className="flex items-start gap-2">
+                          <PlayerTile
+                            player={pl}
+                            size="md"
+                            draggable
+                            onDragStart={(e) => handleDragStart(e, pl.id)}
+                          />
+                          <div className="ml-auto mt-1 flex items-center gap-2">
+                            {/* tiny chem dot */}
+                            <span
+                              className={cls("inline-block w-2.5 h-2.5 rounded-full", chemDotClass(chem))}
+                              title={`Chem ${chem}/3${!valid ? " • out of position" : ""}`}
+                            />
+                          </div>
                         </div>
+
+                        {/* meta row */}
+                        <div className="mt-1 text-[10px] leading-4 text-neutral-300">
+                          <div className="flex justify-between">
+                            <span className="uppercase">{slot.pos}</span>
+                            <span className="font-semibold">{c(pl.price)}</span>
+                          </div>
+                          {!valid && (
+                            <div className="text-amber-300">Out of position</div>
+                          )}
+                        </div>
+
+                        {/* actions */}
                         <div className="mt-1 flex justify-between text-[10px] opacity-80">
-                          <button className="underline" onClick={(e) => { e.stopPropagation(); setSearchOpen(slot.key); }}>Swap</button>
-                          <button className="underline" onClick={(e) => { e.stopPropagation(); clearSlot(slot.key); }}>Clear</button>
+                          <button
+                            className="underline"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSearchOpen(slot.key);
+                            }}
+                          >
+                            Swap
+                          </button>
+                          <button
+                            className="underline"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              clearSlot(slot.key);
+                            }}
+                          >
+                            Clear
+                          </button>
                         </div>
                       </>
                     ) : (
-                      <div className="w-[96px] h-[64px] grid place-items-center text-xs font-semibold uppercase tracking-wide">
+                      <div
+                        className="w-[116px] h-[64px] grid place-items-center text-[11px] font-semibold uppercase tracking-wide text-neutral-300"
+                        title="Click to add player"
+                      >
                         {slot.pos}
                       </div>
                     )}
@@ -217,37 +305,79 @@ export default function SquadBuilder() {
               );
             })}
           </Pitch>
+
           <p className="mt-3 text-xs text-neutral-400">
             Tip: drag between slots to rearrange. Out-of-position = 0 chem (no contributions).
           </p>
         </div>
 
         {/* Search panel */}
-        <div className="col-span-4">
+        <aside className="col-span-4">
           <div className="rounded-3xl border border-neutral-800 bg-neutral-950 p-3">
-            <SearchPanel
-              search={search}
-              setSearch={setSearch}
-              loading={loading}
-              results={results}
-              onAdd={async (p) => {
-                if (!searchOpen) return;
-                const full = await enrichPlayer(p);
-                setPlaced((prev) => ({ ...prev, [searchOpen]: full }));
-              }}
-            />
+            <div className="flex items-center gap-2">
+              <input
+                className="w-full rounded-xl bg-neutral-900 border border-neutral-700 px-3 py-2 text-sm"
+                placeholder={
+                  searchOpen ? `Adding to ${searchOpen}…` : "Search name, club, league, nation, position"
+                }
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+            </div>
+
+            <div className="mt-3 max-h-[64vh] overflow-y-auto custom-scrollbar space-y-2 pr-1">
+              {results.map((p) => (
+                <div
+                  key={p.id}
+                  className="rounded-2xl border border-neutral-800 bg-neutral-900 px-3 py-2"
+                >
+                  <div className="flex items-center gap-3">
+                    <PlayerTile
+                      player={p}
+                      size="sm"
+                      draggable
+                      onDragStart={(e) => handleDragStart(e, p.id)}
+                    />
+                    <div className="min-w-0">
+                      <div className="text-sm font-semibold truncate">{p.name}</div>
+                      <div className="text-[11px] text-neutral-400">
+                        {p.league || p.club || p.nation || "—"}
+                      </div>
+                      <div className="text-[11px] text-neutral-300">
+                        ⭐ {p.rating ?? "-"} • {c(p.price)}
+                      </div>
+                    </div>
+                    <button
+                      className="ml-auto rounded-lg bg-lime-400 text-black text-xs font-bold px-3 py-1"
+                      onClick={() => searchOpen && addPlayerToSlot(p, searchOpen)}
+                      disabled={!searchOpen}
+                      title={searchOpen ? `Add to ${searchOpen}` : "Click a pitch slot first"}
+                    >
+                      Add
+                    </button>
+                  </div>
+                </div>
+              ))}
+              {!results.length && (
+                <div className="text-sm text-neutral-400">Start typing to search players…</div>
+              )}
+            </div>
           </div>
 
+          {/* Rules */}
           <div className="mt-4 rounded-3xl border border-neutral-800 bg-neutral-950 p-3 text-sm">
-            <div className="font-semibold mb-2">Chemistry (FC25)</div>
+            <div className="font-semibold mb-2">Chemistry Rules (FC25-style)</div>
             <ul className="list-disc pl-5 space-y-1 text-neutral-300 text-[13px]">
-              <li>Club: 2/4/7 → +1/+2/+3</li>
-              <li>Nation: 2/5/8 → +1/+2/+3</li>
-              <li>League: 3/5/8 → +1/+2/+3</li>
-              <li>Icons/Heroes: 3 chem in position; special boosts to leagues/nations.</li>
+              <li>Club: 2 / 4 / 7 players → +1 / +2 / +3</li>
+              <li>Nation: 2 / 5 / 8 players → +1 / +2 / +3</li>
+              <li>League: 3 / 5 / 8 players → +1 / +2 / +3</li>
+              <li>
+                Icons/Heroes: 3 chem in position. Icons boost nation globally; Heroes boost their league.
+              </li>
+              <li>Out of position → 0 chem, contributes nothing.</li>
             </ul>
           </div>
-        </div>
+        </aside>
       </main>
 
       {searchOpen && (
@@ -256,56 +386,5 @@ export default function SquadBuilder() {
         </div>
       )}
     </div>
-  );
-}
-
-/* ---------- Search panel ---------- */
-function SearchPanel({ search, setSearch, loading, results, onAdd }) {
-  const [active, setActive] = useState(0);
-  return (
-    <>
-      <div className="flex items-center gap-2">
-        <input
-          className="w-full rounded-xl bg-neutral-900 border border-neutral-700 px-3 py-2 text-sm"
-          placeholder="Search player…"
-          value={search}
-          onChange={(e) => { setSearch(e.target.value); setActive(0); }}
-          onKeyDown={(e) => {
-            if (!results.length) return;
-            if (e.key === "ArrowDown") { e.preventDefault(); setActive((i) => Math.min(i + 1, results.length - 1)); }
-            else if (e.key === "ArrowUp") { e.preventDefault(); setActive((i) => Math.max(i - 1, 0)); }
-            else if (e.key === "Enter") { e.preventDefault(); onAdd(results[active]); }
-          }}
-        />
-        {loading && <div className="text-xs text-neutral-400">Loading…</div>}
-      </div>
-
-      <div className="mt-3 max-h-[60vh] overflow-y-auto custom-scrollbar space-y-2 pr-1">
-        {results.map((p, i) => (
-          <div
-            key={p.id}
-            draggable
-            onDragStart={(e) => e.dataTransfer.setData("text/plain", String(p.id))}
-            className={cls(
-              "rounded-2xl border px-3 py-2 cursor-grab active:cursor-grabbing bg-neutral-900",
-              i === active ? "border-lime-400" : "border-neutral-800"
-            )}
-            onMouseEnter={() => setActive(i)}
-          >
-            <PlayerTile
-              player={p}
-              size="lg"
-              rightSlot={
-                <button className="rounded-lg bg-lime-400 text-black text-xs font-bold px-2 py-1"
-                        onClick={() => onAdd(p)}>Add</button>
-              }
-            />
-          </div>
-        ))}
-        {!results.length && !loading && (
-          <div className="text-sm text-neutral-400">No players match your search.</div>
-        )}
-      </div>
-    </>
   );
 }
