@@ -499,51 +499,48 @@ const PlayerDetail = ({ player, onBack }) => {
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
               {/* Price */}
               <div className="bg-[#334155] rounded-lg p-3 min-w-0">
-                <div className="text-gray-400 text-sm mb-1">Price</div>
-                <div className="font-bold text-yellow-400 leading-snug text-[clamp(1.1rem,3.2vw,1.6rem)]">
+                <div className="text-gray-300 text-xs md:text-sm mb-1">Price</div>
+                <div className="text-2xl md:text-3xl font-bold text-yellow-400 leading-tight">
                   {loading ? (
-                    <Loader2 className="w-5 h-5 animate-spin inline" />
+                    <Loader2 className="w-5 h-5 md:w-6 md:h-6 animate-spin inline align-[-2px]" />
                   ) : priceData?.isExtinct ? (
                     "Extinct"
                   ) : (
-                    <span className="inline-flex items-center gap-2 min-w-0 max-w-full">
+                    <span className="inline-flex items-center gap-2 min-w-0">
                       <img
                         src="https://cdn2.futbin.com/https%3A%2F%2Fcdn.futbin.com%2Fdesign%2Fimg%2Fcoins_big.png?fm=png&ixlib=java-2.1.0&w=40&s=cad4ceb684da7f0b778fdeb1d4065fb1"
                         alt="Coins"
-                        className="w-5 h-5 shrink-0"
+                        className="w-4 h-4 md:w-5 md:h-5 shrink-0"
                       />
-                      <span className="truncate font-mono tabular-nums tracking-tight">
-                        {formatPrice(priceData?.current)}
-                      </span>
+                      {/* number gets truncated instead of overflowing */}
+                      <span className="truncate tabular-nums">{formatPrice(priceData?.current)}</span>
                     </span>
                   )}
                 </div>
               </div>
-
+              
               {/* Range */}
               <div className="bg-[#334155] rounded-lg p-3 min-w-0">
-                <div className="text-gray-400 text-sm mb-1">Range</div>
-                <div className="font-medium leading-snug text-[clamp(0.95rem,2.4vw,1.1rem)] break-words">
-                  {priceRange
-                    ? `${formatPrice(priceRange.min)} - ${formatPrice(priceRange.max)}`
-                    : "N/A"}
+                <div className="text-gray-300 text-xs md:text-sm mb-1">Range</div>
+                <div className="font-medium leading-snug text-sm md:text-base break-words">
+                  {formatPrice(priceRange?.min)}{priceRange ? " - " : ""}{formatPrice(priceRange?.max)}
                 </div>
               </div>
-
+              
               {/* Trend */}
               <div className="bg-[#334155] rounded-lg p-3 min-w-0">
-                <div className="text-gray-400 text-sm mb-1">Trend</div>
+                <div className="text-gray-300 text-xs md:text-sm mb-1">Trend</div>
                 <PriceTrend auctions={priceData?.auctions} />
               </div>
-
-              {/* Accelerate */}
+              
+              {/* AcceleRATE */}
               <div className="bg-[#334155] rounded-lg p-3 min-w-0">
-                <div className="text-gray-400 text-sm mb-1">AcceleRATE</div>
-                <div className="font-medium text-green-400 text-xs leading-tight break-words">
+                <div className="text-gray-300 text-xs md:text-sm mb-1">AcceleRATE</div>
+                {/* normalized size */}
+                <div className="font-semibold text-green-400 text-sm md:text-base leading-tight">
                   {d.accelerateType.replace(/_/g, " ")}
                 </div>
               </div>
-            </div>
 
             {/* Club / Nation / League / Position */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
