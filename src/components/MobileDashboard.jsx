@@ -29,7 +29,7 @@ const MobileDashboard = () => {
       color: 'text-orange-400',
       bg: 'bg-orange-500/10',
       border: 'border-orange-500/20',
-      subtitle: `${((taxPaid / grossProfit) * 100).toFixed(1)}% of gross`,
+      subtitle: grossProfit > 0 ? `${((taxPaid / grossProfit) * 100).toFixed(1)}% of gross` : '0%',
       icon: '🏛️'
     },
     { 
@@ -187,8 +187,6 @@ const MobileDashboard = () => {
             </div>
           )}
         </div>
-
-        {/* Bottom spacing removed since no bottom nav */}
       </div>
     </div>
   );
