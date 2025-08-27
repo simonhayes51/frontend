@@ -23,7 +23,7 @@ const searchPlayers = async (query) => {
   }
 };
 
-// Add to watchlist (cookie session)
+// NEW: Add to watchlist helper (uses cookie session)
 const addToWatchlist = async ({ player_name, card_id, version, platform, notes }) => {
   const r = await fetch(`${API_BASE}/api/watchlist`, {
     method: "POST",
@@ -34,9 +34,12 @@ const addToWatchlist = async ({ player_name, card_id, version, platform, notes }
   let payload = null;
   try {
     payload = await r.json();
-  } catch {}
+  } catch {
+    /* ignore */
+  }
   if (!r.ok) {
-    throw new Error(payload?.detail || "Failed to add to watchlist");
+    const msg = payload?.detail || "Failed to add to watchlist";
+    throw new Error(msg);
   }
   return payload;
 };
@@ -80,17 +83,33 @@ const fetchPlayerPrice = async (cardId) => {
 
 // ---- FC25 Position Map ----
 const POS_CODE_TO_NAME = {
-  0: "GK", 1: "GK", 2: "GK",
-  3: "RB", 4: "RB",
-  5: "CB", 6: "CB",
-  7: "LB", 8: "LB", 9: "LB",
-  10: "CDM", 11: "CDM",
-  12: "RM", 13: "RM",
-  14: "CM", 15: "CM",
-  16: "LM", 17: "LM",
-  18: "CAM", 19: "CAM", 20: "CAM", 21: "CAM", 22: "CAM",
-  23: "RW", 24: "RW",
-  25: "ST", 26: "ST",
+  0: "GK",
+  1: "GK",
+  2: "GK",
+  3: "RB",
+  4: "RB",
+  5: "CB",
+  6: "CB",
+  7: "LB",
+  8: "LB",
+  9: "LB",
+  10: "CDM",
+  11: "CDM",
+  12: "RM",
+  13: "RM",
+  14: "CM",
+  15: "CM",
+  16: "LM",
+  17: "LM",
+  18: "CAM",
+  19: "CAM",
+  20: "CAM",
+  21: "CAM",
+  22: "CAM",
+  23: "RW",
+  24: "RW",
+  25: "ST",
+  26: "ST",
   27: "LW",
 };
 
@@ -229,8 +248,10 @@ const SearchBox = ({ onPlayerSelect }) => {
                 <div className="w-12 h-16 bg-gradient-to-b from-yellow-400 to-yellow-600 rounded-lg flex items-center justify-center text-white font-bold text-sm">
                   {player.rating}
                 </div>
-                <div className="text-white font-semibold">
-                  {player.name} ({player.rating})
+                <div>
+                  <div className="font-semibold text-white">
+                    {player.name} ({player.rating})
+                  </div>
                 </div>
               </div>
             </button>
@@ -284,7 +305,7 @@ const PlayerDetail = ({ player, onBack }) => {
   const [playerData, setPlayerData] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Watchlist CTA state
+  // Add-to-watchlist state
   const [adding, setAdding] = useState(false);
   const [platform, setPlatform] = useState("ps");
   const [notes, setNotes] = useState("");
@@ -386,7 +407,7 @@ const PlayerDetail = ({ player, onBack }) => {
     },
   };
 
-  // Add-to-watchlist handler
+  // add-to-watchlist click
   const onAddClick = async () => {
     try {
       setAdding(true);
@@ -409,6 +430,7 @@ const PlayerDetail = ({ player, onBack }) => {
 
   return (
     <div className="w-full max-w-6xl mx-auto bg-[#0f172a]">
+      {/* Back link */}
       <button
         onClick={onBack}
         className="mb-4 px-4 py-2 text-blue-400 hover:text-blue-300 font-medium transition-colors"
@@ -416,54 +438,38 @@ const PlayerDetail = ({ player, onBack }) => {
         ← Back to Search
       </button>
 
-      <div className="bg-[#1e293b] border border-gray-700 text-white rounded-xl p-6">
-
-        {/* ===== Toolbar between back link and big player name ===== */}
-        <div className="mb-5">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 rounded-lg bg-[#0f1622] border border-[#243041] p-3">
-            <div className="min-w-0">
-              <div className="text-sm text-gray-300 truncate">
-                <span className="font-semibold">{player.name}</span>
-                <span className="text-gray-500 ml-2">ID {cardId}</span>
-                {(player.version || d.version) && (
-                  <span className="text-gray-500 ml-2 hidden sm:inline">
-                    {player.version || d.version}
-                  </span>
-                )}
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2 sm:ml-auto w-full sm:w-auto">
-              <select
-                value={platform}
-                onChange={(e) => setPlatform(e.target.value)}
-                className="px-2 py-1 rounded-md bg-black/40 border border-[#2A2F36] text-white text-sm w-full sm:w-auto"
-                title="Platform"
-              >
-                <option value="ps">PS</option>
-                <option value="xbox">Xbox</option>
-              </select>
-
-              <input
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                placeholder="Notes (optional)"
-                className="px-2 py-1 rounded-md bg-black/40 border border-[#2A2F36] text-white text-sm flex-1 sm:w-56"
-              />
-
-              <button
-                onClick={onAddClick}
-                disabled={adding}
-                className="px-3 py-2 rounded-md bg-lime-500/90 hover:bg-lime-500 text-black font-semibold whitespace-nowrap"
-              >
-                {adding ? "Adding…" : "+ Add to Watchlist"}
-              </button>
-            </div>
-          </div>
+      {/* NEW: toolbar placed directly under Back, before the name */}
+      <div className="mb-4 p-3 bg-[#0f1622] border border-[#243041] rounded-xl flex flex-col sm:flex-row sm:items-center gap-3">
+        <div className="text-sm text-gray-300">Track this player’s price on your Watchlist</div>
+        <div className="flex items-center gap-2 sm:ml-auto">
+          <select
+            value={platform}
+            onChange={(e) => setPlatform(e.target.value)}
+            className="px-2 py-1 rounded-md bg-black/40 border border-[#2A2F36] text-white text-sm"
+            title="Platform"
+          >
+            <option value="ps">PS</option>
+            <option value="xbox">Xbox</option>
+          </select>
+          <input
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            placeholder="Notes (optional)"
+            className="hidden md:block w-56 px-2 py-1 rounded-md bg-black/40 border border-[#2A2F36] text-white text-sm"
+          />
+          <button
+            onClick={onAddClick}
+            disabled={adding}
+            className="px-3 py-2 rounded-md bg-lime-500/90 hover:bg-lime-500 text-black font-semibold"
+          >
+            {adding ? "Adding…" : "+ Add to Watchlist"}
+          </button>
         </div>
-        {/* ===== end toolbar ===== */}
+      </div>
 
+      <div className="bg-[#1e293b] border border-gray-700 text-white rounded-xl p-6">
         <div className="flex flex-col lg:flex-row items-start gap-6 mb-6">
+          {/* Card image */}
           <div className="relative shrink-0">
             <img
               src={d.cardImage}
@@ -482,54 +488,58 @@ const PlayerDetail = ({ player, onBack }) => {
             </div>
           </div>
 
+          {/* Text/content */}
           <div className="flex-1 min-w-0">
-            <h1 className="text-3xl md:text-5xl font-extrabold mb-2 leading-tight break-words">
+            {/* Name: responsive, no giant jumps */}
+            <h1 className="font-bold leading-tight text-[clamp(1.5rem,5vw,3rem)] mb-2 break-words">
               {d.fullName}
             </h1>
 
-            {/* Price / Range / Trend / Accelerate */}
+            {/* Stat cards */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-              <div className="bg-[#334155] rounded-lg p-3 min-h-[96px]">
+              {/* Price */}
+              <div className="bg-[#334155] rounded-lg p-3 min-w-0">
                 <div className="text-gray-400 text-sm mb-1">Price</div>
-                <div className="text-2xl font-bold text-yellow-400 break-words leading-tight">
+                <div className="font-bold text-yellow-400 leading-snug text-[clamp(1.1rem,3.2vw,1.6rem)]">
                   {loading ? (
-                    <Loader2 className="w-6 h-6 animate-spin inline" />
+                    <Loader2 className="w-5 h-5 animate-spin inline" />
                   ) : priceData?.isExtinct ? (
                     "Extinct"
                   ) : (
-                    <span className="inline-flex items-center gap-2 leading-none">
+                    <span className="inline-flex items-center gap-2 min-w-0 max-w-full">
                       <img
                         src="https://cdn2.futbin.com/https%3A%2F%2Fcdn.futbin.com%2Fdesign%2Fimg%2Fcoins_big.png?fm=png&ixlib=java-2.1.0&w=40&s=cad4ceb684da7f0b778fdeb1d4065fb1"
                         alt="Coins"
-                        className="w-5 h-5 inline-block"
+                        className="w-5 h-5 shrink-0"
                       />
-                      {formatPrice(priceData?.current)}
+                      <span className="truncate font-mono tabular-nums tracking-tight">
+                        {formatPrice(priceData?.current)}
+                      </span>
                     </span>
                   )}
                 </div>
               </div>
 
-              <div className="bg-[#334155] rounded-lg p-3 min-h-[96px]">
+              {/* Range */}
+              <div className="bg-[#334155] rounded-lg p-3 min-w-0">
                 <div className="text-gray-400 text-sm mb-1">Range</div>
-                <div className="font-medium text-base leading-tight break-words">
-                  {priceRange ? (
-                    <>
-                      {formatPrice(priceRange.min)} - {formatPrice(priceRange.max)}
-                    </>
-                  ) : (
-                    "—"
-                  )}
+                <div className="font-medium leading-snug text-[clamp(0.95rem,2.4vw,1.1rem)] break-words">
+                  {priceRange
+                    ? `${formatPrice(priceRange.min)} - ${formatPrice(priceRange.max)}`
+                    : "N/A"}
                 </div>
               </div>
 
-              <div className="bg-[#334155] rounded-lg p-3 min-h-[96px]">
+              {/* Trend */}
+              <div className="bg-[#334155] rounded-lg p-3 min-w-0">
                 <div className="text-gray-400 text-sm mb-1">Trend</div>
                 <PriceTrend auctions={priceData?.auctions} />
               </div>
 
-              <div className="bg-[#334155] rounded-lg p-3 min-h-[96px]">
+              {/* Accelerate */}
+              <div className="bg-[#334155] rounded-lg p-3 min-w-0">
                 <div className="text-gray-400 text-sm mb-1">AcceleRATE</div>
-                <div className="font-medium text-green-400 text-xs sm:text-sm leading-tight break-words uppercase">
+                <div className="font-medium text-green-400 text-xs leading-tight break-words">
                   {d.accelerateType.replace(/_/g, " ")}
                 </div>
               </div>
@@ -558,7 +568,9 @@ const PlayerDetail = ({ player, onBack }) => {
                       }}
                     />
                   ) : (
-                    <div className="w-8 h-8 bg-gray-600 rounded flex items-center justify-center text-xs">CLUB</div>
+                    <div className="w-8 h-8 bg-gray-600 rounded flex items-center justify-center text-xs">
+                      LEG
+                    </div>
                   )}
                 </div>
                 <div className="text-sm text-gray-400 mb-1">Club</div>
@@ -586,7 +598,9 @@ const PlayerDetail = ({ player, onBack }) => {
                       }}
                     />
                   ) : (
-                    <div className="w-8 h-6 bg-gray-600 rounded flex items-center justify-center text-xs">NAT</div>
+                    <div className="w-8 h-6 bg-gray-600 rounded flex items-center justify-center text-xs">
+                      NAT
+                    </div>
                   )}
                 </div>
                 <div className="text-sm text-gray-400 mb-1">Nation</div>
@@ -614,7 +628,9 @@ const PlayerDetail = ({ player, onBack }) => {
                       }}
                     />
                   ) : (
-                    <div className="w-8 h-8 bg-gray-600 rounded flex items-center justify-center text-xs">LEG</div>
+                    <div className="w-8 h-8 bg-gray-600 rounded flex items-center justify-center text-xs">
+                      LEG
+                    </div>
                   )}
                 </div>
                 <div className="text-sm text-gray-400 mb-1">League</div>
@@ -625,7 +641,7 @@ const PlayerDetail = ({ player, onBack }) => {
               <div className="text-center bg-[#334155] rounded-lg p-3">
                 <Target className="w-6 h-6 mx-auto mb-2 text-red-400" />
                 <div className="text-sm text-gray-400 mb-1">Position</div>
-                <div className="font-medium break-words">{d.position}</div>
+                <div className="font-medium">{d.position}</div>
               </div>
             </div>
 
@@ -645,11 +661,15 @@ const PlayerDetail = ({ player, onBack }) => {
             {/* Skill / Weak Foot / Age / Preferred Foot */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
               <div className="text-center bg-[#334155] rounded-lg p-3">
-                <div className="text-lg font-semibold text-yellow-400">{"⭐".repeat(d.skillMoves)}</div>
+                <div className="text-lg font-semibold text-yellow-400">
+                  {"⭐".repeat(d.skillMoves)}
+                </div>
                 <div className="text-xs text-gray-400">Skill Moves</div>
               </div>
               <div className="text-center bg-[#334155] rounded-lg p-3">
-                <div className="text-lg font-semibold text-yellow-400">{"⭐".repeat(d.weakFoot)}</div>
+                <div className="text-lg font-semibold text-yellow-400">
+                  {"⭐".repeat(d.weakFoot)}
+                </div>
                 <div className="text-xs text-gray-400">Weak Foot</div>
               </div>
               <div className="text-center bg-[#334155] rounded-lg p-3">
