@@ -440,13 +440,13 @@ const PlayerDetail = ({ player, onBack }) => {
                   ) : priceData?.isExtinct ? (
                     "Extinct"
                   ) : (
-                    <span className="inline-flex items-center gap-2 min-w-0">
+                    <span className="inline-flex items-center gap-2 min-w-0 overflow-hidden align-middle">
                       <img
                         src="https://cdn2.futbin.com/https%3A%2F%2Fcdn.futbin.com%2Fdesign%2Fimg%2Fcoins_big.png?fm=png&ixlib=java-2.1.0&w=40&s=cad4ceb684da7f0b778fdeb1d4065fb1"
                         alt="Coins"
                         className="w-4 h-4 md:w-5 md:h-5 shrink-0"
                       />
-                      <span className="truncate tabular-nums">{formatPrice(priceData?.current)}</span>
+                      <AutoFitNumber value={priceData?.current} />
                     </span>
                   )}
                 </div>
