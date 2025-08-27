@@ -53,12 +53,12 @@ const MobileDashboard = () => {
   const recentTrades = trades.slice(0, 5);
 
   return (
-    <div className="pb-20 min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Status Bar Spacer */}
-      <div className="h-12 bg-gray-900"></div>
+      <div className="h-4 bg-gray-900"></div>
       
       {/* Header */}
-      <header className="bg-gray-900 px-6 py-4">
+      <header className="bg-gray-900 px-6 py-4 pl-20">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
             <div className="relative">
@@ -188,8 +188,7 @@ const MobileDashboard = () => {
           )}
         </div>
 
-        {/* Bottom spacing for navigation */}
-        <div className="h-8"></div>
+        {/* Bottom spacing removed since no bottom nav */}
       </div>
     </div>
   );
