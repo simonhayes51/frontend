@@ -1,5 +1,5 @@
 import { lazy, Suspense } from "react";
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { HashRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
 import { DashboardProvider } from "./context/DashboardContext";
 import { SettingsProvider } from "./context/SettingsContext";
@@ -8,9 +8,9 @@ import Layout from "./components/Layout";
 import Loading from "./components/Loading";
 import PrivateRoute from "./components/PrivateRoute";
 import Landing from "./pages/Landing";
-import Watchlist from "./pages/Watchlist"; // 👈 add this import
+import Watchlist from "./pages/Watchlist";
 
-// Direct import for the page (default export)
+// Direct import
 import PlayerSearch from "./pages/PlayerSearch";
 
 // Lazy-loaded pages
@@ -53,12 +53,15 @@ function App() {
                   <Route index element={<Dashboard />} />
                   <Route path="add-trade" element={<AddTrade />} />
                   <Route path="trades" element={<Trades />} />
-                  <Route path="player-search" element={<PlayerSearch />} /> {/* ✅ */}
+                  <Route path="player-search" element={<PlayerSearch />} />
                   <Route path="profile" element={<Profile />} />
                   <Route path="settings" element={<Settings />} />
                   <Route path="analytics" element={<ProfitGraph />} />
                   <Route path="pricecheck" element={<PriceCheck />} />
                   <Route path="watchlist" element={<Watchlist />} />
+
+                  {/* Alias: /squad -> /player-search */}
+                  <Route path="squad" element={<Navigate to="/player-search" replace />} />
                 </Route>
 
                 {/* 404 */}
