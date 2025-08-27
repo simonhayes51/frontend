@@ -1,18 +1,45 @@
+// src/pages/Watchlist.jsx
 import React, { useEffect, useMemo, useState } from "react";
 import { getWatchlist, addWatch, deleteWatch, refreshWatch } from "../api/watchlist";
-import { X, Plus, RefreshCw, Trash2, ArrowUpDown } from "lucide-react";
+import { Link } from "react-router-dom";
+
+// Tiny inline icons to keep deps minimal
+const Icon = {
+  Plus: (props) => (
+    <svg className={`w-4 h-4 ${props.className||""}`} viewBox="0 0 24 24" fill="none" stroke="currentColor">
+      <path strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M12 5v14M5 12h14" />
+    </svg>
+  ),
+  Refresh: (props) => (
+    <svg className={`w-4 h-4 ${props.className||""}`} viewBox="0 0 24 24" fill="none" stroke="currentColor">
+      <path strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M4 4v6h6M20 20v-6h-6" />
+      <path strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M20 8a8 8 0 10-1.78 5.091" />
+    </svg>
+  ),
+  Trash: (props) => (
+    <svg className={`w-4 h-4 ${props.className||""}`} viewBox="0 0 24 24" fill="none" stroke="currentColor">
+      <path strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7h6m-7 0l1-3h6l1 3" />
+    </svg>
+  ),
+  Sort: (props) => (
+    <svg className={`w-4 h-4 ${props.className||""}`} viewBox="0 0 24 24" fill="none" stroke="currentColor">
+      <path strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M3 7h13M3 12h9M3 17h5" />
+    </svg>
+  ),
+};
 
 function Price({ value }) {
   if (value === null || value === undefined) return <span className="text-gray-400">N/A</span>;
-  return <span className="font-semibold">{value.toLocaleString()}</span>;
+  return <span className="font-semibold">{Number(value).toLocaleString()}</span>;
 }
 
 function Change({ change, pct }) {
-  if (change === null || change === undefined || pct === null || pct === undefined) return <span className="text-gray-400">—</span>;
+  if (change === null || change === undefined || pct === null || pct === undefined)
+    return <span className="text-gray-400">—</span>;
   const up = change > 0;
   return (
     <span className={up ? "text-emerald-400 font-semibold" : change < 0 ? "text-red-400 font-semibold" : "text-gray-300"}>
-      {up ? "↑" : change < 0 ? "↓" : "•"} {change.toLocaleString()} ({pct}%)
+      {up ? "↑" : change < 0 ? "↓" : "•"} {Number(change).toLocaleString()} ({pct}%)
     </span>
   );
 }
@@ -23,6 +50,7 @@ const SORTS = {
   PRICE_ASC: "price_asc",
   PRICE_DESC: "price_desc",
   ADDED_NEWEST: "added_newest",
+  NAME_ASC: "name_asc",
 };
 
 export default function Watchlist() {
@@ -48,7 +76,6 @@ export default function Watchlist() {
 
   const sorted = useMemo(() => {
     const list = [...items];
-
     switch (sort) {
       case SORTS.CHANGE_DESC:
         list.sort((a, b) => (b.change_pct ?? -Infinity) - (a.change_pct ?? -Infinity));
@@ -62,15 +89,19 @@ export default function Watchlist() {
       case SORTS.ADDED_NEWEST:
         list.sort((a, b) => new Date(b.started_at) - new Date(a.started_at));
         break;
+      case SORTS.NAME_ASC:
+        list.sort((a, b) => (a.player_name || "").localeCompare(b.player_name || ""));
+        break;
       case SORTS.SMART:
       default:
+        // extincts last → highest % change → absolute change → newest
         list.sort((a, b) => {
-          if (a.is_extinct !== b.is_extinct) return a.is_extinct ? 1 : -1; // extincts last
+          if (a.is_extinct !== b.is_extinct) return a.is_extinct ? 1 : -1;
           const ap = a.change_pct ?? -Infinity, bp = b.change_pct ?? -Infinity;
-          if (bp !== ap) return bp - ap;                                    // highest % first
+          if (bp !== ap) return bp - ap;
           const aa = Math.abs(a.change ?? -Infinity), ba = Math.abs(b.change ?? -Infinity);
-          if (ba !== aa) return ba - aa;                                    // tie-break by abs change
-          return new Date(b.started_at) - new Date(a.started_at);           // newest last tie-break
+          if (ba !== aa) return ba - aa;
+          return new Date(b.started_at) - new Date(a.started_at);
         });
         break;
     }
@@ -119,32 +150,59 @@ export default function Watchlist() {
 
   return (
     <div className="p-6 md:p-8">
+      {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-6">
-        <h1 className="text-2xl md:text-3xl font-bold text-white">Player Watchlist</h1>
+        <div>
+          <h1 className="text-2xl md:text-3xl font-bold text-white">Player Watchlist</h1>
+          <p className="text-gray-400 text-sm">
+            Track starting price vs current FUT.GG price.{" "}
+            <Link to="/player-search" className="text-lime-400 hover:text-lime-300 underline underline-offset-2">
+              Find card IDs →
+            </Link>
+          </p>
+        </div>
+
         <div className="flex flex-wrap items-center gap-2">
+          {/* Sort picker */}
           <div className="flex items-center gap-1 bg-gray-900/70 border border-[#2A2F36] rounded-md px-2 py-1 text-gray-300">
-            <ArrowUpDown className="w-4 h-4" />
-            <select value={sort} onChange={(e) => setSort(e.target.value)} className="bg-transparent text-sm outline-none" title="Sort">
+            <Icon.Sort />
+            <select
+              value={sort}
+              onChange={(e) => setSort(e.target.value)}
+              className="bg-transparent text-sm outline-none"
+              title="Sort"
+            >
               <option value={SORTS.SMART}>Smart</option>
               <option value={SORTS.CHANGE_DESC}>% Change ↓</option>
               <option value={SORTS.PRICE_DESC}>Current Price ↓</option>
               <option value={SORTS.PRICE_ASC}>Current Price ↑</option>
               <option value={SORTS.ADDED_NEWEST}>Recently Added</option>
+              <option value={SORTS.NAME_ASC}>Name A–Z</option>
             </select>
           </div>
 
-          <button onClick={load} className="px-3 py-2 rounded-md bg-gray-800 hover:bg-gray-700 text-white flex items-center gap-2" title="Refresh all">
-            <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
+          {/* Refresh all */}
+          <button
+            onClick={load}
+            className="px-3 py-2 rounded-md bg-gray-800 hover:bg-gray-700 text-white flex items-center gap-2"
+            title="Refresh all"
+          >
+            <Icon.Refresh className={loading ? "animate-spin" : ""} />
             <span className="hidden sm:inline">Refresh</span>
           </button>
 
-          <button onClick={() => setShowAdd(true)} className="px-3 py-2 rounded-md bg-lime-500/90 hover:bg-lime-500 text-black font-semibold flex items-center gap-2">
-            <Plus className="w-4 h-4" />
+          {/* Add */}
+          <button
+            onClick={() => setShowAdd(true)}
+            className="px-3 py-2 rounded-md bg-lime-500/90 hover:bg-lime-500 text-black font-semibold flex items-center gap-2"
+          >
+            <Icon.Plus />
             Add
           </button>
         </div>
       </div>
 
+      {/* Table */}
       <div className="bg-[#111318]/70 rounded-xl border border-[#2A2F36] overflow-hidden">
         <div className="grid grid-cols-12 px-4 py-3 text-xs uppercase tracking-wider text-gray-400 bg-black/30">
           <div className="col-span-4">Player</div>
@@ -157,28 +215,57 @@ export default function Watchlist() {
         {loading ? (
           <div className="p-6 text-gray-400">Loading…</div>
         ) : sorted.length === 0 ? (
-          <div className="p-6 text-gray-400">No players yet. Add your first watch using the button above.</div>
+          <div className="p-6 text-gray-400">
+            No players yet. Click <span className="text-white">Add</span> to start a watch.
+          </div>
         ) : (
           <ul className="divide-y divide-[#1c1f26]">
             {sorted.map((it) => (
               <li key={it.id} className="grid grid-cols-12 px-4 py-3 items-center text-sm">
                 <div className="col-span-4">
                   <div className="text-white font-semibold">{it.player_name}</div>
-                  <div className="text-xs text-gray-400">ID {it.card_id} • {it.version || "Base"} • {it.platform.toUpperCase()}</div>
+                  <div className="text-xs text-gray-400">
+                    ID {it.card_id} • {it.version || "Base"} • {it.platform?.toUpperCase()}
+                  </div>
                 </div>
-                <div className="col-span-2 text-gray-200"><Price value={it.started_price} /></div>
+
                 <div className="col-span-2 text-gray-200">
-                  {it.is_extinct ? <span className="text-yellow-400 font-semibold">Extinct</span> : <Price value={it.current_price} />}
-                  {it.updated_at && <div className="text-[10px] text-gray-500">Updated {new Date(it.updated_at).toLocaleString()}</div>}
+                  <Price value={it.started_price} />
+                  <div className="text-[10px] text-gray-500">Added {new Date(it.started_at).toLocaleString()}</div>
                 </div>
-                <div className="col-span-2"><Change change={it.change} pct={it.change_pct} /></div>
+
+                <div className="col-span-2 text-gray-200">
+                  {it.is_extinct ? (
+                    <span className="text-yellow-400 font-semibold">Extinct</span>
+                  ) : (
+                    <Price value={it.current_price} />
+                  )}
+                  {it.updated_at && (
+                    <div className="text-[10px] text-gray-500">Updated {new Date(it.updated_at).toLocaleString()}</div>
+                  )}
+                </div>
+
+                <div className="col-span-2">
+                  <Change change={it.change} pct={it.change_pct} />
+                </div>
+
                 <div className="col-span-2 text-right flex justify-end gap-2">
-                  <button onClick={() => handleRefreshRow(it.id)} disabled={busyId === it.id} className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-gray-700 hover:bg-gray-600 text-white text-xs" title="Refresh price">
-                    <RefreshCw className={`w-4 h-4 ${busyId === it.id ? "animate-spin" : ""}`} />
+                  <button
+                    onClick={() => handleRefreshRow(it.id)}
+                    disabled={busyId === it.id}
+                    className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-gray-700 hover:bg-gray-600 text-white text-xs"
+                    title="Refresh price"
+                  >
+                    <Icon.Refresh className={busyId === it.id ? "animate-spin" : ""} />
                     Refresh
                   </button>
-                  <button onClick={() => handleDelete(it.id)} disabled={busyId === it.id} className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-red-600/80 hover:bg-red-600 text-white text-xs">
-                    <Trash2 className="w-4 h-4" /> Remove
+                  <button
+                    onClick={() => handleDelete(it.id)}
+                    disabled={busyId === it.id}
+                    className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-red-600/80 hover:bg-red-600 text-white text-xs"
+                  >
+                    <Icon.Trash />
+                    Remove
                   </button>
                 </div>
               </li>
@@ -187,42 +274,83 @@ export default function Watchlist() {
         )}
       </div>
 
+      {/* Add Modal */}
       {showAdd && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
           <div className="w-full max-w-md bg-[#111318] border border-[#2A2F36] rounded-xl p-5">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-bold text-white">Add to Watchlist</h2>
-              <button onClick={() => setShowAdd(false)} className="text-gray-400 hover:text-white">
-                <X className="w-5 h-5" />
+              <button
+                onClick={() => setShowAdd(false)}
+                className="text-gray-400 hover:text-white p-1 rounded-md hover:bg-gray-800/60"
+                aria-label="Close"
+                title="Close"
+              >
+                ✕
               </button>
             </div>
+
             <form onSubmit={handleAdd} className="space-y-4">
               <div>
                 <label className="block text-sm text-gray-300 mb-1">Player name</label>
-                <input className="w-full px-3 py-2 rounded-md bg-black/40 border border-[#2A2F36] text-white" value={form.player_name} onChange={(e) => setForm((f) => ({ ...f, player_name: e.target.value }))} placeholder="e.g., Bukayo Saka" required />
+                <input
+                  className="w-full px-3 py-2 rounded-md bg-black/40 border border-[#2A2F36] text-white"
+                  value={form.player_name}
+                  onChange={(e) => setForm((f) => ({ ...f, player_name: e.target.value }))}
+                  placeholder="e.g., Bukayo Saka"
+                  required
+                />
               </div>
+
               <div>
                 <label className="block text-sm text-gray-300 mb-1">Card ID (EA/FUT.GG)</label>
-                <input className="w-full px-3 py-2 rounded-md bg-black/40 border border-[#2A2F36] text-white" value={form.card_id} onChange={(e) => setForm((f) => ({ ...f, card_id: e.target.value.replace(/\D/g, "") }))} placeholder="e.g., 100664475" required />
+                <input
+                  className="w-full px-3 py-2 rounded-md bg-black/40 border border-[#2A2F36] text-white"
+                  value={form.card_id}
+                  onChange={(e) => setForm((f) => ({ ...f, card_id: e.target.value.replace(/\D/g, "") }))}
+                  placeholder="e.g., 100664475"
+                  required
+                />
               </div>
+
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-sm text-gray-300 mb-1">Version</label>
-                  <input className="w-full px-3 py-2 rounded-md bg-black/40 border border-[#2A2F36] text-white" value={form.version} onChange={(e) => setForm((f) => ({ ...f, version: e.target.value }))} placeholder="Base / IF / RTTK …" />
+                  <input
+                    className="w-full px-3 py-2 rounded-md bg-black/40 border border-[#2A2F36] text-white"
+                    value={form.version}
+                    onChange={(e) => setForm((f) => ({ ...f, version: e.target.value }))}
+                    placeholder="Base / IF / RTTK …"
+                  />
                 </div>
                 <div>
                   <label className="block text-sm text-gray-300 mb-1">Platform</label>
-                  <select className="w-full px-3 py-2 rounded-md bg-black/40 border border-[#2A2F36] text-white" value={form.platform} onChange={(e) => setForm((f) => ({ ...f, platform: e.target.value }))}>
+                  <select
+                    className="w-full px-3 py-2 rounded-md bg-black/40 border border-[#2A2F36] text-white"
+                    value={form.platform}
+                    onChange={(e) => setForm((f) => ({ ...f, platform: e.target.value }))}
+                  >
                     <option value="ps">PS</option>
                     <option value="xbox">Xbox</option>
                   </select>
                 </div>
               </div>
+
               <div>
                 <label className="block text-sm text-gray-300 mb-1">Notes (optional)</label>
-                <textarea className="w-full px-3 py-2 rounded-md bg-black/40 border border-[#2A2F36] text-white" rows={3} value={form.notes} onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))} placeholder="Target buy/sell, reasons, etc." />
+                <textarea
+                  className="w-full px-3 py-2 rounded-md bg-black/40 border border-[#2A2F36] text-white"
+                  rows={3}
+                  value={form.notes}
+                  onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
+                  placeholder="Target buy/sell, reasons, etc."
+                />
               </div>
-              <button disabled={busyAdd} className="w-full py-2 rounded-md bg-lime-500/90 hover:bg-lime-500 text-black font-bold">
+
+              <button
+                disabled={busyAdd}
+                className="w-full py-2 rounded-md bg-lime-500/90 hover:bg-lime-500 text-black font-bold"
+              >
                 {busyAdd ? "Adding…" : "Add to Watchlist"}
               </button>
             </form>
@@ -232,4 +360,3 @@ export default function Watchlist() {
     </div>
   );
 }
-
