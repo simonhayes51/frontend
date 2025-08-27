@@ -58,7 +58,7 @@ const MobileDashboard = () => {
       <div className="h-4 bg-gray-900"></div>
       
       {/* Header */}
-      <header className="bg-gray-900 px-6 py-4 pl-20">
+      <header className="bg-gray-900 px-6 py-4 pl-16">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
             <div className="relative">
