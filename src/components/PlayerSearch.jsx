@@ -61,6 +61,27 @@ const fetchPlayerPrice = async (cardId) => {
   return null;
 };
 
+// NEW: Add to watchlist helper (uses cookie session)
+const addToWatchlist = async ({ player_name, card_id, version, platform, notes }) => {
+  const r = await fetch(`${API_BASE}/api/watchlist`, {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ player_name, card_id, version, platform, notes }),
+  });
+  let payload = null;
+  try {
+    payload = await r.json();
+  } catch {
+    /* ignore */
+  }
+  if (!r.ok) {
+    const msg = payload?.detail || "Failed to add to watchlist";
+    throw new Error(msg);
+  }
+  return payload;
+};
+
 // ---- FC25 Position Map ----
 const POS_CODE_TO_NAME = {
   0: "GK", 1: "GK", 2: "GK",
@@ -86,7 +107,7 @@ const _posNorm = (x) => {
   if (typeof x === "string") {
     const s = x.trim().toUpperCase();
     if (!s) return null;
-    return s.split(/[,\|/]+/)[0]?.trim() || null; // handle "ST,CAM" etc.
+    return s.split(/[,\|/]+/)[0]?.trim() || null;
   }
   if (Array.isArray(x)) {
     for (const v of x) {
@@ -269,6 +290,11 @@ const PlayerDetail = ({ player, onBack }) => {
   const [playerData, setPlayerData] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  // NEW: CTA state
+  const [adding, setAdding] = useState(false);
+  const [platform, setPlatform] = useState("ps");
+  const [notes, setNotes] = useState("");
+
   const cardId = player.card_id || player.id;
 
   useEffect(() => {
@@ -366,6 +392,27 @@ const PlayerDetail = ({ player, onBack }) => {
     },
   };
 
+  // NEW: add-to-watchlist click handler
+  const onAddClick = async () => {
+    try {
+      setAdding(true);
+      await addToWatchlist({
+        player_name: player.name,
+        card_id: Number(cardId),
+        version: player.version || playerData?.rarity?.name || null,
+        platform,
+        notes: notes?.trim() || null,
+      });
+      alert(`Added ${player.name} to your watchlist ✓`);
+      setNotes("");
+    } catch (e) {
+      console.error(e);
+      alert(e.message || "Failed to add to watchlist");
+    } finally {
+      setAdding(false);
+    }
+  };
+
   return (
     <div className="w-full max-w-6xl mx-auto bg-[#0f172a]">
       <button
@@ -420,7 +467,6 @@ const PlayerDetail = ({ player, onBack }) => {
                 </div>
               </div>
 
-
               {priceRange && (
                 <div className="bg-[#334155] rounded-lg p-3">
                   <div className="text-gray-400 text-sm mb-1">Range</div>
@@ -467,7 +513,7 @@ const PlayerDetail = ({ player, onBack }) => {
                     />
                   ) : (
                     <div className="w-8 h-8 bg-gray-600 rounded flex items-center justify-center text-xs">
-                      CLUB
+                      LEG
                     </div>
                   )}
                 </div>
@@ -583,6 +629,40 @@ const PlayerDetail = ({ player, onBack }) => {
                 <div className="text-xs text-gray-400">Preferred Foot</div>
               </div>
             </div>
+          </div>
+        </div>
+
+        {/* NEW: Add to Watchlist CTA (under the card block) */}
+        <div className="mt-2 mb-6 p-4 bg-[#0f1622] border border-[#243041] rounded-xl flex flex-col sm:flex-row items-start sm:items-center gap-3">
+          <div className="text-sm text-gray-300">
+            Track this player’s price on your Watchlist
+          </div>
+
+          <div className="flex items-center gap-2 sm:ml-auto">
+            <select
+              value={platform}
+              onChange={(e) => setPlatform(e.target.value)}
+              className="px-2 py-1 rounded-md bg-black/40 border border-[#2A2F36] text-white text-sm"
+              title="Platform"
+            >
+              <option value="ps">PS</option>
+              <option value="xbox">Xbox</option>
+            </select>
+
+            <input
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="Notes (optional)"
+              className="hidden md:block w-56 px-2 py-1 rounded-md bg-black/40 border border-[#2A2F36] text-white text-sm"
+            />
+
+            <button
+              onClick={onAddClick}
+              disabled={adding}
+              className="px-3 py-2 rounded-md bg-lime-500/90 hover:bg-lime-500 text-black font-semibold"
+            >
+              {adding ? "Adding…" : "+ Add to Watchlist"}
+            </button>
           </div>
         </div>
 
