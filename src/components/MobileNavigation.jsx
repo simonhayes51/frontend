@@ -1,193 +1,208 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 
 const MobileNavigation = () => {
   const location = useLocation();
-  const [showMore, setShowMore] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
 
-  // Primary navigation items (always visible)
-  const primaryNavItems = [
+  // Close menu when route changes
+  useEffect(() => {
+    setIsOpen(false);
+  }, [location.pathname]);
+
+  // Prevent body scroll when menu is open
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [isOpen]);
+
+  const navigationItems = [
     { 
       path: "/", 
-      label: "Home", 
+      label: "Dashboard", 
       icon: "🏠",
-      activeIcon: "🏡"
+      description: "Overview & stats"
     },
     { 
       path: "/add-trade", 
-      label: "Add", 
+      label: "Add Trade", 
       icon: "➕",
-      activeIcon: "✅",
+      description: "Record new trade",
       isSpecial: true
     },
     { 
       path: "/trades", 
-      label: "Trades", 
+      label: "All Trades", 
       icon: "📋",
-      activeIcon: "📊"
+      description: "View trade history"
     },
     { 
       path: "/analytics", 
-      label: "Stats", 
-      icon: "📈",
-      activeIcon: "📊"
+      label: "Analytics", 
+      icon: "📊",
+      description: "Performance insights"
+    },
+    { 
+      path: "/player-search", 
+      label: "Player Search", 
+      icon: "🔍",
+      description: "Find players to trade"
+    },
+    { 
+      path: "/watchlist", 
+      label: "Watchlist", 
+      icon: "👁️",
+      description: "Tracked players"
+    },
+    { 
+      path: "/settings", 
+      label: "Settings", 
+      icon: "⚙️",
+      description: "App preferences"
+    },
+    { 
+      path: "/profile", 
+      label: "Profile", 
+      icon: "👤",
+      description: "Your account"
     },
   ];
 
-  // Secondary navigation items (in overflow menu)
-  const secondaryNavItems = [
-    { path: "/player-search", label: "Search Players", icon: "🔍" },
-    { path: "/watchlist", label: "Watchlist", icon: "👁️" },
-    { path: "/settings", label: "Settings", icon: "⚙️" },
-    { path: "/profile", label: "Profile", icon: "👤" },
-  ];
-
   const isActive = (path) => location.pathname === path;
-  const hasActiveSecondary = secondaryNavItems.some((item) => isActive(item.path));
 
   return (
     <>
-      {/* Overlay for more menu */}
-      {showMore && (
-        <div
-          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 md:hidden"
-          onClick={() => setShowMore(false)}
-        />
-      )}
+      {/* Menu Toggle Button - Fixed position */}
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className={`fixed top-6 left-4 z-50 p-3 rounded-full shadow-lg transition-all duration-300 ${
+          isOpen 
+            ? 'bg-white dark:bg-gray-800 text-gray-900 dark:text-white' 
+            : 'bg-gray-900 text-white hover:bg-gray-800'
+        }`}
+        aria-label="Toggle menu"
+      >
+        <div className="relative w-5 h-5">
+          {/* Hamburger/Close Icon Animation */}
+          <span className={`absolute h-0.5 w-5 bg-current transform transition-all duration-300 ${
+            isOpen ? 'rotate-45 top-2' : 'top-0'
+          }`}></span>
+          <span className={`absolute h-0.5 w-5 bg-current transform transition-all duration-300 top-2 ${
+            isOpen ? 'opacity-0' : 'opacity-100'
+          }`}></span>
+          <span className={`absolute h-0.5 w-5 bg-current transform transition-all duration-300 ${
+            isOpen ? '-rotate-45 top-2' : 'top-4'
+          }`}></span>
+        </div>
+      </button>
 
-      {/* Secondary menu */}
-      {showMore && (
-        <div className="fixed bottom-20 right-4 left-4 bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 z-50 md:hidden overflow-hidden">
-          <div className="p-2">
-            <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
-              <h3 className="font-semibold text-gray-900 dark:text-white">More Options</h3>
-              <button
-                onClick={() => setShowMore(false)}
-                className="p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-              >
-                <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
+      {/* Overlay */}
+      <div 
+        className={`fixed inset-0 bg-black/60 backdrop-blur-sm z-40 transition-opacity duration-300 ${
+          isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
+        }`}
+        onClick={() => setIsOpen(false)}
+      />
+
+      {/* Slide Menu */}
+      <div className={`fixed top-0 left-0 h-full w-80 bg-white dark:bg-gray-900 shadow-2xl z-50 transform transition-transform duration-300 ease-out ${
+        isOpen ? 'translate-x-0' : '-translate-x-full'
+      }`}>
+        
+        {/* Menu Header */}
+        <div className="bg-gradient-to-r from-purple-600 to-blue-600 p-6 pt-16">
+          <div className="flex items-center space-x-4">
+            <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
+              <span className="text-2xl">⚡</span>
             </div>
-            <div className="p-2">
-              {secondaryNavItems.map(({ path, label, icon }) => (
-                <Link
-                  key={path}
-                  to={path}
-                  onClick={() => setShowMore(false)}
-                  className={`flex items-center space-x-4 px-4 py-4 rounded-xl transition-all duration-200 ${
-                    isActive(path)
-                      ? "text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/30 shadow-sm"
-                      : "text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-700"
-                  }`}
-                >
-                  <div className={`p-2 rounded-lg ${
-                    isActive(path) 
-                      ? 'bg-purple-100 dark:bg-purple-800' 
-                      : 'bg-gray-100 dark:bg-gray-700'
-                  }`}>
-                    <span className="text-lg">{icon}</span>
-                  </div>
-                  <div className="flex-1">
-                    <span className="font-medium">{label}</span>
-                  </div>
-                  {isActive(path) && (
-                    <div className="w-2 h-2 bg-purple-600 dark:bg-purple-400 rounded-full"></div>
-                  )}
-                </Link>
-              ))}
+            <div>
+              <h2 className="text-white font-bold text-lg">Trading App</h2>
+              <p className="text-white/80 text-sm">EA FC Trading Dashboard</p>
             </div>
           </div>
         </div>
-      )}
 
-      {/* Main navigation bar */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white/95 dark:bg-gray-900/95 backdrop-blur-md border-t border-gray-200 dark:border-gray-700 z-50">
-        {/* Navigation Pills Background */}
-        <div className="absolute inset-x-4 top-2 h-12 bg-gray-50 dark:bg-gray-800 rounded-2xl"></div>
-        
-        <div className="relative grid grid-cols-5 h-16 px-4 py-2">
-          {/* Primary navigation items */}
-          {primaryNavItems.map(({ path, label, icon, activeIcon, isSpecial }) => {
-            const active = isActive(path);
-            return (
-              <Link
-                key={path}
-                to={path}
-                className={`flex flex-col items-center justify-center relative transition-all duration-300 rounded-xl ${
-                  isSpecial
-                    ? active
-                      ? 'bg-green-500 text-white shadow-lg scale-110'
-                      : 'bg-green-500 text-white shadow-md hover:shadow-lg hover:scale-105'
-                    : active
-                      ? 'text-purple-600 dark:text-purple-400 transform scale-105'
-                      : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
-                }`}
-              >
-                {/* Active indicator */}
-                {active && !isSpecial && (
-                  <div className="absolute -top-1 w-1 h-1 bg-purple-600 dark:bg-purple-400 rounded-full"></div>
-                )}
-                
-                <div className={`transition-all duration-200 ${active && !isSpecial ? 'transform -translate-y-0.5' : ''}`}>
-                  <span className={`text-2xl block transition-all duration-200 ${active ? 'transform scale-110' : ''}`}>
-                    {active ? (activeIcon || icon) : icon}
-                  </span>
-                  <span className={`text-xs font-medium mt-1 transition-all duration-200 ${
-                    active ? 'opacity-100' : 'opacity-75'
+        {/* Navigation Items */}
+        <div className="flex-1 py-6 overflow-y-auto">
+          <nav className="px-4 space-y-2">
+            {navigationItems.map(({ path, label, icon, description, isSpecial }) => {
+              const active = isActive(path);
+              return (
+                <Link
+                  key={path}
+                  to={path}
+                  className={`group flex items-center space-x-4 px-4 py-4 rounded-2xl transition-all duration-200 ${
+                    isSpecial
+                      ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white shadow-lg hover:shadow-xl hover:scale-[1.02]'
+                      : active
+                        ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 shadow-sm'
+                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white'
+                  }`}
+                >
+                  {/* Icon Container */}
+                  <div className={`p-3 rounded-xl transition-all duration-200 ${
+                    isSpecial
+                      ? 'bg-white/20'
+                      : active 
+                        ? 'bg-purple-200 dark:bg-purple-800 group-hover:scale-110' 
+                        : 'bg-gray-100 dark:bg-gray-700 group-hover:bg-gray-200 dark:group-hover:bg-gray-600 group-hover:scale-110'
                   }`}>
-                    {label}
-                  </span>
+                    <span className="text-xl">{icon}</span>
+                  </div>
+                  
+                  {/* Content */}
+                  <div className="flex-1 min-w-0">
+                    <p className={`font-semibold truncate ${isSpecial ? 'text-white' : ''}`}>
+                      {label}
+                    </p>
+                    <p className={`text-sm truncate ${
+                      isSpecial 
+                        ? 'text-white/80' 
+                        : active 
+                          ? 'text-purple-600 dark:text-purple-400' 
+                          : 'text-gray-500 dark:text-gray-400'
+                    }`}>
+                      {description}
+                    </p>
+                  </div>
+
+                  {/* Active Indicator */}
+                  {active && !isSpecial && (
+                    <div className="w-2 h-2 bg-purple-600 dark:bg-purple-400 rounded-full"></div>
+                  )}
+                </Link>
+              );
+            })}
+          </nav>
+
+          {/* Menu Footer */}
+          <div className="mt-8 px-4">
+            <div className="bg-gray-50 dark:bg-gray-800 rounded-2xl p-4 border border-gray-200 dark:border-gray-700">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 bg-gradient-to-br from-purple-400 to-purple-600 rounded-full flex items-center justify-center">
+                  <span className="text-white text-sm font-bold">U</span>
                 </div>
-
-                {/* Haptic feedback simulation */}
-                <div className={`absolute inset-0 rounded-xl transition-all duration-150 ${
-                  active && !isSpecial ? 'bg-purple-100 dark:bg-purple-900/30' : ''
-                }`}></div>
-              </Link>
-            );
-          })}
-
-          {/* More button */}
-          <button
-            onClick={() => setShowMore(!showMore)}
-            className={`flex flex-col items-center justify-center relative transition-all duration-300 rounded-xl ${
-              showMore || hasActiveSecondary
-                ? "text-purple-600 dark:text-purple-400 transform scale-105"
-                : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200"
-            }`}
-          >
-            {/* Active indicator */}
-            {(showMore || hasActiveSecondary) && (
-              <div className="absolute -top-1 w-1 h-1 bg-purple-600 dark:bg-purple-400 rounded-full"></div>
-            )}
-            
-            <div className={`transition-all duration-200 ${showMore || hasActiveSecondary ? 'transform -translate-y-0.5' : ''}`}>
-              <span className={`text-2xl block transition-all duration-200 ${
-                showMore ? 'transform rotate-180 scale-110' : hasActiveSecondary ? 'transform scale-110' : ''
-              }`}>
-                {showMore ? "✕" : "⋯"}
-              </span>
-              <span className={`text-xs font-medium mt-1 transition-all duration-200 ${
-                showMore || hasActiveSecondary ? 'opacity-100' : 'opacity-75'
-              }`}>
-                More
-              </span>
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium text-gray-900 dark:text-white text-sm truncate">User Profile</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 truncate">Manage your account</p>
+                </div>
+                <button className="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors">
+                  <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </button>
+              </div>
             </div>
-
-            {/* Haptic feedback simulation */}
-            <div className={`absolute inset-0 rounded-xl transition-all duration-150 ${
-              showMore || hasActiveSecondary ? 'bg-purple-100 dark:bg-purple-900/30' : ''
-            }`}></div>
-          </button>
+          </div>
         </div>
-
-        {/* Home indicator (iOS style) */}
-        <div className="flex justify-center pb-2">
-          <div className="w-32 h-1 bg-gray-300 dark:bg-gray-600 rounded-full"></div>
-        </div>
-      </nav>
+      </div>
     </>
   );
 };
