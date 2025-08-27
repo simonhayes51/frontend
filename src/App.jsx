@@ -59,6 +59,7 @@ function App() {
                   <Route path="analytics" element={<ProfitGraph />} />
                   <Route path="pricecheck" element={<PriceCheck />} />
                   <Route path="watchlist" element={<Watchlist />} />
+                  <Route path="squad" element={<SquadBuilder />} />
 
                   {/* Alias: /squad -> /player-search */}
                   <Route path="squad" element={<Navigate to="/player-search" replace />} />
