@@ -126,7 +126,7 @@ export default function Watchlist() {
       if (abortRef.current) abortRef.current.abort();
       abortRef.current = new AbortController();
 
-      const res = await api.get("/search-players", {
+      const res = await api.get("/api/search-players", {
         params: { q },
         signal: abortRef.current.signal,
       });
