@@ -60,6 +60,22 @@ const DesktopSidebar = () => {
         </svg>
       ),
     },
+    // 👇 NEW: Watchlist
+    {
+      path: "/watchlist",
+      label: "Watchlist",
+      icon: (
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"
+          />
+          <circle cx="12" cy="12" r="3" strokeWidth={2} />
+        </svg>
+      ),
+    },
     {
       path: "/analytics",
       label: "Analytics",
@@ -99,32 +115,32 @@ const DesktopSidebar = () => {
                   ${collapsed ? "w-16 px-2" : "w-64 p-4"}`}
     >
       {/* Header / brand + toggle (fixed) */}
-<div className="flex items-center mb-3 shrink-0">
-  {/* Logo: non-shrinking, square, thin gradient ring */}
-  <div
-    className={`rounded-full p-[2px] bg-gradient-to-r from-green-400/80 to-blue-500/80 
+      <div className="flex items-center mb-3 shrink-0">
+        {/* Logo: non-shrinking, square, thin gradient ring */}
+        <div
+          className={`rounded-full p-[2px] bg-gradient-to-r from-green-400/80 to-blue-500/80 
                 overflow-hidden shrink-0 aspect-square 
                 ${collapsed ? "w-8 mx-auto" : "w-10 mr-2"}`}
-  >
-    <img
-      src="/server-logo.png"
-      alt="Server Logo"
-      className="w-full h-full rounded-full object-cover block"
-      onError={(e) => {
-        e.currentTarget.src =
-          'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="white" d="M12 2L13.09 8.26L22 9L13.09 15.74L12 22L10.91 15.74L2 9L10.91 8.26L12 2Z"/></svg>';
-      }}
-    />
-  </div>
+        >
+          <img
+            src="/server-logo.png"
+            alt="Server Logo"
+            className="w-full h-full rounded-full object-cover block"
+            onError={(e) => {
+              e.currentTarget.src =
+                'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="white" d="M12 2L13.09 8.26L22 9L13.09 15.74L12 22L10.91 15.74L2 9L10.91 8.26L12 2Z"/></svg>';
+            }}
+          />
+        </div>
 
-  {/* Brand text (hidden when collapsed) */}
+        {/* Brand text (hidden when collapsed) */}
         {!collapsed && (
           <div className="min-w-0">
             <h1 className="text-sm font-semibold text-white truncate">FUT Dashboard</h1>
             <p className="text-[11px] text-gray-400 truncate">Trading Platform</p>
           </div>
         )}
-      
+
         {/* Toggle button */}
         <button
           onClick={() => setCollapsed((c) => !c)}
