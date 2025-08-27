@@ -1,3 +1,349 @@
-.custom-scrollbar::-webkit-scrollbar{width:10px}
-.custom-scrollbar::-webkit-scrollbar-thumb{background:#2b2f36;border-radius:8px}
-.custom-scrollbar::-webkit-scrollbar-track{background:transparent}
+/* ==========================================================================
+   Squad Builder — Global Styles for the page
+   ========================================================================== */
+
+/* Page background helpers (optional) */
+.sb-page {
+  background: #0b1220;
+  color: #e5e7eb;
+}
+
+/* Soft panel surface */
+.sb-panel {
+  border-radius: 24px;
+  background: rgba(10, 15, 25, 0.9);
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.35), inset 0 0 0 1px rgba(148,163,184,0.07);
+}
+
+/* Header toolbar */
+.sb-toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: rgba(11, 18, 32, 0.8);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid rgba(148, 163, 184, 0.18);
+}
+
+/* Simple select/input/button */
+.sb-input, .sb-select, .sb-btn {
+  height: 36px;
+  border-radius: 12px;
+  border: 1px solid rgba(148,163,184,0.25);
+  background: rgba(17, 24, 39, 0.9);
+  color: #e5e7eb;
+  padding: 0 12px;
+  font-size: 14px;
+  outline: none;
+}
+.sb-input::placeholder { color: rgba(209, 213, 219, 0.6); }
+
+.sb-btn {
+  background: #a3e635;
+  color: #0a0a0a;
+  font-weight: 800;
+  letter-spacing: .2px;
+  border: none;
+  box-shadow: 0 6px 18px rgba(163, 230, 53, 0.25), inset 0 0 0 1px rgba(255,255,255,0.15);
+  transition: transform .12s ease, box-shadow .12s ease, filter .12s ease;
+}
+.sb-btn:hover { transform: translateY(-1px); filter: saturate(1.05); }
+.sb-btn:active { transform: translateY(0); }
+
+/* Tiny muted text */
+.sb-muted { color: rgba(203, 213, 225, 0.7); font-size: 12px; }
+
+/* ==========================================================================
+   Scrollbar (search list)
+   ========================================================================== */
+
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(100,116,139,.6) rgba(3,7,18,.4);
+}
+.custom-scrollbar::-webkit-scrollbar { width: 10px; }
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: rgba(3,7,18,.4);
+  border-radius: 12px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, rgba(100,116,139,.75), rgba(71,85,105,.75));
+  border-radius: 12px;
+  border: 2px solid rgba(3,7,18,.35);
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, rgba(148,163,184,.85), rgba(100,116,139,.85));
+}
+
+/* ==========================================================================
+   Player Card (Tile)
+   ========================================================================== */
+
+.squad-card {
+  position: relative;
+  background: rgba(0,0,0,0.55);
+  overflow: hidden;
+  user-select: none;
+  border: 1px solid rgba(148,163,184,0.2);
+  transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease;
+  box-shadow:
+    0 2px 10px rgba(0,0,0,0.35),
+    inset 0 0 0 1px rgba(148,163,184,0.08);
+}
+.squad-card:active { cursor: grabbing; }
+.squad-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(148,163,184,0.35);
+  box-shadow:
+    0 6px 18px rgba(0,0,0,0.45),
+    inset 0 0 0 1px rgba(148,163,184,0.12);
+}
+
+.squad-card__frame {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(180deg, rgba(34,197,94,0.28), rgba(59,130,246,0.18));
+  mix-blend-mode: soft-light;
+  box-shadow: inset 0 0 0 2px rgba(148,163,184,0.18);
+}
+
+.squad-card__img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: saturate(1.05) contrast(1.02);
+  transition: opacity .15s ease;
+}
+
+/* top row overlays */
+.squad-card__top {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  right: 6px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  pointer-events: none;
+}
+
+.pill {
+  pointer-events: none;
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  line-height: 1;
+  font-weight: 800;
+  letter-spacing: .25px;
+  color: #0a0a0a;
+  background: rgba(250, 250, 250, 0.88);
+  text-shadow: none;
+}
+.pill.rating { background: rgba(250, 204, 21, 0.95); } /* amber */
+.pill.pos    { background: rgba(248, 250, 252, 0.9); }
+
+/* chem + OOP indicators */
+.chem-dot {
+  margin-left: auto;
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  font-size: 12px;
+  font-weight: 900;
+  color: #0a0a0a;
+  box-shadow: 0 0 0 2px rgba(2,6,23,0.55), 0 2px 6px rgba(0,0,0,0.35);
+}
+.oop-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 999px;
+  margin-left: 6px;
+  background: #facc15; /* amber-400 */
+  box-shadow: 0 0 0 2px rgba(2,6,23,0.55);
+}
+
+/* bottom row overlays */
+.squad-card__bottom {
+  position: absolute;
+  left: 6px;
+  right: 6px;
+  bottom: 6px;
+  display: grid;
+  gap: 6px;
+  pointer-events: none;
+}
+
+.squad-card .name {
+  font-weight: 800;
+  font-size: 12px;
+  line-height: 1.05;
+  color: #ffffff;
+  text-shadow:
+    0 1px 2px rgba(0,0,0,0.7),
+    0 0 20px rgba(16,185,129,0.35);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.squad-card .price {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  align-self: start;
+  padding: 4px 8px;
+  border-radius: 10px;
+  background: rgba(2,6,23,0.65);
+  border: 1px solid rgba(148,163,184,0.25);
+  color: #fde68a; /* amber-200 */
+  font-weight: 700;
+  font-size: 11px;
+}
+.squad-card .price .coin {
+  width: 14px;
+  height: 14px;
+  filter: drop-shadow(0 1px 1px rgba(0,0,0,0.4));
+}
+.squad-card .price .price-text { white-space: nowrap; }
+
+/* ==========================================================================
+   Search list (right column)
+   ========================================================================== */
+
+.sb-search-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  border-radius: 16px;
+  border: 1px solid rgba(148,163,184,0.18);
+  background: rgba(2,6,23,0.55);
+  cursor: grab;
+  transition: transform .12s ease, box-shadow .12s ease, background .12s ease, border-color .12s ease;
+}
+.sb-search-item:hover {
+  transform: translateY(-1px);
+  border-color: rgba(148,163,184,0.28);
+  background: rgba(2,6,23,0.7);
+  box-shadow: 0 8px 18px rgba(0,0,0,0.35);
+}
+.sb-search-item:active { cursor: grabbing; }
+
+.sb-search-meta {
+  display: grid;
+  gap: 2px;
+  font-size: 12px;
+  color: rgba(226,232,240,0.9);
+}
+.sb-search-name {
+  font-weight: 800;
+  color: #fff;
+  line-height: 1.1;
+}
+.sb-search-subtle {
+  font-size: 11px;
+  color: rgba(203,213,225,0.75);
+}
+
+/* Add button in list */
+.sb-add-btn {
+  margin-left: auto;
+  height: 28px;
+  padding: 0 10px;
+  border-radius: 10px;
+  background: #a3e635;
+  color: #0a0a0a;
+  font-weight: 900;
+  font-size: 12px;
+  border: none;
+  box-shadow: 0 6px 14px rgba(163, 230, 53, 0.28);
+  transition: transform .12s ease, box-shadow .12s ease, filter .12s ease;
+}
+.sb-add-btn:hover { transform: translateY(-1px); filter: saturate(1.05); }
+
+/* ==========================================================================
+   Slot container (on pitch)
+   ========================================================================== */
+
+.sb-slot {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  width: max-content;
+}
+.sb-slot__wrap {
+  width: max-content;
+  padding: 6px;
+  border-radius: 18px;
+  background: rgba(8, 14, 24, 0.55);
+  border: 1px solid rgba(148,163,184,0.18);
+  box-shadow:
+    0 6px 18px rgba(0,0,0,0.35),
+    inset 0 0 0 1px rgba(148,163,184,0.08);
+  transition: box-shadow .12s ease, border-color .12s ease, background .12s ease;
+}
+.sb-slot__wrap--empty {
+  padding: 10px 12px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .4px;
+  color: rgba(226,232,240,0.75);
+  background: rgba(148,163,184,0.08);
+  border-style: dashed;
+  border-width: 1px;
+  border-color: rgba(148,163,184,0.35);
+}
+.sb-slot__actions {
+  margin-top: 6px;
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  opacity: .85;
+  color: rgba(226,232,240,0.8);
+}
+.sb-link {
+  text-decoration: underline;
+  cursor: pointer;
+}
+.sb-link:hover { color: #a3e635; }
+
+/* Small “Adding to …” toast */
+.sb-toast {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  font-size: 12px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(148,163,184,0.25);
+  background: rgba(15, 23, 42, 0.85);
+  color: #e5e7eb;
+  box-shadow: 0 12px 28px rgba(0,0,0,0.35);
+}
+
+/* ==========================================================================
+   Utilities
+   ========================================================================== */
+
+.hidden { display: none; }
+.block { display: block; }
+.grid { display: grid; }
+.flex { display: flex; }
+.items-center { align-items: center; }
+.gap-2 { gap: 8px; }
+.gap-3 { gap: 12px; }
+.gap-4 { gap: 16px; }
+.text-xs { font-size: 12px; }
+.text-sm { font-size: 14px; }
+.text-muted { color: rgba(203,213,225,0.8); }
+.rounded-xl { border-radius: 16px; }
+.rounded-2xl { border-radius: 20px; }
+.rounded-3xl { border-radius: 24px; }
+.border { border: 1px solid rgba(148,163,184,0.25); }
+.px-3 { padding-left: 12px; padding-right: 12px; }
+.py-2 { padding-top: 8px; padding-bottom: 8px; }
