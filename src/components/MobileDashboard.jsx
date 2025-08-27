@@ -1,274 +1,118 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState } from 'react';
 import { useDashboard } from '../context/DashboardContext';
 import { useSettings } from '../context/SettingsContext';
 import { useAuth } from '../context/AuthContext';
 
 const MobileDashboard = () => {
-  // Safely access contexts
-  const dashboard = useDashboard() || {};
-  const settings = useSettings() || {};
-  const auth = useAuth() || {};
-
-  const {
-    netProfit = 0,
-    taxPaid = 0,
-    startingBalance = 0,
-    trades = [],
-  } = dashboard;
-
-  const formatCurrency =
-    typeof settings.formatCurrency === 'function'
-      ? settings.formatCurrency
-      : (n) => (typeof n === 'number' ? n.toLocaleString() : String(n ?? '0'));
-
-  const formatDateSafe = (val) => {
-    try {
-      if (typeof settings.formatDate === 'function') {
-        const s = settings.formatDate(val);
-        return typeof s === 'string' ? s : new Date(val).toLocaleString();
-      }
-      return new Date(val).toLocaleString();
-    } catch {
-      return '';
-    }
-  };
-
-  const user = auth.user || {};
-
-  const grossProfit = netProfit + taxPaid;
-  const profitPercentage =
-    startingBalance > 0 ? (netProfit / startingBalance) * 100 : 0;
-  const avgProfit = trades.length > 0 ? netProfit / trades.length : 0;
+  const { netProfit, taxPaid, startingBalance, trades } = useDashboard();
+  const { formatCurrency, formatDate } = useSettings();
+  const { user } = useAuth();
+  const [activeTab, setActiveTab] = useState('overview');
 
   const stats = [
-    {
-      title: 'Net Profit',
-      value: formatCurrency(netProfit),
-      color: netProfit >= 0 ? 'text-green-400' : 'text-red-400',
-      bg: netProfit >= 0 ? 'bg-green-500/10' : 'bg-red-500/10',
-      border: netProfit >= 0 ? 'border-green-500/20' : 'border-red-500/20',
-      subtitle: `${profitPercentage >= 0 ? '+' : ''}${profitPercentage.toFixed(
-        1
-      )}%`,
-      icon: netProfit >= 0 ? '📈' : '📉',
-    },
-    {
-      title: 'EA Tax Paid',
-      value: formatCurrency(taxPaid),
-      color: 'text-orange-400',
-      bg: 'bg-orange-500/10',
-      border: 'border-orange-500/20',
-      subtitle:
-        grossProfit > 0
-          ? `${((taxPaid / grossProfit) * 100).toFixed(1)}% of gross`
-          : '0%',
-      icon: '🏛️',
-    },
-    {
-      title: 'Total Trades',
-      value: String(trades.length || 0),
-      color: 'text-blue-400',
-      bg: 'bg-blue-500/10',
-      border: 'border-blue-500/20',
-      subtitle: `Avg: ${formatCurrency(avgProfit || 0)}`,
-      icon: '🎯',
-    },
+    { title: 'Net Profit', value: formatCurrency(netProfit), color: 'text-green-400', bg: 'bg-green-500/10' },
+    { title: 'EA Tax', value: formatCurrency(taxPaid), color: 'text-red-400', bg: 'bg-red-500/10' },
+    { title: 'Starting Balance', value: formatCurrency(startingBalance), color: 'text-blue-400', bg: 'bg-blue-500/10' },
+    { title: 'Total Trades', value: trades.length.toString(), color: 'text-purple-400', bg: 'bg-purple-500/10' }
   ];
-
-  const quickActions = [
-    {
-      label: 'Add Trade',
-      icon: '➕',
-      path: '/add-trade',
-      color: 'bg-green-500',
-      darkColor: 'bg-green-600',
-    },
-    {
-      label: 'View All Trades',
-      icon: '📋',
-      path: '/trades',
-      color: 'bg-blue-500',
-      darkColor: 'bg-blue-600',
-    },
-    {
-      label: 'Analytics',
-      icon: '📊',
-      path: '/analytics',
-      color: 'bg-purple-500',
-      darkColor: 'bg-purple-600',
-    },
-    {
-      label: 'Search Players',
-      icon: '🔍',
-      path: '/player-search',
-      color: 'bg-indigo-500',
-      darkColor: 'bg-indigo-600',
-    },
-  ];
-
-  const recentTrades = Array.isArray(trades) ? trades.slice(0, 5) : [];
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      {/* Status Bar Spacer */}
-      <div className="h-4 bg-gray-900" />
-
-      {/* Header */}
-      <header className="bg-gray-900 px-6 py-4 pl-16">
+    <div className="pb-20 min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900">
+      {/* Mobile Header */}
+      <header className="sticky top-0 z-40 bg-gray-900/95 backdrop-blur-sm border-b border-gray-700/50 p-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <div className="relative">
-              <img
-                src={user.avatar_url || '/favicon.ico'}
-                alt={user.global_name || 'User'}
-                className="w-12 h-12 rounded-full border-2 border-purple-400 object-cover"
-              />
-              <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-400 rounded-full border-2 border-gray-900" />
-            </div>
+            <img 
+              src={user?.avatar_url} 
+              alt={user?.global_name}
+              className="w-10 h-10 rounded-full border-2 border-purple-500"
+            />
             <div>
-              <p className="text-white font-semibold text-lg">
-                {user.global_name || 'Trader'}
-              </p>
-              <p className="text-gray-300 text-sm">Trading Dashboard</p>
+              <p className="text-sm font-medium">Welcome back</p>
+              <p className="text-xs text-gray-400">{user?.global_name}</p>
             </div>
           </div>
+          <button className="p-2 rounded-lg bg-gray-800 border border-gray-600">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-5 5v-5zM4 19h6v-2H4v2zM4 15h8v-2H4v2zM4 11h10V9H4v2z" />
+            </svg>
+          </button>
         </div>
       </header>
 
-      <div className="px-6 py-6 space-y-8">
-        {/* Main Stats */}
-        <div className="space-y-4">
-          <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
-            Portfolio Overview
-          </h2>
+      <div className="p-4 space-y-6">
+        {/* Quick Stats */}
+        <div className="grid grid-cols-2 gap-4">
           {stats.map((stat, index) => (
-            <div
-              key={index}
-              className={`${stat.bg} ${stat.border} rounded-2xl p-5 border-2 shadow-sm`}
-            >
-              <div className="flex items-center space-x-3">
-                <div className="p-2 bg-white/20 rounded-lg">
-                  <span className="text-xl">{stat.icon}</span>
-                </div>
-                <div>
-                  <p className="text-gray-600 dark:text-gray-400 text-sm">
-                    {stat.title}
-                  </p>
-                  <p className={`text-2xl font-bold ${stat.color}`}>
-                    {stat.value}
-                  </p>
-                  {stat.subtitle && (
-                    <p className="text-gray-500 dark:text-gray-400 text-xs mt-1">
-                      {stat.subtitle}
-                    </p>
-                  )}
-                </div>
-              </div>
+            <div key={index} className={`${stat.bg} rounded-2xl p-4 border border-gray-700/30`}>
+              <p className="text-xs text-gray-400 uppercase tracking-wide">{stat.title}</p>
+              <p className={`text-xl font-bold ${stat.color} mt-1`}>{stat.value}</p>
             </div>
           ))}
         </div>
 
-        {/* Quick Actions */}
-        <div className="space-y-4">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-            Quick Actions
-          </h3>
-          <div className="grid grid-cols-2 gap-3">
-            {quickActions.map((action, index) => (
-              <Link
-                key={index}
-                to={action.path}
-                className={`${action.color} hover:${action.darkColor} text-white rounded-2xl p-4 shadow-lg hover:scale-105 transition-all`}
-              >
-                <div className="flex items-center space-x-3">
-                  <span className="text-2xl">{action.icon}</span>
-                  <p className="font-semibold text-sm">{action.label}</p>
+        {/* Tab Navigation */}
+        <div className="flex space-x-1 bg-gray-800 p-1 rounded-xl">
+          {[
+            { id: 'overview', label: 'Overview' },
+            { id: 'trades', label: 'Recent Trades' }
+          ].map(tab => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-colors ${
+                activeTab === tab.id
+                  ? 'bg-purple-600 text-white'
+                  : 'text-gray-400 hover:text-white'
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Tab Content */}
+        {activeTab === 'overview' && (
+          <div className="space-y-4">
+            <div className="bg-gray-800/40 rounded-2xl p-4 border border-gray-700/50">
+              <h3 className="text-lg font-semibold mb-3">Quick Actions</h3>
+              <div className="grid grid-cols-2 gap-3">
+                <button className="flex items-center space-x-2 p-3 bg-green-500/20 rounded-xl border border-green-500/30">
+                  <span>➕</span>
+                  <span className="text-sm font-medium">Add Trade</span>
+                </button>
+                <button className="flex items-center space-x-2 p-3 bg-blue-500/20 rounded-xl border border-blue-500/30">
+                  <span>📊</span>
+                  <span className="text-sm font-medium">Analytics</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'trades' && (
+          <div className="space-y-3">
+            {trades.slice(0, 10).map((trade, index) => (
+              <div key={index} className="bg-gray-800/40 rounded-xl p-4 border border-gray-700/50">
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <p className="font-medium">{trade.player}</p>
+                    <p className="text-xs text-gray-400">{trade.version} • {trade.platform}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className={`font-semibold ${trade.profit >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                      {trade.profit >= 0 ? '+' : ''}{formatCurrency(trade.profit)}
+                    </p>
+                    <p className="text-xs text-gray-400">
+                      {formatDate(trade.timestamp).split(',')[0]}
+                    </p>
+                  </div>
                 </div>
-              </Link>
+              </div>
             ))}
           </div>
-        </div>
-
-        {/* Recent Trades */}
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-              Recent Trades
-            </h3>
-            <Link
-              to="/trades"
-              className="text-purple-600 dark:text-purple-400 text-sm hover:underline"
-            >
-              View All
-            </Link>
-          </div>
-
-          {recentTrades.length > 0 ? (
-            <div className="space-y-3">
-              {recentTrades.map((trade, i) => {
-                const player = trade?.player ?? 'Unknown';
-                const profit = Number(trade?.profit ?? 0);
-                const ts = trade?.timestamp;
-                return (
-                  <div
-                    key={i}
-                    className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm"
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-2">
-                        <div className="w-8 h-8 bg-purple-500 rounded-lg flex items-center justify-center">
-                          <span className="text-white text-xs font-bold">
-                            {player.charAt(0).toUpperCase()}
-                          </span>
-                        </div>
-                        <div>
-                          <p className="font-semibold text-gray-900 dark:text-white text-sm">
-                            {player}
-                          </p>
-                          <p className="text-gray-500 dark:text-gray-400 text-xs">
-                            {trade.version} • {trade.platform}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <p
-                          className={`font-bold text-sm ${
-                            profit >= 0 ? 'text-green-500' : 'text-red-500'
-                          }`}
-                        >
-                          {profit >= 0 ? '+' : ''}
-                          {formatCurrency(profit)}
-                        </p>
-                        <p className="text-gray-400 text-xs">
-                          {ts ? formatDateSafe(ts).split(',')[0] : ''}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          ) : (
-            <div className="bg-white dark:bg-gray-800 rounded-xl p-8 text-center">
-              <div className="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
-                📈
-              </div>
-              <p className="text-gray-500 dark:text-gray-400 mb-4">
-                No trades yet
-              </p>
-              <Link
-                to="/add-trade"
-                className="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
-              >
-                ➕ Add Your First Trade
-              </Link>
-            </div>
-          )}
-        </div>
+        )}
       </div>
     </div>
   );
 };
-
-export default MobileDashboard;
