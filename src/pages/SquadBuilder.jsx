@@ -1,3 +1,4 @@
+// src/pages/SquadBuilder.jsx
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import Pitch from "../components/squad/Pitch";
 import PlayerTile from "../components/squad/PlayerTile";
@@ -13,15 +14,15 @@ export default function SquadBuilder() {
   const formation = FORMATIONS[formationKey];
 
   const [search, setSearch] = useState("");
-  const [searchOpen, setSearchOpen] = useState(null); // slotKey currently adding into
-  const [layout, setLayout] = useState("vertical"); // "horizontal" | "vertical"
+  const [searchOpen, setSearchOpen] = useState(null); // slot key currently adding into
+  const [pitchOrientation, setPitchOrientation] = useState("vertical"); // "horizontal" | "vertical"
 
   // placed players by slot key
   const [placed, setPlaced] = useState(() =>
     Object.fromEntries(formation.map((s) => [s.key, null]))
   );
 
-  // Re-init when formation changes (preserve existing where keys match)
+  // Re-init placed when formation changes (preserve where possible)
   useEffect(() => {
     setPlaced((prev) => {
       const next = {};
@@ -30,6 +31,7 @@ export default function SquadBuilder() {
     });
   }, [formationKey]);
 
+  // --- Chemistry / summary ---
   const { perPlayerChem, teamChem } = useMemo(
     () => computeChemistry(placed, formation),
     [placed, formation]
@@ -46,7 +48,7 @@ export default function SquadBuilder() {
     return ps.reduce((a, p) => a + (Number(p.price) || 0), 0);
   }, [placed]);
 
-  // --- Search with better debounce & caching ---
+  // --- Search (debounced + cached) ---
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
   const queryCache = useRef(new Map());
@@ -70,13 +72,14 @@ export default function SquadBuilder() {
         setResults(data);
         setLoading(false);
       }
-    }, 250); // tighter debounce
+    }, 250);
     return () => {
       canceled = true;
       clearTimeout(t);
     };
   }, [search]);
 
+  // --- DnD / actions ---
   function handleDrop(e, slotKey) {
     e.preventDefault();
     const id = Number(e.dataTransfer.getData("text/plain"));
@@ -87,11 +90,9 @@ export default function SquadBuilder() {
     });
     setSearchOpen(null);
   }
-
   function handleDragStart(e, playerId) {
     e.dataTransfer.setData("text/plain", String(playerId));
   }
-
   function clearSlot(slotKey) {
     setPlaced((prev) => ({ ...prev, [slotKey]: null }));
   }
@@ -117,7 +118,15 @@ export default function SquadBuilder() {
     } catch {}
   }, []);
 
-  // helper: slot validity (to disable the big yellow ring)
+  // --- Orientation mapping (rotate slots when pitch is vertical) ---
+  // Our formation x,y are defined for horizontal (16:9). For a 90° clockwise rotation:
+  // left% <- y, top% <- 100 - x
+  function mapCoords(x, y, orientation) {
+    if (orientation === "vertical") return [y, 100 - x];
+    return [x, y];
+  }
+
+  // valid position (no big yellow ring; we only hint via title)
   function isValidPosition(player, slot) {
     if (!player) return true;
     if (!Array.isArray(player.positions) || player.positions.length === 0) return true;
@@ -132,11 +141,12 @@ export default function SquadBuilder() {
             <span className="text-lime-400">FUT</span> Squad Builder
           </div>
 
-          <div className="ml-auto flex items-center gap-3">
+          <div className="ml-auto flex items-center flex-wrap gap-3">
             <select
               className="bg-neutral-800 rounded-xl px-3 py-2 text-sm"
               value={formationKey}
               onChange={(e) => setFormationKey(e.target.value)}
+              title="Formation"
             >
               {Object.keys(FORMATIONS).map((k) => (
                 <option key={k} value={k}>
@@ -157,12 +167,12 @@ export default function SquadBuilder() {
 
             <select
               className="bg-neutral-800 rounded-xl px-2 py-2 text-sm"
-              value={layout}
-              onChange={(e) => setLayout(e.target.value)}
-              title="Layout"
+              value={pitchOrientation}
+              onChange={(e) => setPitchOrientation(e.target.value)}
+              title="Pitch Orientation"
             >
-              <option value="horizontal">Horizontal</option>
-              <option value="vertical">Vertical</option>
+              <option value="horizontal">Pitch: Horizontal</option>
+              <option value="vertical">Pitch: Vertical</option>
             </select>
 
             <button
@@ -183,20 +193,16 @@ export default function SquadBuilder() {
         </div>
       </header>
 
-      {/* Layout */}
-      <main
-        className={cls(
-          "mx-auto max-w-6xl px-4 py-6 gap-6",
-          layout === "horizontal" ? "grid grid-cols-12" : "space-y-6"
-        )}
-      >
+      {/* Horizontal layout: pitch left, search right */}
+      <main className="mx-auto max-w-6xl px-4 py-6 grid grid-cols-12 gap-6">
         {/* Pitch */}
-        <div className={layout === "horizontal" ? "col-span-8" : ""}>
-          <Pitch>
+        <div className="col-span-8">
+          <Pitch orientation={pitchOrientation}>
             {formation.map((slot) => {
               const pl = placed[slot.key];
               const chem = pl ? perPlayerChem[pl.id] ?? 0 : 0;
               const valid = isValidPosition(pl, slot);
+              const [lx, ly] = mapCoords(slot.x, slot.y, pitchOrientation);
 
               return (
                 <div
@@ -205,8 +211,8 @@ export default function SquadBuilder() {
                   onDrop={(e) => handleDrop(e, slot.key)}
                   className="absolute"
                   style={{
-                    left: `${slot.x}%`,
-                    top: `${slot.y}%`,
+                    left: `${lx}%`,
+                    top: `${ly}%`,
                     transform: "translate(-50%, -50%)",
                   }}
                 >
@@ -218,7 +224,7 @@ export default function SquadBuilder() {
                         : "bg-white/10 border-white/20"
                     )}
                     onClick={() => setSearchOpen(slot.key)}
-                    title={valid ? "" : "Out of position (no chem contribution)"}
+                    title={valid ? slot.pos : `${slot.pos} (out of position)`}
                   >
                     {pl ? (
                       <>
@@ -229,11 +235,9 @@ export default function SquadBuilder() {
                           draggable
                           onDragStart={(e) => handleDragStart(e, pl.id)}
                         />
-                        {/* small pos label under the tile */}
                         <div className="mt-1 text-[10px] uppercase tracking-wide text-neutral-300">
                           {slot.pos}
                         </div>
-                        {/* minimal “swap / clear” */}
                         <div className="mt-1 flex justify-between text-[10px] opacity-80">
                           <button
                             className="underline"
@@ -272,29 +276,9 @@ export default function SquadBuilder() {
           </p>
         </div>
 
-        {/* Search */}
-        <div
-          className={
-            layout === "horizontal"
-              ? "col-span-4"
-              : "rounded-3xl border border-neutral-800 bg-neutral-950 p-3"
-          }
-        >
-          {layout === "horizontal" ? (
-            <div className="rounded-3xl border border-neutral-800 bg-neutral-950 p-3">
-              <SearchPanel
-                search={search}
-                setSearch={setSearch}
-                loading={loading}
-                results={results}
-                onAdd={async (p) => {
-                  if (!searchOpen) return;
-                  const full = await enrichPlayer(p);
-                  setPlaced((prev) => ({ ...prev, [searchOpen]: full }));
-                }}
-              />
-            </div>
-          ) : (
+        {/* Search (right side) */}
+        <div className="col-span-4">
+          <div className="rounded-3xl border border-neutral-800 bg-neutral-950 p-3">
             <SearchPanel
               search={search}
               setSearch={setSearch}
@@ -306,7 +290,7 @@ export default function SquadBuilder() {
                 setPlaced((prev) => ({ ...prev, [searchOpen]: full }));
               }}
             />
-          )}
+          </div>
 
           {/* Rules */}
           <div className="mt-4 rounded-3xl border border-neutral-800 bg-neutral-950 p-3 text-sm">
@@ -315,10 +299,7 @@ export default function SquadBuilder() {
               <li>Club: 2 / 4 / 7 players → +1 / +2 / +3</li>
               <li>Nation: 2 / 5 / 8 players → +1 / +2 / +3</li>
               <li>League: 3 / 5 / 8 players → +1 / +2 / +3</li>
-              <li>
-                Icons/Heroes: 3 chem when in position. Icons boost all leagues; Heroes
-                boost their league.
-              </li>
+              <li>Icons/Heroes: 3 chem when in position; they provide special boosts.</li>
             </ul>
           </div>
         </div>
@@ -333,7 +314,7 @@ export default function SquadBuilder() {
   );
 }
 
-/* --- Search panel component (bigger tiles, clearer) --- */
+/* ---------- Search panel (bigger tiles, keyboard nav) ---------- */
 function SearchPanel({ search, setSearch, loading, results, onAdd }) {
   const [active, setActive] = useState(0);
 
