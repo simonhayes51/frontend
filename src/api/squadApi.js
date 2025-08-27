@@ -1,11 +1,11 @@
 // src/api/squadApi.js
 const API_BASE = import.meta.env.VITE_API_URL || "";
 
-// --- tiny caches to avoid refetch spam during a session
-const defCache = new Map();   // cardId -> definition payload
+// ---------- in-memory caches ----------
+const defCache = new Map();   // cardId -> fut.gg definition object
 const priceCache = new Map(); // cardId -> { current, isExtinct, updatedAt }
 
-/** Search players from your backend DB (fast). */
+// ---------- SEARCH (from your DB) ----------
 export async function searchPlayers(query) {
   const q = (query || "").trim();
   if (!q) return [];
@@ -15,24 +15,17 @@ export async function searchPlayers(query) {
     });
     if (!r.ok) return [];
     const { players = [] } = await r.json();
-
-    // Normalize to the shape SquadBuilder & PlayerTile expect
     return players.map((p) => ({
-      id: Number(p.card_id),             // <- important for DnD
+      id: Number(p.card_id),
       card_id: Number(p.card_id),
       name: p.name,
       rating: Number(p.rating) || 0,
       club: p.club || null,
       nation: p.nation || null,
-      // We only know one position from DB; we’ll enrich later with more
       positions: p.position ? [String(p.position).toUpperCase()] : [],
-      // initial image (can be upgraded by def)
-      image_url: p.image_url || null,
-      // price from DB if present; live price may override on enrich
-      price: typeof p.price === "number" ? p.price : null,
-      // league will be filled by enrich
+      image_url: p.image_url || null, // will be upgraded by def if available
+      price: typeof p.price === "number" ? p.price : null, // fallback if live missing
       league: null,
-      // convenience flags (could be enhanced by def if you want)
       isIcon: false,
       isHero: false,
     }));
@@ -41,16 +34,19 @@ export async function searchPlayers(query) {
   }
 }
 
-/** Fetch & cache FUT.GG definition for a card (via your proxy). */
+// ---------- FUT.GG proxies (definition + price) ----------
+function pickDef(json) {
+  // Some responses are { data: {...} }, others just {...}
+  return json && (json.data || json);
+}
+
 export async function fetchDefinition(cardId) {
   const id = Number(cardId);
   if (defCache.has(id)) return defCache.get(id);
   try {
-    const r = await fetch(`${API_BASE}/api/fut-player-definition/${id}`, {
-      credentials: "include",
-    });
+    const r = await fetch(`${API_BASE}/api/fut-player-definition/${id}`, { credentials: "include" });
     const json = r.ok ? await r.json() : null;
-    const def = json?.data || null;
+    const def = pickDef(json) || null;
     defCache.set(id, def);
     return def;
   } catch {
@@ -58,14 +54,11 @@ export async function fetchDefinition(cardId) {
   }
 }
 
-/** Fetch & cache FUT.GG live price for a card (via your proxy). */
 export async function fetchLivePrice(cardId) {
   const id = Number(cardId);
   if (priceCache.has(id)) return priceCache.get(id);
   try {
-    const r = await fetch(`${API_BASE}/api/fut-player-price/${id}`, {
-      credentials: "include",
-    });
+    const r = await fetch(`${API_BASE}/api/fut-player-price/${id}`, { credentials: "include" });
     const json = r.ok ? await r.json() : null;
     const cur = json?.data?.currentPrice || {};
     const out = {
@@ -80,7 +73,7 @@ export async function fetchLivePrice(cardId) {
   }
 }
 
-/** Extract all usable positions from FUT.GG definition. */
+// ---------- helpers from definition ----------
 function positionsFromDef(def) {
   const raw = [
     def?.preferredPosition1Name,
@@ -93,33 +86,32 @@ function positionsFromDef(def) {
   ]
     .flat()
     .filter(Boolean)
-    .map((x) => String(x).toUpperCase());
+    .map((x) => String(x).toUpperCase().trim());
 
-  // de-dup while keeping order
   return [...new Set(raw)];
 }
 
-/** Build a hi-res card image from FUT.GG definition if available. */
 function cardImageFromDef(def) {
-  const p = def?.futggCardImagePath;
-  if (!p) return null;
-  return `https://game-assets.fut.gg/cdn-cgi/image/quality=90,format=auto,width=500/${p}`;
+  if (def?.futggCardImagePath) {
+    return `https://game-assets.fut.gg/cdn-cgi/image/quality=90,format=auto,width=500/${def.futggCardImagePath}`;
+  }
+  if (def?.futggCardImage?.path) {
+    return `https://game-assets.fut.gg/cdn-cgi/image/quality=90,format=auto,width=500/${def.futggCardImage.path}`;
+  }
+  return null;
 }
 
-/** Enrich a searched player with league, alt positions, hi-res image & live price. */
+// ---------- enrich a selected player ----------
 export async function enrichPlayer(base) {
   const id = Number(base.card_id || base.id);
   const [def, live] = await Promise.all([fetchDefinition(id), fetchLivePrice(id)]);
 
-  const league = def?.league?.name || null;
+  const league = def?.league?.name || base.league || null;
   const positions = positionsFromDef(def);
   const cardImage = cardImageFromDef(def);
-
-  // Keep DB price if live missing
   const price = typeof live?.current === "number" ? live.current : base.price ?? null;
 
-  // Icon / Hero flags (optional)
-  const rarity = def?.rarity?.name?.toLowerCase?.() || "";
+  const rarity = (def?.rarity?.name || "").toLowerCase();
   const isIcon = rarity.includes("icon");
   const isHero = rarity.includes("hero");
 
@@ -133,5 +125,7 @@ export async function enrichPlayer(base) {
     price,
     isIcon,
     isHero,
+    club: base.club || def?.club?.name || null,
+    nation: base.nation || def?.nation?.name || null,
   };
 }
