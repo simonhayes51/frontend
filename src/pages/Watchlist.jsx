@@ -1,8 +1,8 @@
 // src/pages/Watchlist.jsx
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState, useRef } from "react";
 import { getWatchlist, addWatch, deleteWatch, refreshWatch } from "../api/watchlist";
 import { Link } from "react-router-dom";
-import PlayerAutocomplete from "../components/PlayerAutocomplete";
+import api from "../axios"; // <-- use your axios base instance
 
 // Tiny inline icons to keep deps minimal
 const Icon = {
@@ -25,11 +25,6 @@ const Icon = {
   Sort: (props) => (
     <svg className={`w-4 h-4 ${props.className||""}`} viewBox="0 0 24 24" fill="none" stroke="currentColor">
       <path strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M3 7h13M3 12h9M3 17h5" />
-    </svg>
-  ),
-  X: (props) => (
-    <svg className={`w-4 h-4 ${props.className||""}`} viewBox="0 0 24 24" fill="none" stroke="currentColor">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
     </svg>
   ),
 };
@@ -68,6 +63,13 @@ export default function Watchlist() {
   const [busyId, setBusyId] = useState(null);
   const [sort, setSort] = useState(SORTS.SMART);
 
+  // autocomplete state
+  const [suggestions, setSuggestions] = useState([]);
+  const [sugLoading, setSugLoading] = useState(false);
+  const [sugOpen, setSugOpen] = useState(false);
+  const abortRef = useRef(null);
+  const inputRef = useRef(null);
+
   const load = async () => {
     setLoading(true);
     try {
@@ -80,6 +82,7 @@ export default function Watchlist() {
 
   useEffect(() => { load(); }, []);
 
+  // sort
   const sorted = useMemo(() => {
     const list = [...items];
     switch (sort) {
@@ -100,7 +103,6 @@ export default function Watchlist() {
         break;
       case SORTS.SMART:
       default:
-        // extincts last → highest % change → absolute change → newest
         list.sort((a, b) => {
           if (a.is_extinct !== b.is_extinct) return a.is_extinct ? 1 : -1;
           const ap = a.change_pct ?? -Infinity, bp = b.change_pct ?? -Infinity;
@@ -113,6 +115,51 @@ export default function Watchlist() {
     }
     return list;
   }, [items, sort]);
+
+  // --- autocomplete fetch via axios base URL ---
+  const fetchSuggestions = async (q) => {
+    if (!q || q.length < 1) {
+      setSuggestions([]);
+      return;
+    }
+    try {
+      setSugLoading(true);
+      // cancel any in-flight request
+      if (abortRef.current) abortRef.current.abort();
+      abortRef.current = new AbortController();
+
+      const res = await api.get("/api/search-players", {
+        params: { q },
+        signal: abortRef.current.signal,
+      });
+
+      setSuggestions(Array.isArray(res.data?.players) ? res.data.players : []);
+      setSugOpen(true);
+    } catch (e) {
+      setSuggestions([]);
+      setSugOpen(true);
+    } finally {
+      setSugLoading(false);
+    }
+  };
+
+  // debounce input
+  useEffect(() => {
+    const q = form.player_name.trim();
+    const t = setTimeout(() => fetchSuggestions(q), 250);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form.player_name]);
+
+  const applySuggestion = (p) => {
+    setForm((f) => ({
+      ...f,
+      player_name: p.name,
+      card_id: String(p.card_id || ""),
+      version: p.version || f.version,
+    }));
+    setSugOpen(false);
+  };
 
   const handleAdd = async (e) => {
     e.preventDefault();
@@ -153,6 +200,16 @@ export default function Watchlist() {
       setBusyId(null);
     }
   };
+
+  // close suggestions on click outside
+  useEffect(() => {
+    const onDoc = (e) => {
+      if (!inputRef.current) return;
+      if (!inputRef.current.parentElement?.contains(e.target)) setSugOpen(false);
+    };
+    document.addEventListener("click", onDoc);
+    return () => document.removeEventListener("click", onDoc);
+  }, []);
 
   return (
     <div className="p-6 md:p-8">
@@ -297,37 +354,62 @@ export default function Watchlist() {
             </div>
 
             <form onSubmit={handleAdd} className="space-y-4">
-              {/* Player (Autocomplete) */}
-              <div>
+              <div className="relative">
                 <label className="block text-sm text-gray-300 mb-1">Player</label>
-                <PlayerAutocomplete
+                <input
+                  ref={inputRef}
+                  className="w-full px-3 py-2 rounded-md bg-black/40 border border-[#2A2F36] text-white"
                   value={form.player_name}
-                  onChange={(text) => setForm((f) => ({ ...f, player_name: text }))}
-                  onSelect={(p) =>
-                    setForm((f) => ({ ...f, player_name: p.name, card_id: String(p.card_id) }))
-                  }
-                  placeholder="Type at least 2 letters…"
+                  onChange={(e) => {
+                    setForm((f) => ({ ...f, player_name: e.target.value }));
+                    setSugOpen(true);
+                  }}
+                  placeholder="e.g., Cristiano Ronaldo"
+                  required
+                  autoComplete="off"
                 />
-                <p className="mt-1 text-[11px] text-gray-500">
-                  Pick a result to auto-fill the Card ID.
-                </p>
+
+                {/* suggestions dropdown */}
+                {sugOpen && (
+                  <div className="absolute left-0 right-0 mt-1 rounded-md overflow-hidden border border-[#2A2F36] bg-[#0c0f14] z-10">
+                    {sugLoading ? (
+                      <div className="px-3 py-2 text-sm text-gray-400">Searching…</div>
+                    ) : form.player_name.trim().length < 1 ? (
+                      <div className="px-3 py-2 text-sm text-gray-500">Type 1+ characters</div>
+                    ) : suggestions.length === 0 ? (
+                      <div className="px-3 py-2 text-sm text-gray-500">No matches</div>
+                    ) : (
+                      <ul className="max-h-64 overflow-y-auto">
+                        {suggestions.map((p) => (
+                          <li
+                            key={`${p.card_id}-${p.name}`}
+                            onMouseDown={(e) => e.preventDefault()}
+                            onClick={() => applySuggestion(p)}
+                            className="px-3 py-2 text-sm hover:bg-gray-800 cursor-pointer flex items-center gap-2"
+                          >
+                            {p.image_url ? (
+                              <img src={p.image_url} alt="" className="w-6 h-6 rounded-sm object-cover" />
+                            ) : (
+                              <div className="w-6 h-6 rounded-sm bg-gray-700" />
+                            )}
+                            <div className="flex-1">
+                              <div className="text-white">
+                                {p.name} {p.rating ? <span className="text-gray-400">({p.rating})</span> : null}
+                              </div>
+                              <div className="text-[11px] text-gray-400">
+                                ID {p.card_id} • {p.version || "Base"} • {p.position || "—"}
+                              </div>
+                            </div>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                )}
               </div>
 
-              {/* Card ID (editable, in case user pastes directly) */}
               <div>
-                <div className="flex items-center justify-between">
-                  <label className="block text-sm text-gray-300 mb-1">Card ID (EA/FUT.GG)</label>
-                  {form.card_id ? (
-                    <button
-                      type="button"
-                      onClick={() => setForm((f) => ({ ...f, card_id: "" }))}
-                      className="text-[11px] text-gray-400 hover:text-white inline-flex items-center gap-1"
-                      title="Clear ID"
-                    >
-                      <Icon.X /> Clear
-                    </button>
-                  ) : null}
-                </div>
+                <label className="block text-sm text-gray-300 mb-1">Card ID (EA/FUT.GG)</label>
                 <input
                   className="w-full px-3 py-2 rounded-md bg-black/40 border border-[#2A2F36] text-white"
                   value={form.card_id}
