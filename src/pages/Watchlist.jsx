@@ -218,10 +218,7 @@ export default function Watchlist() {
         <div>
           <h1 className="text-2xl md:text-3xl font-bold text-white">Player Watchlist</h1>
           <p className="text-gray-400 text-sm">
-            Track starting price vs current FUT.GG price.{" "}
-            <Link to="/player-search" className="text-lime-400 hover:text-lime-300 underline underline-offset-2">
-              Find card IDs →
-            </Link>
+            Track starting price vs current price.{" "}
           </p>
         </div>
 
