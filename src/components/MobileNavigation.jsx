@@ -2,24 +2,25 @@
 
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+// (You weren't using useAuth here, so I removed it to keep things tidy)
 
 const MobileNavigation = () => {
   const location = useLocation();
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false); // reserved if you later add a drawer
 
   const navItems = [
     { path: '/', label: 'Dashboard', icon: '📊' },
     { path: '/add-trade', label: 'Add Trade', icon: '➕' },
     { path: '/trades', label: 'Trades', icon: '📋' },
     { path: '/player-search', label: 'Players', icon: '🔍' },
+    { path: '/watchlist', label: 'Watchlist', icon: '👁️' }, // 👈 NEW
     { path: '/analytics', label: 'Analytics', icon: '📈' },
-    { path: '/profile', label: 'Profile', icon: '👤' }
+    { path: '/profile', label: 'Profile', icon: '👤' },
   ];
 
   return (
     <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-gray-900 border-t border-gray-700 z-50">
-      <div className="grid grid-cols-6 h-12">
+      <div className={`grid grid-cols-${navItems.length} h-12`}>
         {navItems.map(({ path, label, icon }) => (
           <Link
             key={path}
@@ -39,4 +40,4 @@ const MobileNavigation = () => {
   );
 };
 
-export default MobileNavigation;   // ← only this line added
+export default MobileNavigation;
