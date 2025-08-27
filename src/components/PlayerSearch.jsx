@@ -1,13 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { Search, TrendingUp, TrendingDown, Minus, Loader2, Target } from "lucide-react";
 
-// Config: backend base (set VITE_API_URL to your backend URL)
 const API_BASE = import.meta.env.VITE_API_URL || "";
-
-// Tiny helper to build the proxy URL
 const buildProxy = (url) => `${API_BASE}/img?url=${encodeURIComponent(url)}`;
 
-// DB search via your backend
 const searchPlayers = async (query) => {
   if (!query.trim()) return [];
   try {
@@ -23,7 +19,6 @@ const searchPlayers = async (query) => {
   }
 };
 
-// NEW: Add to watchlist helper (uses cookie session)
 const addToWatchlist = async ({ player_name, card_id, version, platform, notes }) => {
   const r = await fetch(`${API_BASE}/api/watchlist`, {
     method: "POST",
@@ -44,7 +39,6 @@ const addToWatchlist = async ({ player_name, card_id, version, platform, notes }
   return payload;
 };
 
-// FUT.GG: player definition via your backend proxy
 const fetchPlayerDefinition = async (cardId) => {
   try {
     const response = await fetch(`${API_BASE}/api/fut-player-definition/${cardId}`, {
@@ -60,7 +54,6 @@ const fetchPlayerDefinition = async (cardId) => {
   return null;
 };
 
-// FUT.GG: player price via your backend proxy
 const fetchPlayerPrice = async (cardId) => {
   try {
     const response = await fetch(`${API_BASE}/api/fut-player-price/${cardId}`, {
@@ -81,41 +74,23 @@ const fetchPlayerPrice = async (cardId) => {
   return null;
 };
 
-// ---- FC25 Position Map ----
+// ---- Position helpers ----
 const POS_CODE_TO_NAME = {
-  0: "GK",
-  1: "GK",
-  2: "GK",
-  3: "RB",
-  4: "RB",
-  5: "CB",
-  6: "CB",
-  7: "LB",
-  8: "LB",
-  9: "LB",
-  10: "CDM",
-  11: "CDM",
-  12: "RM",
-  13: "RM",
-  14: "CM",
-  15: "CM",
-  16: "LM",
-  17: "LM",
-  18: "CAM",
-  19: "CAM",
-  20: "CAM",
-  21: "CAM",
-  22: "CAM",
-  23: "RW",
-  24: "RW",
-  25: "ST",
-  26: "ST",
+  0: "GK", 1: "GK", 2: "GK",
+  3: "RB", 4: "RB",
+  5: "CB", 6: "CB",
+  7: "LB", 8: "LB", 9: "LB",
+  10: "CDM", 11: "CDM",
+  12: "RM", 13: "RM",
+  14: "CM", 15: "CM",
+  16: "LM", 17: "LM",
+  18: "CAM", 19: "CAM", 20: "CAM", 21: "CAM", 22: "CAM",
+  23: "RW", 24: "RW",
+  25: "ST", 26: "ST",
   27: "LW",
 };
-
 const getPositionName = (id) => POS_CODE_TO_NAME[id] || "Unknown";
 
-// ---- position resolver ----
 const _posNorm = (x) => {
   if (x == null) return null;
   if (typeof x === "number") return getPositionName(x);
@@ -183,7 +158,6 @@ const resolvePosition = (pd, fallbackObj) => {
   return "Unknown";
 };
 
-// Color coding for attributes (0-100)
 const getAttributeColor = (value) => {
   if (value >= 90) return "text-green-400";
   if (value >= 80) return "text-green-300";
@@ -192,7 +166,7 @@ const getAttributeColor = (value) => {
   return "text-red-400";
 };
 
-// Search box component
+// ---------------- SearchBox ----------------
 const SearchBox = ({ onPlayerSelect }) => {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState([]);
@@ -268,7 +242,7 @@ const SearchBox = ({ onPlayerSelect }) => {
   );
 };
 
-// Price trend component
+// ---------------- PriceTrend ----------------
 const PriceTrend = ({ auctions }) => {
   if (!auctions || auctions.length < 2) return null;
   const [a, b] = auctions.slice(0, 2);
@@ -288,24 +262,19 @@ const PriceTrend = ({ auctions }) => {
       ) : (
         <Minus className="w-4 h-4 text-gray-400" />
       )}
-      <span
-        className={`font-medium ${
-          change > 0 ? "text-green-600" : change < 0 ? "text-red-600" : "text-gray-600"
-        }`}
-      >
+      <span className={`font-medium ${change > 0 ? "text-green-600" : change < 0 ? "text-red-600" : "text-gray-600"}`}>
         {pct}% {change > 0 ? `(+${change.toLocaleString()})` : `(${change.toLocaleString()})`}
       </span>
     </div>
   );
 };
 
-// Player detail component
+// ---------------- PlayerDetail ----------------
 const PlayerDetail = ({ player, onBack }) => {
   const [priceData, setPriceData] = useState(null);
   const [playerData, setPlayerData] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Add-to-watchlist state
   const [adding, setAdding] = useState(false);
   const [platform, setPlatform] = useState("ps");
   const [notes, setNotes] = useState("");
@@ -407,7 +376,6 @@ const PlayerDetail = ({ player, onBack }) => {
     },
   };
 
-  // add-to-watchlist click
   const onAddClick = async () => {
     try {
       setAdding(true);
@@ -430,47 +398,16 @@ const PlayerDetail = ({ player, onBack }) => {
 
   return (
     <div className="w-full max-w-6xl mx-auto bg-[#0f172a]">
-      {/* Back link */}
       <button
         onClick={onBack}
-        className="mb-4 px-4 py-2 text-blue-400 hover:text-blue-300 font-medium transition-colors"
+        className="mb-6 px-4 py-2 text-blue-400 hover:text-blue-300 font-medium transition-colors"
       >
         ← Back to Search
       </button>
 
-      {/* NEW: toolbar placed directly under Back, before the name */}
-      <div className="mb-4 p-3 bg-[#0f1622] border border-[#243041] rounded-xl flex flex-col sm:flex-row sm:items-center gap-3">
-        <div className="text-sm text-gray-300">Track this player’s price on your Watchlist</div>
-        <div className="flex items-center gap-2 sm:ml-auto">
-          <select
-            value={platform}
-            onChange={(e) => setPlatform(e.target.value)}
-            className="px-2 py-1 rounded-md bg-black/40 border border-[#2A2F36] text-white text-sm"
-            title="Platform"
-          >
-            <option value="ps">PS</option>
-            <option value="xbox">Xbox</option>
-          </select>
-          <input
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-            placeholder="Notes (optional)"
-            className="hidden md:block w-56 px-2 py-1 rounded-md bg-black/40 border border-[#2A2F36] text-white text-sm"
-          />
-          <button
-            onClick={onAddClick}
-            disabled={adding}
-            className="px-3 py-2 rounded-md bg-lime-500/90 hover:bg-lime-500 text-black font-semibold"
-          >
-            {adding ? "Adding…" : "+ Add to Watchlist"}
-          </button>
-        </div>
-      </div>
-
       <div className="bg-[#1e293b] border border-gray-700 text-white rounded-xl p-6">
         <div className="flex flex-col lg:flex-row items-start gap-6 mb-6">
-          {/* Card image */}
-          <div className="relative shrink-0">
+          <div className="relative">
             <img
               src={d.cardImage}
               alt={d.fullName}
@@ -488,14 +425,11 @@ const PlayerDetail = ({ player, onBack }) => {
             </div>
           </div>
 
-          {/* Text/content */}
           <div className="flex-1 min-w-0">
-            {/* Name: responsive, no giant jumps */}
-            <h1 className="font-bold leading-tight text-[clamp(1.5rem,5vw,3rem)] mb-2 break-words">
+            <h1 className="mb-2 font-extrabold leading-tight tracking-tight break-words text-3xl sm:text-4xl md:text-5xl">
               {d.fullName}
             </h1>
 
-            {/* Stat cards */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
               {/* Price */}
               <div className="bg-[#334155] rounded-lg p-3 min-w-0">
@@ -512,35 +446,34 @@ const PlayerDetail = ({ player, onBack }) => {
                         alt="Coins"
                         className="w-4 h-4 md:w-5 md:h-5 shrink-0"
                       />
-                      {/* number gets truncated instead of overflowing */}
                       <span className="truncate tabular-nums">{formatPrice(priceData?.current)}</span>
                     </span>
                   )}
                 </div>
               </div>
-              
+
               {/* Range */}
               <div className="bg-[#334155] rounded-lg p-3 min-w-0">
                 <div className="text-gray-300 text-xs md:text-sm mb-1">Range</div>
                 <div className="font-medium leading-snug text-sm md:text-base break-words">
-                  {formatPrice(priceRange?.min)}{priceRange ? " - " : ""}{formatPrice(priceRange?.max)}
+                  {priceRange ? `${formatPrice(priceRange.min)} - ${formatPrice(priceRange.max)}` : "N/A"}
                 </div>
               </div>
-              
+
               {/* Trend */}
               <div className="bg-[#334155] rounded-lg p-3 min-w-0">
                 <div className="text-gray-300 text-xs md:text-sm mb-1">Trend</div>
                 <PriceTrend auctions={priceData?.auctions} />
               </div>
-              
+
               {/* AcceleRATE */}
               <div className="bg-[#334155] rounded-lg p-3 min-w-0">
                 <div className="text-gray-300 text-xs md:text-sm mb-1">AcceleRATE</div>
-                {/* normalized size */}
                 <div className="font-semibold text-green-400 text-sm md:text-base leading-tight">
                   {d.accelerateType.replace(/_/g, " ")}
                 </div>
               </div>
+            </div>
 
             {/* Club / Nation / League / Position */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
@@ -565,13 +498,11 @@ const PlayerDetail = ({ player, onBack }) => {
                       }}
                     />
                   ) : (
-                    <div className="w-8 h-8 bg-gray-600 rounded flex items-center justify-center text-xs">
-                      LEG
-                    </div>
+                    <div className="w-8 h-8 bg-gray-600 rounded flex items-center justify-center text-xs">CLUB</div>
                   )}
                 </div>
                 <div className="text-sm text-gray-400 mb-1">Club</div>
-                <div className="font-medium text-sm break-words">{d.club}</div>
+                <div className="font-medium text-sm">{d.club}</div>
               </div>
 
               {/* Nation */}
@@ -595,13 +526,11 @@ const PlayerDetail = ({ player, onBack }) => {
                       }}
                     />
                   ) : (
-                    <div className="w-8 h-6 bg-gray-600 rounded flex items-center justify-center text-xs">
-                      NAT
-                    </div>
+                    <div className="w-8 h-6 bg-gray-600 rounded flex items-center justify-center text-xs">NAT</div>
                   )}
                 </div>
                 <div className="text-sm text-gray-400 mb-1">Nation</div>
-                <div className="font-medium text-sm break-words">{d.nation}</div>
+                <div className="font-medium text-sm">{d.nation}</div>
               </div>
 
               {/* League */}
@@ -625,13 +554,11 @@ const PlayerDetail = ({ player, onBack }) => {
                       }}
                     />
                   ) : (
-                    <div className="w-8 h-8 bg-gray-600 rounded flex items-center justify-center text-xs">
-                      LEG
-                    </div>
+                    <div className="w-8 h-8 bg-gray-600 rounded flex items-center justify-center text-xs">LEG</div>
                   )}
                 </div>
                 <div className="text-sm text-gray-400 mb-1">League</div>
-                <div className="font-medium text-sm break-words">{d.league}</div>
+                <div className="font-medium text-sm">{d.league}</div>
               </div>
 
               {/* Position */}
@@ -658,21 +585,15 @@ const PlayerDetail = ({ player, onBack }) => {
             {/* Skill / Weak Foot / Age / Preferred Foot */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
               <div className="text-center bg-[#334155] rounded-lg p-3">
-                <div className="text-lg font-semibold text-yellow-400">
-                  {"⭐".repeat(d.skillMoves)}
-                </div>
+                <div className="text-lg font-semibold text-yellow-400">{"⭐".repeat(d.skillMoves)}</div>
                 <div className="text-xs text-gray-400">Skill Moves</div>
               </div>
               <div className="text-center bg-[#334155] rounded-lg p-3">
-                <div className="text-lg font-semibold text-yellow-400">
-                  {"⭐".repeat(d.weakFoot)}
-                </div>
+                <div className="text-lg font-semibold text-yellow-400">{"⭐".repeat(d.weakFoot)}</div>
                 <div className="text-xs text-gray-400">Weak Foot</div>
               </div>
               <div className="text-center bg-[#334155] rounded-lg p-3">
-                <div className="text-sm font-semibold text-green-400">
-                  {d.age ? `${d.age} years` : "Unknown"}
-                </div>
+                <div className="text-sm font-semibold text-green-400">{d.age ? `${d.age} years` : "Unknown"}</div>
                 <div className="text-xs text-gray-400">Age</div>
               </div>
               <div className="text-center bg-[#334155] rounded-lg p-3">
@@ -683,6 +604,35 @@ const PlayerDetail = ({ player, onBack }) => {
           </div>
         </div>
 
+        {/* Watchlist CTA */}
+        <div className="mt-1 mb-6 p-4 bg-[#0f1622] border border-[#243041] rounded-xl flex flex-col sm:flex-row items-start sm:items-center gap-3">
+          <div className="text-sm text-gray-300">Track this player’s price on your Watchlist</div>
+          <div className="flex items-center gap-2 sm:ml-auto">
+            <select
+              value={platform}
+              onChange={(e) => setPlatform(e.target.value)}
+              className="px-2 py-1 rounded-md bg-black/40 border border-[#2A2F36] text-white text-sm"
+              title="Platform"
+            >
+              <option value="ps">PS</option>
+              <option value="xbox">Xbox</option>
+            </select>
+            <input
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="Notes (optional)"
+              className="hidden md:block w-56 px-2 py-1 rounded-md bg-black/40 border border-[#2A2F36] text-white text-sm"
+            />
+            <button
+              onClick={onAddClick}
+              disabled={adding}
+              className="px-3 py-2 rounded-md bg-lime-500/90 hover:bg-lime-500 text-black font-semibold"
+            >
+              {adding ? "Adding…" : "+ Add to Watchlist"}
+            </button>
+          </div>
+        </div>
+
         {/* Detailed Attributes */}
         <div className="bg-[#334155] rounded-lg p-4 mb-4">
           <h3 className="font-semibold mb-3 text-lg">Detailed Attributes</h3>
@@ -690,10 +640,7 @@ const PlayerDetail = ({ player, onBack }) => {
             {Object.entries(d.attributes).map(
               ([attr, value]) =>
                 value > 0 && (
-                  <div
-                    key={attr}
-                    className="flex justify-between items-center bg-[#475569] rounded px-2 py-1"
-                  >
+                  <div key={attr} className="flex justify-between items-center bg-[#475569] rounded px-2 py-1">
                     <span className="text-gray-300 capitalize text-xs">
                       {attr.replace(/([A-Z])/g, " $1").trim()}
                     </span>
@@ -709,10 +656,7 @@ const PlayerDetail = ({ player, onBack }) => {
             <h3 className="font-semibold mb-3 text-lg">Recent Sales</h3>
             <div className="space-y-2">
               {priceData.auctions.slice(0, 5).map((a, idx) => (
-                <div
-                  key={idx}
-                  className="flex justify-between items-center text-sm bg-[#475569] rounded px-3 py-2"
-                >
+                <div key={idx} className="flex justify-between items-center text-sm bg-[#475569] rounded px-3 py-2">
                   <span className="text-gray-400">
                     {a.soldDate ? new Date(a.soldDate).toLocaleString() : "—"}
                   </span>
@@ -733,9 +677,9 @@ const PlayerDetail = ({ player, onBack }) => {
       </div>
     </div>
   );
-};
+}; // <-- closes PlayerDetail
 
-// Main component
+// ---------------- Main ----------------
 export default function PlayerSearch() {
   const [selectedPlayer, setSelectedPlayer] = useState(null);
 
