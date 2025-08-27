@@ -11,10 +11,9 @@ const buildProxy = (url) => `${API_BASE}/img?url=${encodeURIComponent(url)}`;
 const searchPlayers = async (query) => {
   if (!query.trim()) return [];
   try {
-    const r = await fetch(
-      `${API_BASE}/api/search-players?q=${encodeURIComponent(query)}`,
-      { credentials: "include" }
-    );
+    const r = await fetch(`${API_BASE}/api/search-players?q=${encodeURIComponent(query)}`, {
+      credentials: "include",
+    });
     if (!r.ok) return [];
     const data = await r.json();
     return data.players || [];
@@ -24,7 +23,7 @@ const searchPlayers = async (query) => {
   }
 };
 
-// NEW: Add to watchlist helper (uses cookie session)
+// Add to watchlist (cookie session)
 const addToWatchlist = async ({ player_name, card_id, version, platform, notes }) => {
   const r = await fetch(`${API_BASE}/api/watchlist`, {
     method: "POST",
@@ -35,12 +34,9 @@ const addToWatchlist = async ({ player_name, card_id, version, platform, notes }
   let payload = null;
   try {
     payload = await r.json();
-  } catch {
-    /* ignore */
-  }
+  } catch {}
   if (!r.ok) {
-    const msg = payload?.detail || "Failed to add to watchlist";
-    throw new Error(msg);
+    throw new Error(payload?.detail || "Failed to add to watchlist");
   }
   return payload;
 };
@@ -233,10 +229,8 @@ const SearchBox = ({ onPlayerSelect }) => {
                 <div className="w-12 h-16 bg-gradient-to-b from-yellow-400 to-yellow-600 rounded-lg flex items-center justify-center text-white font-bold text-sm">
                   {player.rating}
                 </div>
-                <div>
-                  <div className="font-semibold text-white">
-                    {player.name} ({player.rating})
-                  </div>
+                <div className="text-white font-semibold">
+                  {player.name} ({player.rating})
                 </div>
               </div>
             </button>
@@ -290,7 +284,7 @@ const PlayerDetail = ({ player, onBack }) => {
   const [playerData, setPlayerData] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // NEW: CTA state
+  // Watchlist CTA state
   const [adding, setAdding] = useState(false);
   const [platform, setPlatform] = useState("ps");
   const [notes, setNotes] = useState("");
@@ -392,7 +386,7 @@ const PlayerDetail = ({ player, onBack }) => {
     },
   };
 
-  // NEW: add-to-watchlist click handler
+  // Add-to-watchlist handler
   const onAddClick = async () => {
     try {
       setAdding(true);
@@ -417,14 +411,60 @@ const PlayerDetail = ({ player, onBack }) => {
     <div className="w-full max-w-6xl mx-auto bg-[#0f172a]">
       <button
         onClick={onBack}
-        className="mb-6 px-4 py-2 text-blue-400 hover:text-blue-300 font-medium transition-colors"
+        className="mb-4 px-4 py-2 text-blue-400 hover:text-blue-300 font-medium transition-colors"
       >
         ← Back to Search
       </button>
 
       <div className="bg-[#1e293b] border border-gray-700 text-white rounded-xl p-6">
+
+        {/* ===== Toolbar between back link and big player name ===== */}
+        <div className="mb-5">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 rounded-lg bg-[#0f1622] border border-[#243041] p-3">
+            <div className="min-w-0">
+              <div className="text-sm text-gray-300 truncate">
+                <span className="font-semibold">{player.name}</span>
+                <span className="text-gray-500 ml-2">ID {cardId}</span>
+                {(player.version || d.version) && (
+                  <span className="text-gray-500 ml-2 hidden sm:inline">
+                    {player.version || d.version}
+                  </span>
+                )}
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 sm:ml-auto w-full sm:w-auto">
+              <select
+                value={platform}
+                onChange={(e) => setPlatform(e.target.value)}
+                className="px-2 py-1 rounded-md bg-black/40 border border-[#2A2F36] text-white text-sm w-full sm:w-auto"
+                title="Platform"
+              >
+                <option value="ps">PS</option>
+                <option value="xbox">Xbox</option>
+              </select>
+
+              <input
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                placeholder="Notes (optional)"
+                className="px-2 py-1 rounded-md bg-black/40 border border-[#2A2F36] text-white text-sm flex-1 sm:w-56"
+              />
+
+              <button
+                onClick={onAddClick}
+                disabled={adding}
+                className="px-3 py-2 rounded-md bg-lime-500/90 hover:bg-lime-500 text-black font-semibold whitespace-nowrap"
+              >
+                {adding ? "Adding…" : "+ Add to Watchlist"}
+              </button>
+            </div>
+          </div>
+        </div>
+        {/* ===== end toolbar ===== */}
+
         <div className="flex flex-col lg:flex-row items-start gap-6 mb-6">
-          <div className="relative">
+          <div className="relative shrink-0">
             <img
               src={d.cardImage}
               alt={d.fullName}
@@ -442,14 +482,16 @@ const PlayerDetail = ({ player, onBack }) => {
             </div>
           </div>
 
-          <div className="flex-1">
-            <h1 className="text-4xl font-bold mb-2">{d.fullName}</h1>
+          <div className="flex-1 min-w-0">
+            <h1 className="text-3xl md:text-5xl font-extrabold mb-2 leading-tight break-words">
+              {d.fullName}
+            </h1>
 
             {/* Price / Range / Trend / Accelerate */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-              <div className="bg-[#334155] rounded-lg p-3">
+              <div className="bg-[#334155] rounded-lg p-3 min-h-[96px]">
                 <div className="text-gray-400 text-sm mb-1">Price</div>
-                <div className="text-2xl font-bold text-yellow-400">
+                <div className="text-2xl font-bold text-yellow-400 break-words leading-tight">
                   {loading ? (
                     <Loader2 className="w-6 h-6 animate-spin inline" />
                   ) : priceData?.isExtinct ? (
@@ -467,23 +509,27 @@ const PlayerDetail = ({ player, onBack }) => {
                 </div>
               </div>
 
-              {priceRange && (
-                <div className="bg-[#334155] rounded-lg p-3">
-                  <div className="text-gray-400 text-sm mb-1">Range</div>
-                  <div className="font-medium">
-                    {formatPrice(priceRange.min)} - {formatPrice(priceRange.max)}
-                  </div>
+              <div className="bg-[#334155] rounded-lg p-3 min-h-[96px]">
+                <div className="text-gray-400 text-sm mb-1">Range</div>
+                <div className="font-medium text-base leading-tight break-words">
+                  {priceRange ? (
+                    <>
+                      {formatPrice(priceRange.min)} - {formatPrice(priceRange.max)}
+                    </>
+                  ) : (
+                    "—"
+                  )}
                 </div>
-              )}
+              </div>
 
-              <div className="bg-[#334155] rounded-lg p-3">
+              <div className="bg-[#334155] rounded-lg p-3 min-h-[96px]">
                 <div className="text-gray-400 text-sm mb-1">Trend</div>
                 <PriceTrend auctions={priceData?.auctions} />
               </div>
 
-              <div className="bg-[#334155] rounded-lg p-3">
+              <div className="bg-[#334155] rounded-lg p-3 min-h-[96px]">
                 <div className="text-gray-400 text-sm mb-1">AcceleRATE</div>
-                <div className="font-medium text-green-400 text-xs leading-tight">
+                <div className="font-medium text-green-400 text-xs sm:text-sm leading-tight break-words uppercase">
                   {d.accelerateType.replace(/_/g, " ")}
                 </div>
               </div>
@@ -512,13 +558,11 @@ const PlayerDetail = ({ player, onBack }) => {
                       }}
                     />
                   ) : (
-                    <div className="w-8 h-8 bg-gray-600 rounded flex items-center justify-center text-xs">
-                      LEG
-                    </div>
+                    <div className="w-8 h-8 bg-gray-600 rounded flex items-center justify-center text-xs">CLUB</div>
                   )}
                 </div>
                 <div className="text-sm text-gray-400 mb-1">Club</div>
-                <div className="font-medium text-sm">{d.club}</div>
+                <div className="font-medium text-sm break-words">{d.club}</div>
               </div>
 
               {/* Nation */}
@@ -542,13 +586,11 @@ const PlayerDetail = ({ player, onBack }) => {
                       }}
                     />
                   ) : (
-                    <div className="w-8 h-6 bg-gray-600 rounded flex items-center justify-center text-xs">
-                      NAT
-                    </div>
+                    <div className="w-8 h-6 bg-gray-600 rounded flex items-center justify-center text-xs">NAT</div>
                   )}
                 </div>
                 <div className="text-sm text-gray-400 mb-1">Nation</div>
-                <div className="font-medium text-sm">{d.nation}</div>
+                <div className="font-medium text-sm break-words">{d.nation}</div>
               </div>
 
               {/* League */}
@@ -572,20 +614,18 @@ const PlayerDetail = ({ player, onBack }) => {
                       }}
                     />
                   ) : (
-                    <div className="w-8 h-8 bg-gray-600 rounded flex items-center justify-center text-xs">
-                      LEG
-                    </div>
+                    <div className="w-8 h-8 bg-gray-600 rounded flex items-center justify-center text-xs">LEG</div>
                   )}
                 </div>
                 <div className="text-sm text-gray-400 mb-1">League</div>
-                <div className="font-medium text-sm">{d.league}</div>
+                <div className="font-medium text-sm break-words">{d.league}</div>
               </div>
 
               {/* Position */}
               <div className="text-center bg-[#334155] rounded-lg p-3">
                 <Target className="w-6 h-6 mx-auto mb-2 text-red-400" />
                 <div className="text-sm text-gray-400 mb-1">Position</div>
-                <div className="font-medium">{d.position}</div>
+                <div className="font-medium break-words">{d.position}</div>
               </div>
             </div>
 
@@ -595,9 +635,7 @@ const PlayerDetail = ({ player, onBack }) => {
               <div className="grid grid-cols-3 md:grid-cols-6 gap-4">
                 {Object.entries(d.stats).map(([stat, value]) => (
                   <div key={stat} className="text-center">
-                    <div className={`text-2xl font-bold ${getAttributeColor(value)}`}>
-                      {value}
-                    </div>
+                    <div className={`text-2xl font-bold ${getAttributeColor(value)}`}>{value}</div>
                     <div className="text-xs text-gray-400 capitalize">{stat}</div>
                   </div>
                 ))}
@@ -607,15 +645,11 @@ const PlayerDetail = ({ player, onBack }) => {
             {/* Skill / Weak Foot / Age / Preferred Foot */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
               <div className="text-center bg-[#334155] rounded-lg p-3">
-                <div className="text-lg font-semibold text-yellow-400">
-                  {"⭐".repeat(d.skillMoves)}
-                </div>
+                <div className="text-lg font-semibold text-yellow-400">{"⭐".repeat(d.skillMoves)}</div>
                 <div className="text-xs text-gray-400">Skill Moves</div>
               </div>
               <div className="text-center bg-[#334155] rounded-lg p-3">
-                <div className="text-lg font-semibold text-yellow-400">
-                  {"⭐".repeat(d.weakFoot)}
-                </div>
+                <div className="text-lg font-semibold text-yellow-400">{"⭐".repeat(d.weakFoot)}</div>
                 <div className="text-xs text-gray-400">Weak Foot</div>
               </div>
               <div className="text-center bg-[#334155] rounded-lg p-3">
@@ -629,40 +663,6 @@ const PlayerDetail = ({ player, onBack }) => {
                 <div className="text-xs text-gray-400">Preferred Foot</div>
               </div>
             </div>
-          </div>
-        </div>
-
-        {/* NEW: Add to Watchlist CTA (under the card block) */}
-        <div className="mt-2 mb-6 p-4 bg-[#0f1622] border border-[#243041] rounded-xl flex flex-col sm:flex-row items-start sm:items-center gap-3">
-          <div className="text-sm text-gray-300">
-            Track this player’s price on your Watchlist
-          </div>
-
-          <div className="flex items-center gap-2 sm:ml-auto">
-            <select
-              value={platform}
-              onChange={(e) => setPlatform(e.target.value)}
-              className="px-2 py-1 rounded-md bg-black/40 border border-[#2A2F36] text-white text-sm"
-              title="Platform"
-            >
-              <option value="ps">PS</option>
-              <option value="xbox">Xbox</option>
-            </select>
-
-            <input
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              placeholder="Notes (optional)"
-              className="hidden md:block w-56 px-2 py-1 rounded-md bg-black/40 border border-[#2A2F36] text-white text-sm"
-            />
-
-            <button
-              onClick={onAddClick}
-              disabled={adding}
-              className="px-3 py-2 rounded-md bg-lime-500/90 hover:bg-lime-500 text-black font-semibold"
-            >
-              {adding ? "Adding…" : "+ Add to Watchlist"}
-            </button>
           </div>
         </div>
 
@@ -680,9 +680,7 @@ const PlayerDetail = ({ player, onBack }) => {
                     <span className="text-gray-300 capitalize text-xs">
                       {attr.replace(/([A-Z])/g, " $1").trim()}
                     </span>
-                    <span className={`font-semibold ${getAttributeColor(value)}`}>
-                      {value}
-                    </span>
+                    <span className={`font-semibold ${getAttributeColor(value)}`}>{value}</span>
                   </div>
                 )
             )}
