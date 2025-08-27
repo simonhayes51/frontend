@@ -1,37 +1,44 @@
 // src/utils/positions.js
 
-// Canonical list
-export const POSITIONS = [
+// Canonical position codes
+const POSITION_SET = new Set([
   "GK",
   "RB","RWB","CB","LB","LWB",
   "CDM","CM","CAM",
   "RM","LM",
   "RW","LW",
   "RF","LF","CF","ST"
-];
+]);
 
-// Buckets (useful for filters/UI)
-export const POSITION_GROUPS = {
-  GK: ["GK"],
-  DEF: ["RB","RWB","CB","LB","LWB"],
-  MID: ["CDM","CM","CAM","RM","LM"],
-  ATT: ["RW","LW","RF","LF","CF","ST"]
-};
+// Aliases → canonical codes
+const ALIASES = new Map([
+  ["GOALKEEPER","GK"], ["KEEPER","GK"], ["GK","GK"],
 
-export const positionToGroup = (pos) => {
-  const p = String(pos || "").toUpperCase();
-  if (p === "GK") return "GK";
-  if (POSITION_GROUPS.DEF.includes(p)) return "DEF";
-  if (POSITION_GROUPS.MID.includes(p)) return "MID";
-  if (POSITION_GROUPS.ATT.includes(p)) return "ATT";
-  return "OTHER";
-};
+  ["RIGHT BACK","RB"], ["RIGHTBACK","RB"], ["RB","RB"],
+  ["LEFT BACK","LB"], ["LEFTBACK","LB"], ["LB","LB"],
+  ["RIGHT WING BACK","RWB"], ["RIGHTWINGBACK","RWB"], ["RWB","RWB"],
+  ["LEFT WING BACK","LWB"], ["LEFTWINGBACK","LWB"], ["LWB","LWB"],
+  ["CENTER BACK","CB"], ["CENTRE BACK","CB"], ["CENTERBACK","CB"], ["CENTREBACK","CB"], ["CB","CB"],
 
-export const isPosition = (pos) =>
-  POSITIONS.includes(String(pos || "").toUpperCase());
+  ["DEFENSIVE MID","CDM"], ["DEFENSIVE MIDFIELDER","CDM"], ["CDM","CDM"],
+  ["CENTRE MID","CM"], ["CENTER MID","CM"], ["CENTREMID","CM"], ["CENTERMID","CM"], ["CM","CM"],
+  ["ATTACKING MID","CAM"], ["ATTACKING MIDFIELDER","CAM"], ["CAM","CAM"],
 
-// Simple OOP/compat map (tweak if you have stricter rules)
-export const COMPATIBILITY = {
+  ["RIGHT MID","RM"], ["RIGHTMID","RM"], ["RM","RM"],
+  ["LEFT MID","LM"], ["LEFTMID","LM"], ["LM","LM"],
+
+  ["RIGHT WING","RW"], ["RIGHTWING","RW"], ["RW","RW"],
+  ["LEFT WING","LW"], ["LEFTWING","LW"], ["LW","LW"],
+
+  ["RIGHT FORWARD","RF"], ["RIGHTFORWARD","RF"], ["RF","RF"],
+  ["LEFT FORWARD","LF"], ["LEFTFORWARD","LF"], ["LF","LF"],
+  ["CENTRE FORWARD","CF"], ["CENTER FORWARD","CF"], ["CENTREFORWARD","CF"], ["CENTERFORWARD","CF"], ["CF","CF"],
+
+  ["STRIKER","ST"], ["FORWARD","ST"], ["ST","ST"]
+]);
+
+// Compatibility map: card pos → allowed squad slot pos
+const COMPATIBILITY = {
   GK: ["GK"],
 
   RB: ["RB","RWB","CB"],
@@ -55,31 +62,48 @@ export const COMPATIBILITY = {
   ST: ["ST","CF","RF","LF","RW","LW"]
 };
 
-export const isCompatible = (cardPos, slotPos) => {
-  const a = String(cardPos || "").toUpperCase();
-  const b = String(slotPos || "").toUpperCase();
-  const list = COMPATIBILITY[a] || [a];
-  return list.includes(b);
-};
+function normalizePosition(p) {
+  if (p == null) return null;
+  const cleaned = String(p).trim().toUpperCase().replace(/\s+/g, " ");
+  if (POSITION_SET.has(cleaned)) return cleaned;
 
-// Normalise various free-text inputs to your codes
-const ALIASES = new Map([
-  ["GOALKEEPER","GK"], ["KEEPER","GK"],
-  ["RIGHTBACK","RB"], ["LEFTBACK","LB"],
-  ["RIGHTWINGBACK","RWB"], ["LEFTWINGBACK","LWB"],
-  ["CENTERBACK","CB"], ["CENTREBACK","CB"],
-  ["DEFENSIVEMID","CDM"], ["DEFENSIVEMIDFIELDER","CDM"],
-  ["MID","CM"], ["MIDFIELDER","CM"],
-  ["ATTACKINGMID","CAM"], ["ATTACKINGMIDFIELDER","CAM"],
-  ["RIGHTMID","RM"], ["LEFTMID","LM"],
-  ["RIGHTWING","RW"], ["LEFTWING","LW"],
-  ["RIGHTFORWARD","RF"], ["LEFTFORWARD","LF"],
-  ["CENTREFORWARD","CF"], ["CENTERFORWARD","CF"],
-  ["STRIKER","ST"], ["FORWARD","ST"]
-]);
+  const noSpaces = cleaned.replace(/\s+/g, "");
+  if (ALIASES.has(cleaned)) return ALIASES.get(cleaned);
+  if (ALIASES.has(noSpaces)) return ALIASES.get(noSpaces);
 
-export const normalizePosition = (p) => {
-  const raw = String(p || "").toUpperCase().replace(/\s+/g, "");
-  if (POSITIONS.includes(raw)) return raw;
-  return ALIASES.get(raw) || raw;
-};
+  const lettersOnly = cleaned.replace(/[^A-Z]/g, "");
+  if (POSITION_SET.has(lettersOnly)) return lettersOnly;
+  if (ALIASES.has(lettersOnly)) return ALIASES.get(lettersOnly);
+
+  return null;
+}
+
+export function normalizePositions(list) {
+  const seen = new Set();
+  const out = [];
+  (Array.isArray(list) ? list : [list]).forEach((p) => {
+    const norm = normalizePosition(p);
+    if (norm && !seen.has(norm)) {
+      seen.add(norm);
+      out.push(norm);
+    }
+  });
+  return out;
+}
+
+export const POSITIONS = Array.from(POSITION_SET);
+export const isPosition = (p) => POSITION_SET.has(String(p || "").toUpperCase());
+
+// ✅ New: check if a player's position(s) can fit a given slot
+export function isValidForSlot(playerPositions, slotPosition) {
+  const slot = normalizePosition(slotPosition);
+  if (!slot) return false;
+
+  const list = normalizePositions(playerPositions);
+  for (const p of list) {
+    if (p === slot) return true; // exact match
+    const compat = COMPATIBILITY[p] || [];
+    if (compat.includes(slot)) return true;
+  }
+  return false;
+}
