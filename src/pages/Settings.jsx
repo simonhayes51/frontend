@@ -1,3 +1,4 @@
+// src/pages/Settings.jsx
 import React, { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
 import api from "../utils/axios";
@@ -8,7 +9,6 @@ const Settings = () => {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   
-  // Settings state
   const [settings, setSettings] = useState({
     default_platform: "Console",
     custom_tags: [],
@@ -21,7 +21,6 @@ const Settings = () => {
     visible_widgets: ["profit", "tax", "balance", "trades"]
   });
 
-  // Form states
   const [startingBalance, setStartingBalance] = useState("");
   const [newTag, setNewTag] = useState("");
   const [importFile, setImportFile] = useState(null);
@@ -34,8 +33,6 @@ const Settings = () => {
   const fetchSettings = async () => {
     try {
       const response = await api.get("/api/settings");
-      console.log("Full response:", response);
-      console.log("Response data:", response.data);
       setSettings(response.data);
     } catch (error) {
       console.error("Failed to fetch settings:", error);
@@ -44,10 +41,9 @@ const Settings = () => {
 
   const updateSetting = async (key, value) => {
     const newSettings = { ...settings, [key]: value };
-    setSettings(newSettings);  // Updates local state
-    
+    setSettings(newSettings);
     try {
-      await api.post("/api/settings", newSettings);  // Saves to backend (working)
+      await api.post("/api/settings", newSettings);
       setMessage("Settings updated successfully!");
       setTimeout(() => setMessage(""), 3000);
     } catch (error) {
@@ -92,7 +88,6 @@ const Settings = () => {
       const response = await api.get(`/api/export/trades?format=${format}`, {
         responseType: 'blob'
       });
-      
       const blob = new Blob([response.data]);
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
@@ -100,7 +95,6 @@ const Settings = () => {
       link.download = `trades_export.${format}`;
       link.click();
       window.URL.revokeObjectURL(url);
-      
       setMessage(`Data exported as ${format.toUpperCase()} successfully!`);
     } catch (error) {
       setMessage("Failed to export data");
@@ -122,7 +116,6 @@ const Settings = () => {
       const response = await api.post("/api/import/trades", formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
-      
       setMessage(`${response.data.message}`);
       setImportFile(null);
     } catch (error) {
@@ -159,12 +152,19 @@ const Settings = () => {
     { id: "account", label: "Account", icon: "👤" }
   ];
 
+  const inputCls =
+    "w-full p-3 rounded bg-white text-gray-900 border border-slate-200 dark:bg-zinc-800 dark:text-white dark:border-neutral-700";
+
+  const btnPrimary = "bg-blue-600 hover:bg-blue-700 text-white px-4 py-3 rounded";
+  const btnSuccess = "bg-green-600 hover:bg-green-700 text-white px-4 py-3 rounded";
+  const pillCls = "bg-gray-100 dark:bg-gray-700 px-3 py-1 rounded-full text-sm flex items-center gap-2 border border-slate-200 dark:border-gray-600";
+
   return (
-    <div className="bg-zinc-900 p-6 rounded-xl shadow-lg text-white max-w-4xl mx-auto">
+    <div className="bg-white text-gray-900 p-6 rounded-xl shadow-lg max-w-4xl mx-auto border border-slate-200 dark:bg-zinc-900 dark:text-white dark:border-neutral-800">
       <h2 className="text-2xl font-bold mb-6">Settings</h2>
       
       {message && (
-        <div className={`mb-4 p-3 rounded ${message.includes('success') ? 'bg-green-800' : 'bg-red-800'}`}>
+        <div className={`mb-4 p-3 rounded text-white ${message.includes('success') ? 'bg-green-600' : 'bg-red-600'}`}>
           {message}
         </div>
       )}
@@ -175,10 +175,10 @@ const Settings = () => {
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
-            className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+            className={`px-4 py-2 rounded-lg font-medium transition-colors border ${
               activeTab === tab.id 
-                ? 'bg-blue-600 text-white' 
-                : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                ? 'bg-indigo-600 text-white border-indigo-600' 
+                : 'bg-white text-gray-700 border-slate-200 hover:bg-slate-50 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-600'
             }`}
           >
             {tab.icon} {tab.label}
@@ -197,12 +197,12 @@ const Settings = () => {
                 placeholder="Enter Starting Balance"
                 value={startingBalance}
                 onChange={(e) => setStartingBalance(e.target.value)}
-                className="flex-1 p-3 rounded bg-zinc-800 text-white"
+                className={`flex-1 ${inputCls}`}
               />
               <button 
                 onClick={handleSaveBalance} 
                 disabled={loading}
-                className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded disabled:opacity-50"
+                className={`${btnSuccess} disabled:opacity-50`}
               >
                 {loading ? "Saving..." : "Save"}
               </button>
@@ -214,7 +214,7 @@ const Settings = () => {
             <select
               value={settings.theme}
               onChange={(e) => updateSetting("theme", e.target.value)}
-              className="w-full p-3 rounded bg-zinc-800 text-white"
+              className={inputCls}
             >
               <option value="dark">Dark Theme</option>
               <option value="light">Light Theme</option>
@@ -226,15 +226,15 @@ const Settings = () => {
             <select
               value={settings.timezone}
               onChange={(e) => updateSetting("timezone", e.target.value)}
-              className="w-full p-3 rounded bg-zinc-800 text-white"
+              className={inputCls}
             >
               <option value="UTC">UTC</option>
+              <option value="Europe/London">London</option>
+              <option value="Europe/Berlin">Berlin</option>
               <option value="America/New_York">Eastern Time</option>
               <option value="America/Chicago">Central Time</option>
               <option value="America/Denver">Mountain Time</option>
               <option value="America/Los_Angeles">Pacific Time</option>
-              <option value="Europe/London">London</option>
-              <option value="Europe/Berlin">Berlin</option>
             </select>
           </div>
         </div>
@@ -248,7 +248,7 @@ const Settings = () => {
             <select
               value={settings.default_platform}
               onChange={(e) => updateSetting("default_platform", e.target.value)}
-              className="w-full p-3 rounded bg-zinc-800 text-white"
+              className={inputCls}
             >
               <option value="Console">Console</option>
               <option value="PC">PC</option>
@@ -263,12 +263,12 @@ const Settings = () => {
                 placeholder="Add new tag"
                 value={newTag}
                 onChange={(e) => setNewTag(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && addCustomTag()}
-                className="flex-1 p-3 rounded bg-zinc-800 text-white"
+                onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addCustomTag())}
+                className={`flex-1 ${inputCls}`}
               />
               <button 
                 onClick={addCustomTag}
-                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-3 rounded"
+                className={btnPrimary}
               >
                 Add
               </button>
@@ -277,12 +277,13 @@ const Settings = () => {
               {(settings.custom_tags || []).map((tag, index) => (
                 <span
                   key={index}
-                  className="bg-gray-700 px-3 py-1 rounded-full text-sm flex items-center gap-2"
+                  className={pillCls}
                 >
                   {tag}
                   <button
                     onClick={() => removeCustomTag(tag)}
-                    className="text-red-400 hover:text-red-300"
+                    className="text-red-600 dark:text-red-400 hover:opacity-80"
+                    title="Remove"
                   >
                     ×
                   </button>
@@ -313,10 +314,10 @@ const Settings = () => {
             <select
               value={settings.currency_format}
               onChange={(e) => updateSetting("currency_format", e.target.value)}
-              className="w-full p-3 rounded bg-zinc-800 text-white"
+              className={inputCls}
             >
               <option value="coins">Full Numbers (1,000,000)</option>
-              <option value="k">Thousands (1,000K)</option>
+              <option value="k">Thousands (1.0K)</option>
               <option value="m">Millions (1.0M)</option>
             </select>
           </div>
@@ -326,7 +327,7 @@ const Settings = () => {
             <select
               value={settings.date_format}
               onChange={(e) => updateSetting("date_format", e.target.value)}
-              className="w-full p-3 rounded bg-zinc-800 text-white"
+              className={inputCls}
             >
               <option value="US">US Format (MM/DD/YYYY)</option>
               <option value="EU">EU Format (DD/MM/YYYY)</option>
@@ -338,7 +339,7 @@ const Settings = () => {
             <select
               value={settings.default_chart_range}
               onChange={(e) => updateSetting("default_chart_range", e.target.value)}
-              className="w-full p-3 rounded bg-zinc-800 text-white"
+              className={inputCls}
             >
               <option value="7d">Last 7 Days</option>
               <option value="30d">Last 30 Days</option>
@@ -357,13 +358,13 @@ const Settings = () => {
             <div className="flex gap-3">
               <button
                 onClick={() => handleExport("csv")}
-                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded"
+                className={btnPrimary}
               >
                 Export as CSV
               </button>
               <button
                 onClick={() => handleExport("json")}
-                className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded"
+                className={btnSuccess}
               >
                 Export as JSON
               </button>
@@ -377,27 +378,27 @@ const Settings = () => {
                 type="file"
                 accept=".csv,.json"
                 onChange={(e) => setImportFile(e.target.files[0])}
-                className="w-full p-3 rounded bg-zinc-800 text-white file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:bg-gray-600 file:text-white"
+                className={`${inputCls} file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:bg-indigo-600 file:text-white`}
               />
               <button
                 onClick={handleImport}
                 disabled={loading || !importFile}
-                className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded disabled:opacity-50"
+                className={`${btnSuccess} disabled:opacity-50`}
               >
                 {loading ? "Importing..." : "Import Data"}
               </button>
             </div>
           </div>
 
-          <div className="border-t border-gray-700 pt-6">
-            <h3 className="text-lg font-semibold mb-3 text-red-400">Danger Zone</h3>
+          <div className="border-t border-slate-200 dark:border-gray-700 pt-6">
+            <h3 className="text-lg font-semibold mb-3 text-red-600 dark:text-red-400">Danger Zone</h3>
             <div className="space-y-3">
               <input
                 type="text"
                 placeholder="Type 'DELETE ALL' to confirm"
                 value={deleteConfirm}
                 onChange={(e) => setDeleteConfirm(e.target.value)}
-                className="w-full p-3 rounded bg-zinc-800 text-white"
+                className={inputCls}
               />
               <button
                 onClick={handleDeleteAllData}
@@ -414,7 +415,7 @@ const Settings = () => {
       {/* Account Tab */}
       {activeTab === "account" && (
         <div className="space-y-6">
-          <div className="pt-4 border-t border-gray-700">
+          <div className="pt-4 border-t border-slate-200 dark:border-gray-700">
             <button 
               onClick={logout} 
               className="bg-red-600 hover:bg-red-700 text-white py-3 px-6 rounded-lg w-full"
