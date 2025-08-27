@@ -9,6 +9,7 @@ import Loading from "./components/Loading";
 import PrivateRoute from "./components/PrivateRoute";
 import Landing from "./pages/Landing";
 import Watchlist from "./pages/Watchlist";
+import SquadBuilder from "./pages/SquadBuilder";
 
 // Direct import
 import PlayerSearch from "./pages/PlayerSearch";
