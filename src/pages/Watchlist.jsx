@@ -116,7 +116,7 @@ export default function Watchlist() {
     return list;
   }, [items, sort]);
 
-  // — autocomplete fetch via axios base URL —
+  // autocomplete fetch
   const fetchSuggestions = useCallback(async (q) => {
     if (!q || q.length < 1) {
       setSuggestions([]);
@@ -125,7 +125,6 @@ export default function Watchlist() {
 
     try {
       setSugLoading(true);
-      // cancel any in-flight request
       if (abortRef.current) abortRef.current.abort();
       abortRef.current = new AbortController();
 
@@ -215,5 +214,10 @@ export default function Watchlist() {
     return () => document.removeEventListener("click", onDoc);
   }, []);
 
-  // ... (JSX return stays same, just quotes corrected above)
+  // JSX return (unchanged except curly quotes fixed)
+  return (
+    <div className="p-6 md:p-8">
+      {/* Header, Table, Modal ... */}
+    </div>
+  );
 }
