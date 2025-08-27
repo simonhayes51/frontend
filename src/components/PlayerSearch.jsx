@@ -4,6 +4,7 @@ import { Search, TrendingUp, TrendingDown, Minus, Loader2, Target } from "lucide
 const API_BASE = import.meta.env.VITE_API_URL || "";
 const buildProxy = (url) => `${API_BASE}/img?url=${encodeURIComponent(url)}`;
 
+// ------- backend helpers -------
 const searchPlayers = async (query) => {
   if (!query.trim()) return [];
   try {
@@ -29,9 +30,7 @@ const addToWatchlist = async ({ player_name, card_id, version, platform, notes }
   let payload = null;
   try {
     payload = await r.json();
-  } catch {
-    /* ignore */
-  }
+  } catch {}
   if (!r.ok) {
     const msg = payload?.detail || "Failed to add to watchlist";
     throw new Error(msg);
@@ -74,7 +73,7 @@ const fetchPlayerPrice = async (cardId) => {
   return null;
 };
 
-// ---- Position helpers ----
+// ------- position helpers -------
 const POS_CODE_TO_NAME = {
   0: "GK", 1: "GK", 2: "GK",
   3: "RB", 4: "RB",
@@ -119,37 +118,14 @@ const _posNorm = (x) => {
   return null;
 };
 
-const resolvePosition = (pd, fallbackObj) => {
+const resolvePosition = (pd, fb) => {
   const cands = [
-    pd?.position,
-    pd?.preferredPosition1,
-    pd?.preferredPosition2,
-    pd?.preferredPosition3,
-    pd?.mainPosition,
-    pd?.primaryPosition,
-    pd?.bestPosition,
-    pd?.basePosition,
-    pd?.defaultPosition,
-    pd?.positionId,
-    pd?.positionName,
-    pd?.preferredPosition1Name,
-    pd?.shortPosition,
-    pd?.positionShort,
-    pd?.positionFull,
-    pd?.positionLong,
-    pd?.positions,
-    pd?.preferredPositions,
-    pd?.alternativePositions,
-    pd?.altPositions,
-    pd?.playablePositions,
-    pd?.positionsList,
-    pd?.positionList,
-    pd?.displayPositions,
-    fallbackObj?.position,
-    fallbackObj?.position_name,
-    fallbackObj?.position_short,
-    fallbackObj?.pos,
-    fallbackObj?.positions,
+    pd?.position, pd?.preferredPosition1, pd?.preferredPosition2, pd?.preferredPosition3,
+    pd?.mainPosition, pd?.primaryPosition, pd?.bestPosition, pd?.basePosition, pd?.defaultPosition,
+    pd?.positionId, pd?.positionName, pd?.preferredPosition1Name, pd?.shortPosition, pd?.positionShort,
+    pd?.positionFull, pd?.positionLong, pd?.positions, pd?.preferredPositions, pd?.alternativePositions,
+    pd?.altPositions, pd?.playablePositions, pd?.positionsList, pd?.positionList, pd?.displayPositions,
+    fb?.position, fb?.position_name, fb?.position_short, fb?.pos, fb?.positions,
   ];
   for (const c of cands) {
     const t = _posNorm(c);
@@ -158,15 +134,76 @@ const resolvePosition = (pd, fallbackObj) => {
   return "Unknown";
 };
 
-const getAttributeColor = (value) => {
-  if (value >= 90) return "text-green-400";
-  if (value >= 80) return "text-green-300";
-  if (value >= 70) return "text-yellow-300";
-  if (value >= 60) return "text-orange-300";
-  return "text-red-400";
-};
+const getAttributeColor = (v) =>
+  v >= 90 ? "text-green-400" :
+  v >= 80 ? "text-green-300" :
+  v >= 70 ? "text-yellow-300" :
+  v >= 60 ? "text-orange-300" : "text-red-400";
 
-// ---------------- SearchBox ----------------
+// ================== AutoFitNumber (shrinks to fit) ==================
+/**
+ * Renders a number that shrinks (down to 40%) to always fit in its parent line,
+ * taking padding and the coin icon into account.
+ */
+function AutoFitNumber({ value, className = "" }) {
+  const spanRef = useRef(null);
+  const [scale, setScale] = useState(1);
+
+  useLayoutEffect(() => {
+    const el = spanRef.current;
+    if (!el) return;
+    const parent = el.parentElement; // the inline-flex containing [img + span]
+    if (!parent) return;
+
+    const recalc = () => {
+      // Compute available width in the parent for the number text.
+      const cs = getComputedStyle(parent);
+      const pad = (parseFloat(cs.paddingLeft) || 0) + (parseFloat(cs.paddingRight) || 0);
+      const icon = parent.querySelector("img");
+      const iconW = icon ? icon.getBoundingClientRect().width : 20;
+      const gap =  (parseFloat(cs.columnGap) || 0) || 8; // inline-flex "gap-2" ~ 8px
+
+      // A small safety margin so we never touch the edge
+      const safety = 6;
+
+      const available = Math.max(0, parent.clientWidth - pad - iconW - gap - safety);
+      // (1) Measure the span at scale=1
+      el.style.transform = "scale(1)";
+      const needed = el.scrollWidth || 1;
+
+      // (2) Decide scale; clamp between 0.4 and 1
+      const next = Math.min(1, Math.max(0.4, available / needed));
+      setScale(next);
+    };
+
+    recalc();
+    const ro = new ResizeObserver(recalc);
+    ro.observe(parent);
+    window.addEventListener("resize", recalc);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", recalc);
+    };
+  }, [value]);
+
+  return (
+    <span
+      ref={spanRef}
+      className={className}
+      style={{
+        display: "inline-block",
+        transform: `scale(${scale})`,
+        transformOrigin: "left center",
+        whiteSpace: "nowrap",
+        lineHeight: 1, // keeps the row compact while scaling
+      }}
+    >
+      {value != null ? Number(value).toLocaleString() : "N/A"}
+    </span>
+  );
+}
+
+// ================== SearchBox ==================
 const SearchBox = ({ onPlayerSelect }) => {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState([]);
@@ -222,10 +259,8 @@ const SearchBox = ({ onPlayerSelect }) => {
                 <div className="w-12 h-16 bg-gradient-to-b from-yellow-400 to-yellow-600 rounded-lg flex items-center justify-center text-white font-bold text-sm">
                   {player.rating}
                 </div>
-                <div>
-                  <div className="font-semibold text-white">
-                    {player.name} ({player.rating})
-                  </div>
+                <div className="font-semibold text-white">
+                  {player.name} ({player.rating})
                 </div>
               </div>
             </button>
@@ -242,7 +277,7 @@ const SearchBox = ({ onPlayerSelect }) => {
   );
 };
 
-// ---------------- PriceTrend ----------------
+// ================== PriceTrend ==================
 const PriceTrend = ({ auctions }) => {
   if (!auctions || auctions.length < 2) return null;
   const [a, b] = auctions.slice(0, 2);
@@ -269,54 +304,7 @@ const PriceTrend = ({ auctions }) => {
   );
 };
 
-function AutoFitNumber({ value, className = "" }) {
-  const spanRef = useRef(null);
-  const [scale, setScale] = useState(1);
-
-  useLayoutEffect(() => {
-    const el = spanRef.current;
-    if (!el || !el.parentElement) return;
-    const parent = el.parentElement;
-
-    const recalc = () => {
-      // width left for text (subtract icon + gap + small safety)
-      const available =
-        parent.clientWidth - 24 /*icon*/ - 8 /*gap*/ - 8 /*pad*/;
-      const needed = el.scrollWidth || 1;
-      const next = Math.min(1, Math.max(0.6, available / needed)); // clamp 0.6–1
-      setScale(next);
-    };
-
-    recalc();
-    const ro = new ResizeObserver(recalc);
-    ro.observe(parent);
-    return () => ro.disconnect();
-  }, [value]);
-
-  useEffect(() => {
-    const onResize = () => {}; // ResizeObserver handles it; keep hook alive
-    window.addEventListener("resize", onResize);
-    return () => window.removeEventListener("resize", onResize);
-  }, []);
-
-  return (
-    <span
-      ref={spanRef}
-      className={className}
-      style={{
-        display: "inline-block",
-        transform: `scale(${scale})`,
-        transformOrigin: "left center",
-        whiteSpace: "nowrap",
-      }}
-    >
-      {value != null ? Number(value).toLocaleString() : "N/A"}
-    </span>
-  );
-}
-
-
-// ---------------- PlayerDetail ----------------
+// ================== PlayerDetail ==================
 const PlayerDetail = ({ player, onBack }) => {
   const [priceData, setPriceData] = useState(null);
   const [playerData, setPlayerData] = useState(null);
@@ -477,22 +465,26 @@ const PlayerDetail = ({ player, onBack }) => {
               {d.fullName}
             </h1>
 
+            {/* Price / Range / Trend / Accelerate */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
               {/* Price */}
               <div className="bg-[#334155] rounded-lg p-3 min-w-0">
                 <div className="text-gray-300 text-xs md:text-sm mb-1">Price</div>
-                <div className="text-2xl md:text-3xl font-bold text-yellow-400 leading-tight">
+
+                {/* Important: no fixed text-x classes here; the number scales itself */}
+                <div className="font-bold text-yellow-400 leading-tight">
                   {loading ? (
                     <Loader2 className="w-5 h-5 md:w-6 md:h-6 animate-spin inline align-[-2px]" />
                   ) : priceData?.isExtinct ? (
                     "Extinct"
                   ) : (
-                    <span className="inline-flex items-center gap-2 min-w-0 overflow-hidden align-middle">
+                    <span className="inline-flex items-center gap-2 min-w-0 overflow-hidden align-middle w-full">
                       <img
                         src="https://cdn2.futbin.com/https%3A%2F%2Fcdn.futbin.com%2Fdesign%2Fimg%2Fcoins_big.png?fm=png&ixlib=java-2.1.0&w=40&s=cad4ceb684da7f0b778fdeb1d4065fb1"
                         alt="Coins"
                         className="w-4 h-4 md:w-5 md:h-5 shrink-0"
                       />
+                      {/* Auto-shrinks from 100% down to 40% as needed */}
                       <AutoFitNumber value={priceData?.current} />
                     </span>
                   )}
@@ -724,9 +716,9 @@ const PlayerDetail = ({ player, onBack }) => {
       </div>
     </div>
   );
-}; // <-- closes PlayerDetail
+};
 
-// ---------------- Main ----------------
+// ================== Main ==================
 export default function PlayerSearch() {
   const [selectedPlayer, setSelectedPlayer] = useState(null);
 
