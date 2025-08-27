@@ -14,86 +14,55 @@ import {
 } from "recharts";
 import api from "../utils/axios";
 
-const asArray = (v) => (Array.isArray(v) ? v : []);
-
 const ModernDashboard = () => {
-  // ---- Safely consume contexts (with defaults) ----
-  const dash = useDashboard?.() || {};
   const {
-    netProfit = 0,
-    taxPaid = 0,
-    startingBalance = 0,
-    trades = [],
-    isLoading = false,
-    error = null
-  } = dash;
+    netProfit,
+    taxPaid,
+    startingBalance,
+    trades,
+    isLoading,
+    error
+  } = useDashboard();
 
-  const settings = useSettings?.() || {};
   const {
-    formatCurrency: _formatCurrency,
-    formatDate: _formatDate,
-    isLoading: settingsLoading = false
-  } = settings;
+    formatCurrency,
+    formatDate,
+    isLoading: settingsLoading
+  } = useSettings();
 
-  const formatCurrency =
-    typeof _formatCurrency === "function"
-      ? _formatCurrency
-      : (n) =>
-          typeof n === "number"
-            ? n.toLocaleString(undefined, { maximumFractionDigits: 0 })
-            : String(n ?? "0");
+  const { user } = useAuth();
 
-  const formatDateSafe = (val) => {
-    try {
-      if (typeof _formatDate === "function") {
-        const s = _formatDate(val);
-        return typeof s === "string" ? s : new Date(val).toLocaleString();
-      }
-      return new Date(val).toLocaleString();
-    } catch {
-      return "";
-    }
-  };
-
-  const { user = {} } = useAuth?.() || {};
-
-  // ---- Local state ----
   const [analyticsData, setAnalyticsData] = useState(null);
   const [goals, setGoals] = useState([]);
 
   useEffect(() => {
     fetchAdvancedAnalytics();
     fetchGoals();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const fetchAdvancedAnalytics = async () => {
     try {
       const response = await api.get("/api/analytics/advanced");
-      setAnalyticsData(response.data || {});
+      setAnalyticsData(response.data);
     } catch (error) {
       console.error("Failed to fetch analytics:", error);
-      setAnalyticsData({ daily_profits: [] });
     }
   };
 
   const fetchGoals = async () => {
     try {
       const response = await api.get("/api/goals");
-      setGoals(asArray(response?.data?.goals));
+      setGoals(response.data.goals);
     } catch (error) {
       console.error("Failed to fetch goals:", error);
-      setGoals([]);
     }
   };
 
   if (isLoading || settingsLoading) {
     return <ModernLoadingState />;
   }
-  if (error) return <div className="text-red-400 p-6">{String(error)}</div>;
 
-  const safeTrades = asArray(trades);
-  const safeGoals = asArray(goals);
+  if (error) return <div className="text-red-400 p-6">{error}</div>;
 
   const stats = [
     {
@@ -138,7 +107,7 @@ const ModernDashboard = () => {
               className="w-8 h-8 rounded-full"
               onError={(e) => {
                 e.currentTarget.src =
-                  "https://cdn.discordapp.com/embed/avatars/0.png";
+                  'https://cdn.discordapp.com/embed/avatars/0.png';
               }}
             />
           </div>
@@ -172,9 +141,9 @@ const ModernDashboard = () => {
 
           <div className="flex items-center space-x-3">
             <img
-              src={user?.avatar_url || "https://cdn.discordapp.com/embed/avatars/0.png"}
-              alt={user?.global_name || "User"}
-              className="w-10 h-10 rounded-full border-2 border-purple-500 object-cover"
+              src={user?.avatar_url}
+              alt={user?.global_name}
+              className="w-10 h-10 rounded-full border-2 border-purple-500"
               onError={(e) => {
                 e.currentTarget.src =
                   "https://cdn.discordapp.com/embed/avatars/0.png";
@@ -182,7 +151,7 @@ const ModernDashboard = () => {
             />
             <div className="text-right">
               <p className="text-sm font-medium">
-                {user?.global_name || user?.username || "Trader"}
+                {user?.global_name || user?.username}
               </p>
               <p className="text-xs text-gray-400">Trader</p>
             </div>
@@ -191,16 +160,18 @@ const ModernDashboard = () => {
       </header>
 
       <div className="flex">
-        {/* Sidebar (hide if your Layout already renders nav) */}
+        {/* Sidebar
+            If Layout.jsx already renders DesktopSidebar/MobileNavigation,
+            remove this <aside> to avoid duplicate nav. */}
         <aside className="w-64 p-6 border-r border-gray-700/50 hidden md:block">
           <nav className="space-y-2">
             {[
-              { path: "/", label: "Dashboard", icon: "📊" },
-              { path: "/add-trade", label: "Add Trade", icon: "➕" },
-              { path: "/trades", label: "Trades", icon: "📋" },
-              { path: "/profile", label: "Profile", icon: "👤" },
-              { path: "/analytics", label: "Analytics", icon: "📈" },
-              { path: "/settings", label: "Settings", icon: "⚙️" }
+              { path: "/",          label: "Dashboard",  icon: "📊" },
+              { path: "/add-trade", label: "Add Trade",  icon: "➕" },
+              { path: "/trades",    label: "Trades",     icon: "📋" },
+              { path: "/profile",   label: "Profile",    icon: "👤" },
+              { path: "/analytics", label: "Analytics",  icon: "📈" },
+              { path: "/settings",  label: "Settings",   icon: "⚙️" }
             ].map(({ path, label, icon }) => (
               <NavLink
                 key={path}
@@ -212,7 +183,7 @@ const ModernDashboard = () => {
                       : "text-gray-400 hover:text-white hover:bg-gray-800/50"
                   }`
                 }
-                end={path === "/"}
+                end={path === "/"} // exact match for root
               >
                 <span>{icon}</span>
                 <span className="text-sm">{label}</span>
@@ -225,7 +196,7 @@ const ModernDashboard = () => {
         <main className="flex-1 p-6">
           {/* Stats Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            {asArray(stats).map((stat, index) => (
+            {stats.map((stat, index) => (
               <div
                 key={index}
                 className="bg-gray-800/40 backdrop-blur-sm rounded-2xl p-6 border border-gray-700/50"
@@ -299,7 +270,7 @@ const ModernDashboard = () => {
 
               <div className="h-64">
                 <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={asArray(analyticsData?.daily_profits)}>
+                  <LineChart data={analyticsData?.daily_profits || []}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
                     <XAxis dataKey="date" stroke="#9CA3AF" />
                     <YAxis stroke="#9CA3AF" />
@@ -339,66 +310,57 @@ const ModernDashboard = () => {
               </div>
 
               <div className="space-y-4">
-                {asArray(safeTrades.slice(0, 8)).map((trade, index) => {
-                  const player = trade?.player ?? "Unknown";
-                  const profitNum = Number(trade?.profit ?? 0);
-                  const ts = trade?.timestamp;
-                  return (
-                    <div
-                      key={index}
-                      className="flex items-center justify-between p-3 bg-gray-900/50 rounded-lg"
-                    >
-                      <div className="flex items-center space-x-3">
-                        <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
-                          <span className="text-sm font-bold">
-                            {player.charAt(0)}
-                          </span>
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium">{player}</p>
-                          <p className="text-xs text-gray-400">
-                            {trade?.version ?? "player"}
-                          </p>
-                        </div>
+                {trades.slice(0, 8).map((trade, index) => (
+                  <div
+                    key={index}
+                    className="flex items-center justify-between p-3 bg-gray-900/50 rounded-lg"
+                  >
+                    <div className="flex items-center space-x-3">
+                      <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
+                        <span className="text-sm font-bold">
+                          {trade.player.charAt(0)}
+                        </span>
                       </div>
-                      <div className="text-right">
-                        <p
-                          className={`text-sm font-medium ${
-                            profitNum >= 0 ? "text-green-400" : "text-red-400"
-                          }`}
-                        >
-                          {profitNum >= 0 ? "+" : ""}
-                          {formatCurrency(profitNum)}
-                        </p>
-                        <p className="text-xs text-gray-400">
-                          {ts ? formatDateSafe(ts).split(",")[0] : ""}
-                        </p>
+                      <div>
+                        <p className="text-sm font-medium">{trade.player}</p>
+                        <p className="text-xs text-gray-400">{trade.version}</p>
                       </div>
                     </div>
-                  );
-                })}
+                    <div className="text-right">
+                      <p
+                        className={`text-sm font-medium ${
+                          trade.profit >= 0 ? "text-green-400" : "text-red-400"
+                        }`}
+                      >
+                        {trade.profit >= 0 ? "+" : ""}
+                        {formatCurrency(trade.profit)}
+                      </p>
+                      <p className="text-xs text-gray-400">
+                        {formatDate(trade.timestamp).split(",")[0]}
+                      </p>
+                    </div>
+                  </div>
+                ))}
               </div>
 
               {/* Upcoming Section */}
               <div className="mt-8">
                 <h3 className="text-lg font-semibold mb-4">Upcoming</h3>
                 <div className="space-y-3">
-                  {asArray(safeGoals.slice(0, 3)).map((goal, index) => (
+                  {goals.slice(0, 3).map((goal, index) => (
                     <div
                       key={index}
                       className="flex items-center space-x-3 p-3 bg-gray-900/30 rounded-lg"
                     >
                       <div className="w-2 h-2 bg-green-500 rounded-full" />
                       <div className="flex-1">
-                        <p className="text-sm font-medium">
-                          {goal?.title ?? "Goal"}
-                        </p>
+                        <p className="text-sm font-medium">{goal.title}</p>
                         <p className="text-xs text-gray-400">
-                          Target: {formatCurrency(goal?.target_amount ?? 0)}
+                          Target: {formatCurrency(goal.target_amount)}
                         </p>
                       </div>
                       <span className="text-xs text-gray-400">
-                        {goal?.target_date ?? ""}
+                        {goal.target_date}
                       </span>
                     </div>
                   ))}
