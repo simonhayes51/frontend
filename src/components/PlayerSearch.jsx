@@ -24,6 +24,27 @@ const searchPlayers = async (query) => {
   }
 };
 
+// NEW: Add to watchlist helper (uses cookie session)
+const addToWatchlist = async ({ player_name, card_id, version, platform, notes }) => {
+  const r = await fetch(`${API_BASE}/api/watchlist`, {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ player_name, card_id, version, platform, notes }),
+  });
+  let payload = null;
+  try {
+    payload = await r.json();
+  } catch {
+    /* ignore */
+  }
+  if (!r.ok) {
+    const msg = payload?.detail || "Failed to add to watchlist";
+    throw new Error(msg);
+  }
+  return payload;
+};
+
 // FUT.GG: player definition via your backend proxy
 const fetchPlayerDefinition = async (cardId) => {
   try {
