@@ -1,63 +1,69 @@
-const thresholds = {
-  club:   [2, 4, 7],
-  nation: [2, 5, 8],
-  league: [3, 5, 8],
-};
+// src/components/squad/chemistry.js
+import { isValidForSlot } from "../../utils/positions";
 
-const inPos = (player, slotPos) => !!player && player.positions?.includes?.(slotPos);
-
-export function countIncrements(pairs) {
-  const inc = {
-    club: new Map(),
-    nation: new Map(),
-    league: new Map(),
-  };
-  const add = (m, k, by = 1) => m.set(k, (m.get(k) || 0) + by);
-
-  for (const { player, slotPos } of pairs) {
-    if (!player) continue;
-    if (!inPos(player, slotPos)) continue; // OOP gives nothing
-
-    if (player.isIcon) {
-      add(inc.nation, player.nation, 2);   // +2 nation
-      add(inc.league, "*", 1);            // +1 to every league later
-    } else if (player.isHero) {
-      add(inc.nation, player.nation, 1);   // +1 nation
-      add(inc.league, player.league, 2);   // +2 their league
-    } else {
-      add(inc.club, player.club, 1);
-      add(inc.nation, player.nation, 1);
-      add(inc.league, player.league, 1);
-    }
-  }
-  return inc;
-}
-
-const chemFrom = (kind, n) => {
-  const [a,b,c] = thresholds[kind];
-  if (n >= c) return 3; if (n >= b) return 2; if (n >= a) return 1; return 0;
-};
-
+// placed: { [slotKey]: player|null }
+// formation: array of { key, pos }
 export function computeChemistry(placed, formation) {
-  const pairs = formation.map(s => ({ slotPos: s.pos, player: placed[s.key] || null }));
-  const inc = countIncrements(pairs);
-  const leagueGlobal = inc.league.get("*") || 0;
+  const players = Object.values(placed).filter(Boolean);
+
+  // club / nation / league tallies (in-position only)
+  const clubMap = new Map();
+  const nationMap = new Map();
+  const leagueMap = new Map();
 
   const perPlayerChem = {};
-  let teamChem = 0;
 
-  for (const { slotPos, player } of pairs) {
-    if (!player) continue;
-    if (!inPos(player, slotPos)) { perPlayerChem[player.id] = 0; continue; }
+  // First pass: collect counts (only if in slot position)
+  for (const slot of formation) {
+    const p = placed[slot.key];
+    if (!p) continue;
+    const inPos = isValidForSlot(slot.pos, p.positions);
 
-    if (player.isIcon || player.isHero) { perPlayerChem[player.id] = 3; teamChem += 3; continue; }
-
-    const cc = inc.club.get(player.club)   || 0;
-    const nc = inc.nation.get(player.nation) || 0;
-    const lc = (inc.league.get(player.league) || 0) + leagueGlobal;
-
-    const chem = Math.min(3, chemFrom('club',cc) + chemFrom('nation',nc) + chemFrom('league',lc));
-    perPlayerChem[player.id] = chem; teamChem += chem;
+    if (inPos) {
+      if (p.club) clubMap.set(p.club, (clubMap.get(p.club) || 0) + 1);
+      if (p.nation) nationMap.set(p.nation, (nationMap.get(p.nation) || 0) + 1);
+      if (p.league) leagueMap.set(p.league, (leagueMap.get(p.league) || 0) + 1);
+    }
   }
+
+  // Helper to convert counts to 0..3 chem
+  const chemFromClub   = (n) => (n >= 7 ? 3 : n >= 4 ? 2 : n >= 2 ? 1 : 0);
+  const chemFromNation = (n) => (n >= 8 ? 3 : n >= 5 ? 2 : n >= 2 ? 1 : 0);
+  const chemFromLeague = (n) => (n >= 8 ? 3 : n >= 5 ? 2 : n >= 3 ? 1 : 0);
+
+  // Second pass: per-player chem
+  for (const slot of formation) {
+    const p = placed[slot.key];
+    if (!p) continue;
+
+    const inPos = isValidForSlot(slot.pos, p.positions);
+    if (!inPos) {
+      perPlayerChem[p.id] = 0;
+      continue;
+    }
+
+    // base from counts
+    const clubC   = p.club   ? chemFromClub(clubMap.get(p.club) || 0) : 0;
+    const nationC = p.nation ? chemFromNation(nationMap.get(p.nation) || 0) : 0;
+    const leagueC = p.league ? chemFromLeague(leagueMap.get(p.league) || 0) : 0;
+
+    let chem = clubC + nationC + leagueC;
+    chem = Math.max(0, Math.min(3, chem)); // cap
+
+    // You can optionally add icon/hero perks here (only in position):
+    // if (p.isIcon) { /* nation's thresholds behave differently in FC25 */ }
+    // if (p.isHero) { /* hero league boosts, etc. */ }
+
+    perPlayerChem[p.id] = chem;
+  }
+
+  const teamChem = Math.max(
+    0,
+    Math.min(
+      33,
+      Object.values(perPlayerChem).reduce((a, b) => a + (b || 0), 0)
+    )
+  );
+
   return { perPlayerChem, teamChem };
 }
