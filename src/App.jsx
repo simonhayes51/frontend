@@ -58,7 +58,7 @@ function App() {
                   <Route path="settings" element={<Settings />} />
                   <Route path="analytics" element={<ProfitGraph />} />
                   <Route path="pricecheck" element={<PriceCheck />} />
-                  <Route path="/watchlist" element={<Watchlist />} />
+                  <Route path="watchlist" element={<Watchlist />} />
                 </Route>
 
                 {/* 404 */}
