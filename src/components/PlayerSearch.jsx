@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useLayoutEffect, useRef } from "react";
 import { Search, TrendingUp, TrendingDown, Minus, Loader2, Target } from "lucide-react";
 
 const API_BASE = import.meta.env.VITE_API_URL || "";
@@ -268,6 +268,53 @@ const PriceTrend = ({ auctions }) => {
     </div>
   );
 };
+
+function AutoFitNumber({ value, className = "" }) {
+  const spanRef = useRef(null);
+  const [scale, setScale] = useState(1);
+
+  useLayoutEffect(() => {
+    const el = spanRef.current;
+    if (!el || !el.parentElement) return;
+    const parent = el.parentElement;
+
+    const recalc = () => {
+      // width left for text (subtract icon + gap + small safety)
+      const available =
+        parent.clientWidth - 24 /*icon*/ - 8 /*gap*/ - 8 /*pad*/;
+      const needed = el.scrollWidth || 1;
+      const next = Math.min(1, Math.max(0.6, available / needed)); // clamp 0.6–1
+      setScale(next);
+    };
+
+    recalc();
+    const ro = new ResizeObserver(recalc);
+    ro.observe(parent);
+    return () => ro.disconnect();
+  }, [value]);
+
+  useEffect(() => {
+    const onResize = () => {}; // ResizeObserver handles it; keep hook alive
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+
+  return (
+    <span
+      ref={spanRef}
+      className={className}
+      style={{
+        display: "inline-block",
+        transform: `scale(${scale})`,
+        transformOrigin: "left center",
+        whiteSpace: "nowrap",
+      }}
+    >
+      {value != null ? Number(value).toLocaleString() : "N/A"}
+    </span>
+  );
+}
+
 
 // ---------------- PlayerDetail ----------------
 const PlayerDetail = ({ player, onBack }) => {
