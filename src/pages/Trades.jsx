@@ -22,6 +22,38 @@ const safeDate = (date) => {
   }
 };
 
+// normalise various ID shapes into a single `id`
+const getId = (t) => t?.id ?? t?.trade_id ?? t?.tradeId ?? t?.ID ?? t?._id ?? null;
+
+// normalise backend fields to the UI shape we use here
+const normalizeTrade = (t) => {
+  const id = getId(t);
+
+  return {
+    id, // always keep the resolved id here
+    // names
+    player: t.player ?? t.player_name ?? t.name ?? "N/A",
+    version: t.version ?? t.card_version ?? t.card ?? "N/A",
+
+    // qty
+    quantity: t.quantity ?? t.qty ?? 1,
+
+    // numbers
+    buy: Number(t.buy ?? t.buy_price ?? 0),
+    sell: Number(t.sell ?? t.sell_price ?? 0),
+    profit: typeof t.profit === "number" ? t.profit : (Number(t.sell ?? 0) - Number(t.buy ?? 0) - Math.round(Number(t.sell ?? 0) * 0.05)),
+
+    // timestamp / date
+    timestamp: t.timestamp ?? t.created_at ?? t.updated_at ?? null,
+
+    // pass through extras if present
+    notes: t.notes ?? "",
+    platform: t.platform ?? t.console ?? undefined,
+    tag: t.tag ?? undefined,
+    ea_tax: t.ea_tax ?? undefined,
+  };
+};
+
 async function putUpdateTrade(tradeId, patch) {
   const r = await fetch(`${API_BASE}/api/trades/${tradeId}`, {
     method: "PUT",
@@ -47,7 +79,7 @@ function EditModal({ open, trade, onClose, onSaved }) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (trade) {
       setForm({
         player: trade.player ?? "",
@@ -76,7 +108,9 @@ function EditModal({ open, trade, onClose, onSaved }) {
 
   const submit = async (e) => {
     e.preventDefault();
-    if (!trade.id) return;
+    const id = getId(trade);
+    if (!id) return;
+
     setSaving(true);
     setError("");
     try {
@@ -87,25 +121,22 @@ function EditModal({ open, trade, onClose, onSaved }) {
         buy: form.buy,
         sell: form.sell,
         notes: form.notes,
-        timestamp: form.timestamp
-          ? new Date(form.timestamp).toISOString()
-          : undefined,
+        timestamp: form.timestamp ? new Date(form.timestamp).toISOString() : undefined,
       };
-      Object.keys(patch).forEach(
-        (k) => patch[k] === undefined && delete patch[k]
-      );
-      const updated = await putUpdateTrade(trade.id, patch);
+      Object.keys(patch).forEach((k) => patch[k] === undefined && delete patch[k]);
 
-      // Client-side fallback calc if backend doesn't return ea_tax/profit
+      const updated = await putUpdateTrade(id, patch);
+
+      // Fallback profit/EA tax if backend doesn't send back computed fields
       if (updated) {
-        const sell = Number(updated.sell || 0);
-        const buy = Number(updated.buy || 0);
-        const tax = Math.round(sell * 0.05);
+        const sell = Number(updated.sell ?? updated.sell_price ?? form.sell ?? 0);
+        const buy  = Number(updated.buy  ?? updated.buy_price  ?? form.buy  ?? 0);
+        const tax  = Math.round(sell * 0.05);
         if (updated.ea_tax == null) updated.ea_tax = tax;
         if (updated.profit == null) updated.profit = sell - buy - tax;
       }
 
-      onSaved(updated);
+      onSaved(normalizeTrade(updated));
     } catch (err) {
       setError(err.message || "Failed to save");
     } finally {
@@ -118,104 +149,54 @@ function EditModal({ open, trade, onClose, onSaved }) {
       <div className="w-full max-w-2xl rounded-2xl bg-zinc-900 p-6 shadow-xl">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-xl font-semibold">Edit Trade</h2>
-          <button
-            onClick={onClose}
-            className="rounded-lg px-3 py-1 text-sm bg-zinc-800 hover:bg-zinc-700"
-          >
+          <button onClick={onClose} className="rounded-lg px-3 py-1 text-sm bg-zinc-800 hover:bg-zinc-700">
             Close
           </button>
         </div>
 
-        {error && (
-          <div className="mb-3 rounded-lg bg-red-900/40 px-3 py-2 text-red-200">
-            {error}
-          </div>
-        )}
+        {error && <div className="mb-3 rounded-lg bg-red-900/40 px-3 py-2 text-red-200">{error}</div>}
 
         <form onSubmit={submit} className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <label className="flex flex-col gap-1">
             <span className="text-sm text-zinc-300">Player</span>
-            <input
-              className="rounded-lg bg-zinc-800 px-3 py-2"
-              value={form.player}
-              onChange={set("player")}
-            />
+            <input className="rounded-lg bg-zinc-800 px-3 py-2" value={form.player} onChange={set("player")} />
           </label>
 
           <label className="flex flex-col gap-1">
             <span className="text-sm text-zinc-300">Version</span>
-            <input
-              className="rounded-lg bg-zinc-800 px-3 py-2"
-              value={form.version}
-              onChange={set("version")}
-            />
+            <input className="rounded-lg bg-zinc-800 px-3 py-2" value={form.version} onChange={set("version")} />
           </label>
 
           <label className="flex flex-col gap-1">
             <span className="text-sm text-zinc-300">Quantity</span>
-            <input
-              type="number"
-              min="1"
-              className="rounded-lg bg-zinc-800 px-3 py-2"
-              value={form.quantity}
-              onChange={set("quantity")}
-            />
+            <input type="number" min="1" className="rounded-lg bg-zinc-800 px-3 py-2" value={form.quantity} onChange={set("quantity")} />
           </label>
 
           <label className="flex flex-col gap-1">
             <span className="text-sm text-zinc-300">Buy</span>
-            <input
-              type="number"
-              min="0"
-              className="rounded-lg bg-zinc-800 px-3 py-2"
-              value={form.buy}
-              onChange={set("buy")}
-            />
+            <input type="number" min="0" className="rounded-lg bg-zinc-800 px-3 py-2" value={form.buy} onChange={set("buy")} />
           </label>
 
           <label className="flex flex-col gap-1">
             <span className="text-sm text-zinc-300">Sell</span>
-            <input
-              type="number"
-              min="0"
-              className="rounded-lg bg-zinc-800 px-3 py-2"
-              value={form.sell}
-              onChange={set("sell")}
-            />
+            <input type="number" min="0" className="rounded-lg bg-zinc-800 px-3 py-2" value={form.sell} onChange={set("sell")} />
           </label>
 
           <label className="md:col-span-2 flex flex-col gap-1">
             <span className="text-sm text-zinc-300">Notes</span>
-            <textarea
-              className="rounded-lg bg-zinc-800 px-3 py-2"
-              rows={3}
-              value={form.notes}
-              onChange={set("notes")}
-            />
+            <textarea className="rounded-lg bg-zinc-800 px-3 py-2" rows={3} value={form.notes} onChange={set("notes")} />
           </label>
 
           <label className="flex flex-col gap-1">
             <span className="text-sm text-zinc-300">Date/Time</span>
-            <input
-              type="datetime-local"
-              className="rounded-lg bg-zinc-800 px-3 py-2"
-              value={form.timestamp}
-              onChange={set("timestamp")}
-            />
+            <input type="datetime-local" className="rounded-lg bg-zinc-800 px-3 py-2" value={form.timestamp} onChange={set("timestamp")} />
           </label>
 
           <div className="md:col-span-2 mt-2 flex justify-end gap-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="rounded-lg bg-zinc-800 px-4 py-2 hover:bg-zinc-700"
-            >
+            <button type="button" onClick={onClose} className="rounded-lg bg-zinc-800 px-4 py-2 hover:bg-zinc-700">
               Cancel
             </button>
-            <button
-              disabled={saving}
-              className="rounded-lg bg-lime-500/90 px-4 py-2 font-semibold text-black hover:bg-lime-400 disabled:opacity-50"
-            >
+            <button disabled={saving} className="rounded-lg bg-lime-500/90 px-4 py-2 font-semibold text-black hover:bg-lime-400 disabled:opacity-50">
               {saving ? "Saving…" : "Save Changes"}
             </button>
           </div>
@@ -238,10 +219,11 @@ const Trades = () => {
     const fetchTrades = async () => {
       try {
         const result = await getAllTrades();
-        if (result.success) {
-          setTrades(result.trades);
+        if (result?.success) {
+          const normalised = (result.trades || []).map(normalizeTrade);
+          setTrades(normalised);
         } else {
-          console.error("Failed to fetch trades:", result.message);
+          console.error("Failed to fetch trades:", result?.message);
         }
       } catch (err) {
         console.error("Failed to fetch trades:", err);
@@ -253,13 +235,15 @@ const Trades = () => {
   }, [getAllTrades]);
 
   const startEdit = (t) => {
-    if (!t?.id) return; // need primary key to update
+    const id = getId(t);
+    if (!id) return;
     setCurrent(t);
     setModalOpen(true);
   };
 
   const onSaved = (updated) => {
-    setTrades((rows) => rows.map((r) => (r.id === updated.id ? updated : r)));
+    const id = getId(updated);
+    setTrades((rows) => rows.map((r) => (getId(r) === id ? normalizeTrade(updated) : r)));
     setModalOpen(false);
     setCurrent(null);
   };
@@ -287,36 +271,35 @@ const Trades = () => {
               </tr>
             </thead>
             <tbody>
-              {trades.map((trade, i) => (
-                <tr key={trade.id ?? i} className="border-b border-gray-800">
-                  <td className="py-2">{trade.player || "N/A"}</td>
-                  <td>{trade.version || "N/A"}</td>
-                  <td>{trade.quantity || 0}</td>
-                  <td>{safeNumber(trade.buy)}</td>
-                  <td>{safeNumber(trade.sell)}</td>
-                  <td
-                    className={
-                      (trade.profit || 0) >= 0 ? "text-green-400" : "text-red-400"
-                    }
-                  >
-                    {safeNumber(trade.profit)}
-                  </td>
-                  <td>{safeDate(trade.timestamp)}</td>
-                  <td className="py-2 pr-2 text-right">
-                    {trade.id ? (
-                      <button
-                        onClick={() => startEdit(trade)}
-                        className="rounded-lg bg-zinc-800 px-3 py-1.5 text-sm hover:bg-zinc-700"
-                        title="Edit trade"
-                      >
-                        Edit
-                      </button>
-                    ) : (
-                      <span className="text-xs text-zinc-500">no id</span>
-                    )}
-                  </td>
-                </tr>
-              ))}
+              {trades.map((trade, i) => {
+                const id = getId(trade);
+                return (
+                  <tr key={id ?? i} className="border-b border-gray-800">
+                    <td className="py-2">{trade.player || "N/A"}</td>
+                    <td>{trade.version || "N/A"}</td>
+                    <td>{trade.quantity || 1}</td>
+                    <td>{safeNumber(trade.buy)}</td>
+                    <td>{safeNumber(trade.sell)}</td>
+                    <td className={(trade.profit || 0) >= 0 ? "text-green-400" : "text-red-400"}>
+                      {safeNumber(trade.profit)}
+                    </td>
+                    <td>{safeDate(trade.timestamp)}</td>
+                    <td className="py-2 pr-2 text-right">
+                      {id ? (
+                        <button
+                          onClick={() => startEdit(trade)}
+                          className="rounded-lg bg-zinc-800 px-3 py-1.5 text-sm hover:bg-zinc-700"
+                          title="Edit trade"
+                        >
+                          Edit
+                        </button>
+                      ) : (
+                        <span className="text-xs text-zinc-500">no id</span>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
