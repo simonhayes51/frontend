@@ -17,7 +17,7 @@ export function computeChemistry(placed, formation) {
   for (const slot of formation) {
     const p = placed[slot.key];
     if (!p) continue;
-    const inPos = isValidForSlot(slot.pos, p.positions);
+    const inPos = isValidForSlot(p.positions, slot.pos);
 
     if (inPos) {
       if (p.club) clubMap.set(p.club, (clubMap.get(p.club) || 0) + 1);
