@@ -1,5 +1,7 @@
+// src/components/PlayerSearch.jsx
 import React, { useState, useEffect, useLayoutEffect, useRef } from "react";
 import { Search, TrendingUp, TrendingDown, Minus, Loader2, Target } from "lucide-react";
+import PriceTrendChart from "./PriceTrendChart.jsx"; // ← the new chart
 
 const API_BASE = import.meta.env.VITE_API_URL || "";
 const buildProxy = (url) => `${API_BASE}/img?url=${encodeURIComponent(url)}`;
@@ -141,10 +143,6 @@ const getAttributeColor = (v) =>
   v >= 60 ? "text-orange-300" : "text-red-400";
 
 // ================== AutoFitNumber (shrinks to fit) ==================
-/**
- * Renders a number that shrinks (down to 40%) to always fit in its parent line,
- * taking padding and the coin icon into account.
- */
 function AutoFitNumber({ value, className = "" }) {
   const spanRef = useRef(null);
   const [scale, setScale] = useState(1);
@@ -152,26 +150,21 @@ function AutoFitNumber({ value, className = "" }) {
   useLayoutEffect(() => {
     const el = spanRef.current;
     if (!el) return;
-    const parent = el.parentElement; // the inline-flex containing [img + span]
+    const parent = el.parentElement;
     if (!parent) return;
 
     const recalc = () => {
-      // Compute available width in the parent for the number text.
       const cs = getComputedStyle(parent);
       const pad = (parseFloat(cs.paddingLeft) || 0) + (parseFloat(cs.paddingRight) || 0);
       const icon = parent.querySelector("img");
       const iconW = icon ? icon.getBoundingClientRect().width : 20;
-      const gap =  (parseFloat(cs.columnGap) || 0) || 8; // inline-flex "gap-2" ~ 8px
-
-      // A small safety margin so we never touch the edge
+      const gap =  (parseFloat(cs.columnGap) || 0) || 8;
       const safety = 6;
 
       const available = Math.max(0, parent.clientWidth - pad - iconW - gap - safety);
-      // (1) Measure the span at scale=1
       el.style.transform = "scale(1)";
       const needed = el.scrollWidth || 1;
 
-      // (2) Decide scale; clamp between 0.4 and 1
       const next = Math.min(1, Math.max(0.4, available / needed));
       setScale(next);
     };
@@ -195,7 +188,7 @@ function AutoFitNumber({ value, className = "" }) {
         transform: `scale(${scale})`,
         transformOrigin: "left center",
         whiteSpace: "nowrap",
-        lineHeight: 1, // keeps the row compact while scaling
+        lineHeight: 1,
       }}
     >
       {value != null ? Number(value).toLocaleString() : "N/A"}
@@ -465,13 +458,11 @@ const PlayerDetail = ({ player, onBack }) => {
               {d.fullName}
             </h1>
 
-            {/* Price / Range / Trend / Accelerate */}
+            {/* Price / Range / Trend / AcceleRATE */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
               {/* Price */}
               <div className="bg-[#334155] rounded-lg p-3 min-w-0">
                 <div className="text-gray-300 text-xs md:text-sm mb-1">Price</div>
-
-                {/* Important: no fixed text-x classes here; the number scales itself */}
                 <div className="font-bold text-yellow-400 leading-tight">
                   {loading ? (
                     <Loader2 className="w-5 h-5 md:w-6 md:h-6 animate-spin inline align-[-2px]" />
@@ -484,7 +475,6 @@ const PlayerDetail = ({ player, onBack }) => {
                         alt="Coins"
                         className="w-4 h-4 md:w-5 md:h-5 shrink-0"
                       />
-                      {/* Auto-shrinks from 100% down to 40% as needed */}
                       <AutoFitNumber value={priceData?.current} />
                     </span>
                   )}
@@ -512,6 +502,17 @@ const PlayerDetail = ({ player, onBack }) => {
                   {d.accelerateType.replace(/_/g, " ")}
                 </div>
               </div>
+            </div>
+
+            {/* Price History (orange chart) */}
+            <div className="bg-[#334155] rounded-lg p-4 mb-6">
+              <h3 className="font-semibold mb-3 text-lg">Price History</h3>
+              <PriceTrendChart
+                playerId={cardId}
+                platform={platform}
+                initialTimeframe="today"
+                height={300}
+              />
             </div>
 
             {/* Club / Nation / League / Position */}
