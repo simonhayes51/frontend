@@ -14,6 +14,8 @@ function keyOf(id, name) {
 // placed: { [slotKey]: player|null }
 // formation: array of { key, pos }
 export function computeChemistry(placed, formation) {
+  console.log("🧪 Computing chemistry for:", Object.keys(placed).length, "slots");
+  
   // Tallies (only for players that are IN POSITION)
   const clubMap = new Map();
   const nationMap = new Map();
@@ -21,54 +23,45 @@ export function computeChemistry(placed, formation) {
 
   const perPlayerChem = {};
 
-  // Track Icons and Heroes for global bonuses
-  const iconsInPosition = [];
-  const heroesInPosition = [];
-
   // --- First pass: count entities for players who are in their slot position
   for (const slot of formation) {
     const p = placed[slot.key];
-    if (!p) continue;
+    if (!p) {
+      console.log(`❌ No player in slot ${slot.key} (${slot.pos})`);
+      continue;
+    }
 
-    // ✅ FIXED: Using correct parameter order (slotPosition, playerPositions)
+    console.log(`🎮 Checking player ${p.name} in slot ${slot.key} (${slot.pos})`);
+    console.log(`📍 Player positions: [${p.positions?.join(', ') || 'none'}]`);
+
+    // ✅ CRITICAL: Using correct parameter order
     const inPos = isValidForSlot(slot.pos, p.positions);
-    if (!inPos) continue;
-
-    // Track special cards
-    if (p.isIcon) iconsInPosition.push(p);
-    if (p.isHero) heroesInPosition.push(p);
+    console.log(`✅ ${p.name} in position: ${inPos}`);
+    
+    if (!inPos) {
+      console.log(`❌ ${p.name} is out of position for ${slot.pos}`);
+      continue;
+    }
 
     const ck = keyOf(p.clubId, p.club);
     const nk = keyOf(p.nationId, p.nation);
     const lk = keyOf(p.leagueId, p.league);
+
+    console.log(`🏢 ${p.name} - Club: ${p.club} (${ck}), Nation: ${p.nation} (${nk}), League: ${p.league} (${lk})`);
 
     if (ck) clubMap.set(ck, (clubMap.get(ck) || 0) + 1);
     if (nk) nationMap.set(nk, (nationMap.get(nk) || 0) + 1);
     if (lk) leagueMap.set(lk, (leagueMap.get(lk) || 0) + 1);
   }
 
+  console.log("📊 Club counts:", Object.fromEntries(clubMap));
+  console.log("📊 Nation counts:", Object.fromEntries(nationMap));
+  console.log("📊 League counts:", Object.fromEntries(leagueMap));
+
   // FC25 thresholds
   const chemFromClub   = (n) => (n >= 7 ? 3 : n >= 4 ? 2 : n >= 2 ? 1 : 0);
   const chemFromNation = (n) => (n >= 8 ? 3 : n >= 5 ? 2 : n >= 2 ? 1 : 0);
   const chemFromLeague = (n) => (n >= 8 ? 3 : n >= 5 ? 2 : n >= 3 ? 1 : 0);
-
-  // Icon global nation boost
-  const iconNationBoost = new Map();
-  iconsInPosition.forEach(icon => {
-    const nk = keyOf(icon.nationId, icon.nation);
-    if (nk) {
-      iconNationBoost.set(nk, (iconNationBoost.get(nk) || 0) + 1);
-    }
-  });
-
-  // Hero global league boost
-  const heroLeagueBoost = new Map();
-  heroesInPosition.forEach(hero => {
-    const lk = keyOf(hero.leagueId, hero.league);
-    if (lk) {
-      heroLeagueBoost.set(lk, (heroLeagueBoost.get(lk) || 0) + 1);
-    }
-  });
 
   // --- Second pass: compute per-player chem (only if in position)
   for (const slot of formation) {
@@ -78,35 +71,8 @@ export function computeChemistry(placed, formation) {
     const inPos = isValidForSlot(slot.pos, p.positions);
     if (!inPos) {
       perPlayerChem[p.id] = 0;
+      console.log(`❌ ${p.name}: 0 chem (out of position)`);
       continue;
     }
 
-    const ck = keyOf(p.clubId, p.club);
-    const nk = keyOf(p.nationId, p.nation);
-    const lk = keyOf(p.leagueId, p.league);
-
-    // Special cards get automatic 3 chemistry when in position
-    if (p.isIcon || p.isHero) {
-      perPlayerChem[p.id] = 3;
-    } else {
-      // Regular players: calculate based on connections + global bonuses
-      const clubC = ck ? chemFromClub(clubMap.get(ck) || 0) : 0;
-      const nationC = nk ? chemFromNation((nationMap.get(nk) || 0) + (iconNationBoost.get(nk) || 0)) : 0;
-      const leagueC = lk ? chemFromLeague((leagueMap.get(lk) || 0) + (heroLeagueBoost.get(lk) || 0)) : 0;
-
-      let chem = clubC + nationC + leagueC;
-      if (chem > 3) chem = 3;
-      if (chem < 0) chem = 0;
-
-      perPlayerChem[p.id] = chem;
-    }
-  }
-
-  // Team chem is the sum of individual chem capped at 33
-  const teamChem = Math.min(
-    33,
-    Object.values(perPlayerChem).reduce((a, b) => a + (b || 0), 0)
-  );
-
-  return { perPlayerChem, teamChem };
-}
+    const
