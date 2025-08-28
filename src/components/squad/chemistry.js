@@ -1,30 +1,37 @@
 // src/components/squad/chemistry.js
 import { isValidForSlot } from "../../utils/positions";
 
-/** map id->key or fallback to lowercased name */
+/** Prefer IDs; fall back to lowercased names (stable keys). */
 function keyOf(id, name) {
   if (id != null) return `id:${id}`;
   if (name) return `nm:${String(name).toLowerCase()}`;
   return null;
 }
 
-// placed: { [slotKey]: player|null }
-// formation: [{ key, pos }, ...]
+/**
+ * placed:    { [slotKey]: player|null }
+ * formation: [{ key, pos }, ...]
+ *
+ * Rule set (FC25-style):
+ * - Everyone contributes to Club / Nation / League thresholds (regardless of position).
+ * - A player only receives personal chemistry if he is in-position (or compatible).
+ * - Thresholds:
+ *    Club:   2/4/7 → +1 / +2 / +3
+ *    Nation: 2/5/8 → +1 / +2 / +3
+ *    League: 3/5/8 → +1 / +2 / +3
+ */
 export function computeChemistry(placed, formation) {
-  const clubMap = new Map();
+  const clubMap   = new Map(); // key -> count
   const nationMap = new Map();
   const leagueMap = new Map();
   const perPlayerChem = {};
 
-  // First pass: count contributions (only if player is in their slot position)
+  // --- PASS 1: Count contributions from ALL placed players (position agnostic)
   for (const slot of formation) {
     const p = placed[slot.key];
     if (!p) continue;
 
-    const inPos = isValidForSlot(slot.pos, p.positions);
-    if (!inPos) continue;
-
-    const ck = keyOf(p.clubId, p.club);
+    const ck = keyOf(p.clubId,   p.club);
     const nk = keyOf(p.nationId, p.nation);
     const lk = keyOf(p.leagueId, p.league);
 
@@ -33,12 +40,12 @@ export function computeChemistry(placed, formation) {
     if (lk) leagueMap.set(lk, (leagueMap.get(lk) || 0) + 1);
   }
 
-  // FC25 thresholds
+  // Threshold helpers
   const chemFromClub   = (n) => (n >= 7 ? 3 : n >= 4 ? 2 : n >= 2 ? 1 : 0);
   const chemFromNation = (n) => (n >= 8 ? 3 : n >= 5 ? 2 : n >= 2 ? 1 : 0);
   const chemFromLeague = (n) => (n >= 8 ? 3 : n >= 5 ? 2 : n >= 3 ? 1 : 0);
 
-  // Second pass: compute per player
+  // --- PASS 2: Personal chem (only if in-position)
   for (const slot of formation) {
     const p = placed[slot.key];
     if (!p) continue;
@@ -49,7 +56,7 @@ export function computeChemistry(placed, formation) {
       continue;
     }
 
-    const ck = keyOf(p.clubId, p.club);
+    const ck = keyOf(p.clubId,   p.club);
     const nk = keyOf(p.nationId, p.nation);
     const lk = keyOf(p.leagueId, p.league);
 
