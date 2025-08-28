@@ -94,8 +94,8 @@ export function normalizePositions(list) {
 export const POSITIONS = Array.from(POSITION_SET);
 export const isPosition = (p) => POSITION_SET.has(String(p || "").toUpperCase());
 
-// ✅ New: check if a player's position(s) can fit a given slot
-export function isValidForSlot(playerPositions, slotPosition) {
+// ✅ FIXED: Corrected parameter order to match how it's called in chemistry.js
+export function isValidForSlot(slotPosition, playerPositions) {
   const slot = normalizePosition(slotPosition);
   if (!slot) return false;
 
