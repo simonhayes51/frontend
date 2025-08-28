@@ -12,13 +12,14 @@ import {
 
 const API_BASE = import.meta.env.VITE_API_URL || "";
 
-// --- theme colours to match your UI ---
-const ORANGE = "#91db32";     // line/dots
-const GRID = "#292d3e";       // grid lines
-const AXIS = "#1b1e29";       // axis line
-const TICK = "#878c9c";       // tick text
+// theme colors
+const ORANGE = "#91dc30";
+const GRID = "#292d3e";
+const AXIS = "#1b1e29";
+const TICK = "#878c9c";
 
-const timeframes = [
+// timeframes used by backend
+const TIMEFRAMES = [
   { key: "today", label: "Today" },
   { key: "3d", label: "3 Days" },
   { key: "week", label: "Week" },
@@ -26,14 +27,15 @@ const timeframes = [
   { key: "year", label: "Year" },
 ];
 
-const currency = (n) =>
-  typeof n === "number"
-    ? n >= 1000
-      ? `${Math.round(n / 100) / 10}K`.replace(".0K", "K")
-      : n.toLocaleString()
-    : "";
+// small helpers
+const abbreviate = (n) => {
+  if (typeof n !== "number") return "";
+  if (n >= 1_000_000) return `${Math.round(n / 100_000) / 10}M`.replace(".0M", "M");
+  if (n >= 1_000) return `${Math.round(n / 100) / 10}K`.replace(".0K", "K");
+  return n.toLocaleString();
+};
 
-const formatTime = (iso, tf) => {
+const formatTickTime = (iso, tf) => {
   const d = new Date(iso);
   if (tf === "today" || tf === "3d" || tf === "week") {
     return new Intl.DateTimeFormat(undefined, {
@@ -45,22 +47,22 @@ const formatTime = (iso, tf) => {
   return new Intl.DateTimeFormat(undefined, { day: "2-digit", month: "short" }).format(d);
 };
 
-// Accepts any of:
-// - { points: [{ t: ISO, price: number }] }
-// - { series: [{ data: [[ts, price], ...] }] }
-// - [{ time, price }]
-function normalisePoints(payload) {
+// normalize server responses
+function normalizePoints(payload) {
   if (!payload) return [];
+  // preferred shape: { points: [{ t, price }] }
   if (Array.isArray(payload.points)) {
     return payload.points
       .filter((p) => p && p.t && p.price != null)
       .map((p) => ({ time: new Date(p.t).toISOString(), price: Number(p.price) }));
   }
+  // fallback: series[0].data = [[ts, price], ...]
   if (payload.series && payload.series[0] && Array.isArray(payload.series[0].data)) {
     return payload.series[0].data
       .filter((row) => Array.isArray(row) && row.length >= 2)
       .map(([ts, pr]) => ({ time: new Date(ts).toISOString(), price: Number(pr) }));
   }
+  // raw array: [{ time, price }]
   if (Array.isArray(payload)) {
     return payload
       .filter((p) => p && p.time && p.price != null)
@@ -97,14 +99,16 @@ export default function PriceTrendChart({
       setLoading(true);
       setError("");
       try {
-        const url = `${API_BASE}/api/price-history?playerId=${encodeURIComponent(
-          playerId
-        )}&platform=${encodeURIComponent(platform)}&tf=${encodeURIComponent(tf)}`;
+        const url =
+          `${API_BASE}/api/price-history?` +
+          `playerId=${encodeURIComponent(playerId)}` +
+          `&platform=${encodeURIComponent(platform)}` +
+          `&tf=${encodeURIComponent(tf)}`;
         const r = await fetch(url, { credentials: "include" });
         if (!r.ok) throw new Error(`HTTP ${r.status}`);
         const data = await r.json();
         if (aborted) return;
-        setPoints(normalisePoints(data));
+        setPoints(normalizePoints(data));
       } catch (e) {
         if (!aborted) {
           setError(e?.message || "Failed to load price history");
@@ -127,20 +131,16 @@ export default function PriceTrendChart({
 
   return (
     <div className={`w-full ${className}`}>
-      {/* Timeframe controls — visible on all screen sizes, wrap on small */}
+      {/* Timeframe controls — ALWAYS visible, wraps on small screens */}
       <div className="mb-3">
         <div className="flex flex-wrap items-center gap-2">
-          {timeframes.map(({ key, label }) => (
+          {TIMEFRAMES.map(({ key, label }) => (
             <button
               key={key}
               onClick={() => setTf(key)}
-              className={[
-                "rounded-full px-3 py-1 text-xs font-semibold transition-colors",
-                key === tf
-                  ? "bg-orange-500 text-black"
-                  : "bg-[#1e293b] text-gray-300 hover:bg-[#2b3a52]",
-              ].join(" ")}
-              aria-pressed={key === tf}
+              className={`px-3 py-1 rounded-full text-xs font-semibold transition-colors
+                ${tf === key ? "bg-orange-500 text-black" : "bg-[#1e293b] text-gray-300 hover:bg-[#2b3a52]"}`}
+              aria-pressed={tf === key}
             >
               {label}
             </button>
@@ -155,7 +155,7 @@ export default function PriceTrendChart({
 
             <XAxis
               dataKey="x"
-              tickFormatter={(v) => formatTime(v, tf)}
+              tickFormatter={(v) => formatTickTime(v, tf)}
               stroke={AXIS}
               tick={{ fill: TICK, fontSize: 12, fontWeight: 500 }}
               axisLine={{ stroke: AXIS }}
@@ -166,7 +166,7 @@ export default function PriceTrendChart({
 
             <YAxis
               dataKey="y"
-              tickFormatter={(v) => currency(v)}
+              tickFormatter={(v) => abbreviate(v)}
               stroke={AXIS}
               tick={{ fill: TICK, fontSize: 12, fontWeight: 500 }}
               axisLine={{ stroke: AXIS }}
@@ -182,7 +182,7 @@ export default function PriceTrendChart({
                 boxShadow: "0 8px 24px rgba(0,0,0,0.35)",
                 padding: "8px 10px",
               }}
-              labelFormatter={(v) => formatTime(v, tf)}
+              labelFormatter={(v) => formatTickTime(v, tf)}
               formatter={(value) => [value?.toLocaleString?.() ?? value, "Coins"]}
             />
 
@@ -207,13 +207,9 @@ export default function PriceTrendChart({
         </ResponsiveContainer>
       </div>
 
-      {/* States */}
-      {loading && (
-        <div className="text-center text-sm text-slate-400 py-2">Loading price history…</div>
-      )}
-      {!loading && error && (
-        <div className="text-center text-sm text-red-400 py-2">{error}</div>
-      )}
+      {/* states */}
+      {loading && <div className="text-center text-sm text-slate-400 py-2">Loading price history…</div>}
+      {!loading && error && <div className="text-center text-sm text-red-400 py-2">{error}</div>}
       {!loading && !error && chartData.length === 0 && (
         <div className="text-center text-sm text-slate-400 py-2">No data for this period.</div>
       )}
