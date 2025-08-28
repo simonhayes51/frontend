@@ -1,177 +1,212 @@
 // src/components/squad/Pitch.jsx
 import React from "react";
 
-export default function Pitch({ children, height = "72vh" }) {
+export default function Pitch({ children, height = "600px", orientation = "vertical" }) {
   const container = {
     position: "relative",
     width: "100%",
     height,
     minHeight: 520,
-    borderRadius: 28,
+    borderRadius: 24,
     overflow: "hidden",
-    background:
-      "radial-gradient(ellipse at center, rgba(6,95,70,0.35), rgba(2,44,34,0.45))",
-    border: "1px solid rgba(6,95,70,0.7)",
-    boxShadow: "inset 0 0 0 2px rgba(5,46,39,0.5)",
+    background: `
+      radial-gradient(ellipse at center, rgba(6,95,70,0.25), rgba(2,44,34,0.15) 70%),
+      linear-gradient(180deg, 
+        rgba(6,95,70,0.18) 0%, 
+        rgba(4,120,87,0.12) 25%,
+        rgba(6,95,70,0.08) 50%, 
+        rgba(4,120,87,0.12) 75%,
+        rgba(6,95,70,0.18) 100%)
+    `,
+    border: "2px solid rgba(6,95,70,0.4)",
+    boxShadow: `
+      0 8px 32px rgba(0,0,0,0.4),
+      inset 0 0 0 1px rgba(34,197,94,0.1),
+      inset 0 1px 0 rgba(255,255,255,0.05)
+    `,
   };
 
   const inner = {
     position: "absolute",
-    top: 16,
-    bottom: 16,
-    left: 16,
-    right: 16,
-    borderRadius: 22,
-    border: "1px solid rgba(56,178,172,0.55)",
+    top: 12,
+    bottom: 12,
+    left: 12,
+    right: 12,
+    borderRadius: 18,
+    border: "2px solid rgba(34,197,94,0.3)",
     overflow: "hidden",
+    background: "transparent",
   };
 
   const stripeWrap = {
     position: "absolute",
     inset: 0,
-    borderRadius: 22,
+    borderRadius: 18,
     pointerEvents: "none",
   };
 
-  const lineColor = "rgba(56,178,172,0.6)";
+  const lineColor = "rgba(34,197,94,0.4)";
+  const markingColor = "rgba(255,255,255,0.25)";
 
   return (
     <div style={container}>
       <div style={inner}>
-        {/* grass stripes */}
+        {/* Enhanced grass stripes with subtle animation */}
         <div style={stripeWrap}>
-          {Array.from({ length: 14 }).map((_, i) => (
+          {Array.from({ length: 16 }).map((_, i) => (
             <div
               key={i}
+              className="grass-stripe"
               style={{
                 position: "absolute",
                 left: 0,
                 right: 0,
-                top: `${(i * 100) / 14}%`,
-                height: `${100 / 14}%`,
+                top: `${(i * 100) / 16}%`,
+                height: `${100 / 16}%`,
                 background:
                   i % 2 === 0
-                    ? "rgba(2,96,71,0.22)"
-                    : "rgba(2,96,71,0.10)",
+                    ? "rgba(6,95,70,0.12)"
+                    : "rgba(4,120,87,0.06)",
+                opacity: 0.8,
               }}
             />
           ))}
         </div>
 
-        {/* halfway line */}
+        {/* Center line */}
         <div
           style={{
             position: "absolute",
-            left: 0,
-            right: 0,
+            left: "5%",
+            right: "5%",
             top: "50%",
             transform: "translateY(-50%)",
-            borderTop: `2px solid ${lineColor}`,
+            borderTop: `2px solid ${markingColor}`,
+            filter: "drop-shadow(0 0 4px rgba(255,255,255,0.1))",
           }}
         />
 
-        {/* center circle */}
+        {/* Center circle */}
         <div
           style={{
             position: "absolute",
             left: "50%",
             top: "50%",
             transform: "translate(-50%, -50%)",
-            width: "18%",
-            height: "18%",
+            width: "20%",
+            height: "20%",
             borderRadius: "50%",
-            border: `2px solid ${lineColor}`,
+            border: `2px solid ${markingColor}`,
             boxSizing: "border-box",
+            filter: "drop-shadow(0 0 4px rgba(255,255,255,0.1))",
           }}
         />
-        {/* center spot */}
+        
+        {/* Center spot */}
         <div
           style={{
             position: "absolute",
             left: "50%",
             top: "50%",
             transform: "translate(-50%, -50%)",
-            width: 7,
-            height: 7,
+            width: 8,
+            height: 8,
             borderRadius: "50%",
-            background: "rgba(56,178,172,0.85)",
+            background: markingColor,
+            boxShadow: "0 0 6px rgba(255,255,255,0.3)",
           }}
         />
 
-        {/* top penalty area + arc */}
-        <PenaltyBox position="top" lineColor={lineColor} />
+        {/* Enhanced penalty areas */}
+        <EnhancedPenaltyBox position="top" lineColor={markingColor} />
+        <EnhancedPenaltyBox position="bottom" lineColor={markingColor} />
 
-        {/* bottom penalty area + arc */}
-        <PenaltyBox position="bottom" lineColor={lineColor} />
+        {/* Corner arcs */}
+        <CornerArc corner="top-left" color={markingColor} />
+        <CornerArc corner="top-right" color={markingColor} />
+        <CornerArc corner="bottom-left" color={markingColor} />
+        <CornerArc corner="bottom-right" color={markingColor} />
 
-        {/* children live inside the inner playable area */}
-        <div style={{ position: "absolute", inset: 0 }}>{children}</div>
+        {/* Children container */}
+        <div style={{ position: "absolute", inset: 0 }}>
+          {children}
+        </div>
       </div>
     </div>
   );
 }
 
-function PenaltyBox({ position, lineColor }) {
+function EnhancedPenaltyBox({ position, lineColor }) {
   const isTop = position === "top";
-  const areaHeight = "22%"; // 18-yard box height relative to inner pitch
-  const sixHeight = "8%";   // 6-yard box height
-  const arcDiameter = "18%";
+  const areaHeight = "24%";
+  const sixHeight = "9%";
+  const arcRadius = "10%";
 
   // 18-yard box
   const areaStyle = {
     position: "absolute",
     left: "50%",
     transform: "translateX(-50%)",
-    width: "60%",
+    width: "65%",
     height: areaHeight,
-    borderRadius: 14,
     border: `2px solid ${lineColor}`,
     boxSizing: "border-box",
     top: isTop ? 0 : undefined,
     bottom: !isTop ? 0 : undefined,
+    borderTopLeftRadius: isTop ? 0 : 12,
+    borderTopRightRadius: isTop ? 0 : 12,
+    borderBottomLeftRadius: !isTop ? 0 : 12,
+    borderBottomRightRadius: !isTop ? 0 : 12,
+    filter: "drop-shadow(0 0 4px rgba(255,255,255,0.1))",
   };
 
-  // 6-yard box
+  // 6-yard box (goal area)
   const sixStyle = {
     position: "absolute",
     left: "50%",
     transform: "translateX(-50%)",
-    width: "30%",
+    width: "32%",
     height: sixHeight,
-    borderRadius: 10,
     border: `2px solid ${lineColor}`,
     boxSizing: "border-box",
     top: isTop ? 0 : undefined,
     bottom: !isTop ? 0 : undefined,
+    borderTopLeftRadius: isTop ? 0 : 8,
+    borderTopRightRadius: isTop ? 0 : 8,
+    borderBottomLeftRadius: !isTop ? 0 : 8,
+    borderBottomRightRadius: !isTop ? 0 : 8,
+    filter: "drop-shadow(0 0 4px rgba(255,255,255,0.1))",
   };
 
-  // penalty spot
+  // Penalty spot
   const spotStyle = {
     position: "absolute",
     left: "50%",
     transform: "translateX(-50%)",
-    width: 7,
-    height: 7,
+    width: 8,
+    height: 8,
     borderRadius: "50%",
-    background: "rgba(56,178,172,0.85)",
-    top: isTop ? "13.8%" : undefined,
-    bottom: !isTop ? "13.8%" : undefined,
+    background: lineColor,
+    top: isTop ? "15%" : undefined,
+    bottom: !isTop ? "15%" : undefined,
+    boxShadow: "0 0 6px rgba(255,255,255,0.3)",
   };
 
-  // penalty arc (half circle outside the area)
+  // Penalty arc
   const arcStyle = {
     position: "absolute",
     left: "50%",
     transform: "translateX(-50%)",
-    width: arcDiameter,
-    height: arcDiameter,
+    width: "22%",
+    height: "22%",
     borderRadius: "50%",
     border: `2px solid ${lineColor}`,
     boxSizing: "border-box",
-    clipPath: isTop ? "inset(50% 0 0 0)" : "inset(0 0 50% 0)", // show half
-    top: isTop ? `calc(${areaHeight} - 9%)` : undefined,
-    bottom: !isTop ? `calc(${areaHeight} - 9%)` : undefined,
+    clipPath: isTop ? "inset(50% 0 0 0)" : "inset(0 0 50% 0)",
+    top: isTop ? `calc(${areaHeight} - 11%)` : undefined,
+    bottom: !isTop ? `calc(${areaHeight} - 11%)` : undefined,
     background: "transparent",
+    filter: "drop-shadow(0 0 4px rgba(255,255,255,0.1))",
   };
 
   return (
@@ -181,5 +216,40 @@ function PenaltyBox({ position, lineColor }) {
       <div style={spotStyle} />
       <div style={arcStyle} />
     </>
+  );
+}
+
+function CornerArc({ corner, color }) {
+  const size = "12%";
+  const thickness = "2px";
+  
+  const getPosition = () => {
+    switch (corner) {
+      case "top-left":
+        return { top: 0, left: 0, clipPath: "inset(0 50% 50% 0)" };
+      case "top-right":
+        return { top: 0, right: 0, clipPath: "inset(0 0 50% 50%)" };
+      case "bottom-left":
+        return { bottom: 0, left: 0, clipPath: "inset(50% 50% 0 0)" };
+      case "bottom-right":
+        return { bottom: 0, right: 0, clipPath: "inset(50% 0 0 50%)" };
+      default:
+        return {};
+    }
+  };
+
+  return (
+    <div
+      style={{
+        position: "absolute",
+        width: size,
+        height: size,
+        borderRadius: "50%",
+        border: `${thickness} solid ${color}`,
+        background: "transparent",
+        filter: "drop-shadow(0 0 3px rgba(255,255,255,0.1))",
+        ...getPosition(),
+      }}
+    />
   );
 }
