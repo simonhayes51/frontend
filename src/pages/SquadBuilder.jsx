@@ -1,6 +1,6 @@
 // src/pages/SquadBuilder.jsx
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { Search, X, Star, Users, Trophy, DollarSign, Plus } from "lucide-react";
+import { Search, X, Star, Trophy, DollarSign, Users, Plus } from "lucide-react";
 import Pitch from "../components/squad/Pitch";
 import { FORMATIONS } from "../components/squad/formations";
 import { VERTICAL_COORDS } from "../components/squad/formations_vertical";
@@ -10,120 +10,131 @@ import { isValidForSlot } from "../utils/positions";
 import "../styles/squad.css";
 
 const cls = (...xs) => xs.filter(Boolean).join(" ");
+const coins = (n) => (typeof n === "number" ? `${n.toLocaleString()}c` : "—");
 
-function EnhancedPlayerCard({
-  player,
-  slotPosition,
-  onRemove,
-  chem = 0,
-  size = "md",
-  draggable = false,
-  onDragStart,
-}) {
-  if (!player) return null;
-  const outOfPosition = slotPosition ? !isValidForSlot(slotPosition, player.positions) : false;
-  const getCardStyle = () => {
-    if (player.isIcon) return "from-orange-500/40 via-yellow-500/40 to-orange-600/40 border-orange-500/50";
-    if (player.isHero) return "from-purple-500/40 via-pink-500/40 to-purple-600/40 border-purple-500/50";
-    return "from-blue-500/30 via-purple-500/30 to-pink-500/30 border-gray-600";
-  };
-  const sizeClasses = size === "sm" ? "w-16 h-20" : "w-24 h-32";
+function EmptySlot({ pos, selected, onClick }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cls(
+        "w-24 h-32 rounded-xl border-2 border-dashed grid place-items-center transition",
+        selected
+          ? "border-green-400 bg-green-500/10 shadow-[0_0_0_2px_rgba(34,197,94,.2)]"
+          : "border-white/30 hover:border-white/50 hover:bg-white/5"
+      )}
+      title={`Add ${pos}`}
+    >
+      <div className="flex flex-col items-center gap-1">
+        <span className="text-sm font-bold">{pos}</span>
+        <Plus size={16} className={selected ? "text-green-400" : "text-white/60"} />
+      </div>
+    </button>
+  );
+}
 
+function PlayerCard({ player, slotPos, chem = 0, onRemove, draggable, onDragStart }) {
+  const oop = !isValidForSlot(slotPos, player.positions);
   return (
     <div className="relative group">
       <div
-        className={`${sizeClasses} bg-gradient-to-br ${getCardStyle()} rounded-xl border overflow-hidden shadow-lg hover:shadow-xl transition-all duration-200 hover:-translate-y-1 ${outOfPosition ? "ring-2 ring-red-500/50" : ""}`}
+        className={cls(
+          "w-24 h-32 rounded-xl overflow-hidden border shadow transition",
+          oop ? "ring-2 ring-red-500/60" : "",
+          "bg-gradient-to-br from-slate-700/60 via-slate-900/60 to-black border-slate-600"
+        )}
         draggable={draggable}
         onDragStart={onDragStart}
       >
         {player.image_url && (
-          <img className="absolute inset-0 w-full h-full object-cover" src={player.image_url} alt={player.name} referrerPolicy="no-referrer" />
+          <img
+            src={player.image_url}
+            alt={player.name}
+            className="absolute inset-0 w-full h-full object-cover"
+            referrerPolicy="no-referrer"
+          />
         )}
-        <div className="absolute inset-0 bg-gradient-to-b from-white/10 to-transparent pointer-events-none" />
 
-        <div className="absolute top-1.5 left-1.5 bg-yellow-400 text-black text-xs font-black px-1.5 py-0.5 rounded-md shadow-sm">
-          {player.rating}
+        {/* overlays */}
+        <div className="absolute inset-0 bg-gradient-to-b from-white/15 via-transparent to-black/30 pointer-events-none" />
+
+        {/* rating & pos */}
+        <div className="absolute top-1 left-1 bg-yellow-400 text-black text-xs font-black px-1.5 rounded">
+          {player.rating ?? "-"}
         </div>
-        <div className="absolute top-1.5 right-1.5 bg-white/95 text-black text-xs font-black px-1.5 py-0.5 rounded-md shadow-sm">
-          {(player.positions && player.positions[0]) || "—"}
+        <div className="absolute top-1 right-1 bg-white text-black text-[10px] font-black px-1.5 rounded">
+          {player.positions?.[0] ?? "—"}
         </div>
 
+        {/* chem dot */}
         <div
-          className={`absolute top-7 right-1.5 w-2.5 h-2.5 rounded-full shadow-sm border border-black/20 ${
-            outOfPosition ? "bg-red-500" : chem >= 3 ? "bg-lime-400" : chem === 2 ? "bg-yellow-400" : chem === 1 ? "bg-orange-400" : "bg-gray-500"
-          }`}
-          title={`Chemistry: ${chem}/3${outOfPosition ? " (Out of Position)" : ""}`}
+          className={cls(
+            "absolute top-6 right-1 w-2.5 h-2.5 rounded-full border border-black/30",
+            oop
+              ? "bg-red-500"
+              : chem >= 3
+              ? "bg-lime-400"
+              : chem === 2
+              ? "bg-yellow-400"
+              : chem === 1
+              ? "bg-orange-400"
+              : "bg-gray-500"
+          )}
+          title={`Chemistry: ${chem}/3${oop ? " (Out of Position)" : ""}`}
         />
 
-        {player.isIcon && <div className="absolute top-10 left-1 bg-orange-500 text-white text-xs font-bold px-1 py-0.5 rounded">ICN</div>}
-        {player.isHero && <div className="absolute top-10 left-1 bg-purple-500 text-white text-xs font-bold px-1 py-0.5 rounded">HRO</div>}
-
-        <div className="absolute bottom-6 left-1.5 right-1.5">
-          <div className="text-white text-xs font-bold truncate drop-shadow-lg">{player.name}</div>
+        {/* name */}
+        <div className="absolute bottom-6 left-1 right-1">
+          <div className="text-white text-xs font-bold truncate drop-shadow">
+            {player.name}
+          </div>
         </div>
 
+        {/* price */}
         {typeof player.price === "number" && (
-          <div className="absolute bottom-1 left-1.5 right-1.5 flex items-center gap-1">
-            <div className="w-2.5 h-2.5 bg-yellow-400 rounded-full shadow-sm" />
-            <span className="text-yellow-200 text-xs font-semibold truncate">{player.price.toLocaleString()}</span>
+          <div className="absolute bottom-1 left-1 right-1 text-[11px] text-yellow-200 font-semibold truncate">
+            {player.price.toLocaleString()}
           </div>
         )}
 
+        {/* remove */}
         {onRemove && (
           <button
             onClick={(e) => {
               e.stopPropagation();
               onRemove();
             }}
-            className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center hover:bg-red-600 shadow-lg z-10"
+            className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-red-600 text-white grid place-items-center opacity-0 group-hover:opacity-100 transition"
+            title="Remove"
           >
             <X size={10} />
           </button>
         )}
       </div>
-      {outOfPosition && (
+      {oop && (
         <div className="absolute -bottom-5 left-0 right-0 text-center">
-          <span className="text-xs text-red-400 bg-red-900/80 px-2 py-0.5 rounded-full border border-red-500/50 shadow-sm">OOP</span>
+          <span className="text-[10px] px-2 py-0.5 rounded-full bg-red-900/70 text-red-300 border border-red-600/40">
+            Out of position
+          </span>
         </div>
       )}
     </div>
   );
 }
 
-function EnhancedEmptySlot({ position, onClick, isSelected }) {
-  return (
-    <div
-      onClick={onClick}
-      className={`w-24 h-32 border-2 border-dashed rounded-xl flex flex-col items-center justify-center cursor-pointer transition-all duration-200 group ${
-        isSelected ? "border-green-400 bg-green-400/10 shadow-lg shadow-green-400/20" : "border-gray-600 hover:border-gray-500 hover:bg-gray-800/30"
-      }`}
-    >
-      <div className={`text-sm font-bold ${isSelected ? "text-green-400" : "text-gray-400 group-hover:text-gray-300"}`}>{position}</div>
-      <Plus size={16} className={`${isSelected ? "text-green-400" : "text-gray-500 group-hover:text-gray-400"} mt-1`} />
-      {isSelected && <div className="text-xs text-green-400 mt-1 font-medium animate-pulse">Click player</div>}
-    </div>
-  );
-}
-
-// helpers to rotate to vertical layout
-function rotateSlot(slot) {
-  return { ...slot, x: slot.y, y: 100 - slot.x };
-}
-function rotateFormationSlots(slots) {
-  return (slots || []).map(rotateSlot);
-}
-function getVerticalSlots(formationKey) {
-  return VERTICAL_COORDS[formationKey] || rotateFormationSlots(FORMATIONS[formationKey] || []);
-}
-
-const fmtCoins = (n) => (typeof n === "number" ? `${n.toLocaleString()}c` : "—");
+// helpers for vertical pitch coords
+const rotate = (slot) => ({ ...slot, x: slot.y, y: 100 - slot.x });
+const rotateSlots = (slots) => (slots || []).map(rotate);
+const getVerticalSlots = (k) => VERTICAL_COORDS[k] || rotateSlots(FORMATIONS[k] || []);
 
 export default function SquadBuilder() {
   const [formationKey, setFormationKey] = useState("4-3-3");
   const slots = useMemo(() => getVerticalSlots(formationKey), [formationKey]);
 
+  // placed players keyed by slot
   const [placed, setPlaced] = useState(() => Object.fromEntries(slots.map((s) => [s.key, null])));
 
+  // keep players when formation changes for same slot keys
   useEffect(() => {
     setPlaced((prev) => {
       const next = {};
@@ -132,7 +143,11 @@ export default function SquadBuilder() {
     });
   }, [formationKey, slots]);
 
-  const { perPlayerChem, teamChem } = useMemo(() => computeChemistry(placed, slots), [placed, slots]);
+  // chemistry
+  const { perPlayerChem, teamChem } = useMemo(
+    () => computeChemistry(placed, slots),
+    [placed, slots]
+  );
 
   const avgRating = useMemo(() => {
     const ps = Object.values(placed).filter(Boolean);
@@ -140,71 +155,65 @@ export default function SquadBuilder() {
     return Math.round(ps.reduce((a, p) => a + (p.rating || 0), 0) / ps.length);
   }, [placed]);
 
-  const squadPrice = useMemo(() => Object.values(placed).filter(Boolean).reduce((a, p) => a + (p.price || 0), 0), [placed]);
+  const squadPrice = useMemo(
+    () => Object.values(placed).filter(Boolean).reduce((a, p) => a + (p.price || 0), 0),
+    [placed]
+  );
   const playerCount = useMemo(() => Object.values(placed).filter(Boolean).length, [placed]);
 
-  // search and slot-aware filter
+  // search state
   const [search, setSearch] = useState("");
   const [results, setResults] = useState([]);
-  const [searchOpen, setSearchOpen] = useState(null); // slotKey
+  const [searchOpen, setSearchOpen] = useState(null);
   const debounceRef = useRef();
 
-  const currentSlotPos = useMemo(() => (searchOpen ? slots.find((s) => s.key === searchOpen)?.pos : null), [searchOpen, slots]);
-
-  // preload eligible players when a slot is opened (even with empty search)
-  useEffect(() => {
-    let abort = false;
-    (async () => {
-      if (!searchOpen) return;
-      const base = await searchPlayers("", currentSlotPos || "");
-      if (!abort) setResults(base);
-    })();
-    return () => {
-      abort = true;
-    };
-  }, [searchOpen, currentSlotPos]);
-
-  // debounce search; keep filtering by current slot position
+  // run search with slot filtering (so clicking ST shows ST-eligible players)
   useEffect(() => {
     clearTimeout(debounceRef.current);
-    if (!searchOpen && !search.trim()) {
+    const slotPos = searchOpen ? slots.find((s) => s.key === searchOpen)?.pos : null;
+
+    if (!search.trim()) {
       setResults([]);
       return;
     }
     debounceRef.current = setTimeout(async () => {
-      const base = await searchPlayers(search, currentSlotPos || "");
+      const base = await searchPlayers(search, slotPos);
       setResults(base);
     }, 300);
     return () => clearTimeout(debounceRef.current);
-  }, [search, searchOpen, currentSlotPos]);
+  }, [search, searchOpen, slots]);
 
-  async function addPlayerToSlot(basePlayer, slotKey) {
+  async function addToSlot(basePlayer, slotKey) {
     const full = await enrichPlayer(basePlayer);
     setPlaced((prev) => ({ ...prev, [slotKey]: full }));
-    setSearchOpen(null);
     setSearch("");
+    setSearchOpen(null);
   }
 
-  function handleDragStart(e, playerId) {
+  // DnD
+  function onDragStart(e, playerId) {
     e.dataTransfer.setData("text/plain", String(playerId));
   }
-  function handleDrop(e, slotKey) {
+  function onDrop(e, slotKey) {
     e.preventDefault();
     const id = Number(e.dataTransfer.getData("text/plain"));
-    const base = results.find((x) => x.id === id) || null;
-    if (!base) return;
-    addPlayerToSlot(base, slotKey);
+    const p = results.find((x) => x.id === id) || null;
+    if (!p) return;
+    addToSlot(p, slotKey);
   }
-  function clearSlot(slotKey) {
-    setPlaced((prev) => ({ ...prev, [slotKey]: null }));
+
+  function clearSlot(key) {
+    setPlaced((prev) => ({ ...prev, [key]: null }));
   }
   function clearAll() {
     setPlaced(Object.fromEntries(slots.map((s) => [s.key, null])));
-    setSearchOpen(null);
     setSearch("");
+    setSearchOpen(null);
   }
-  function shareUrl() {
-    const pruned = Object.fromEntries(
+
+  // share
+  function share() {
+    const slim = Object.fromEntries(
       Object.entries(placed).map(([k, v]) => [
         k,
         v
@@ -218,26 +227,24 @@ export default function SquadBuilder() {
               positions: v.positions,
               image_url: v.image_url,
               price: v.price,
-              isIcon: v.isIcon,
-              isHero: v.isHero,
             }
           : null,
       ])
     );
-    const state = { formationKey, placed: pruned };
+    const state = { formationKey, placed: slim };
     const encoded = encodeURIComponent(btoa(JSON.stringify(state)));
     const url = new URL(window.location.href);
     url.searchParams.set("squad", encoded);
     navigator.clipboard.writeText(url.toString());
   }
 
-  // import from URL if present
+  // import from URL
   useEffect(() => {
     try {
       const url = new URL(window.location.href);
-      const encoded = url.searchParams.get("squad");
-      if (!encoded) return;
-      const state = JSON.parse(atob(decodeURIComponent(encoded)));
+      const enc = url.searchParams.get("squad");
+      if (!enc) return;
+      const state = JSON.parse(atob(decodeURIComponent(enc)));
       if (state?.formationKey && (VERTICAL_COORDS[state.formationKey] || FORMATIONS[state.formationKey])) {
         setFormationKey(state.formationKey);
       }
@@ -249,14 +256,15 @@ export default function SquadBuilder() {
 
   return (
     <div className="min-h-screen bg-black text-white">
-      <header className="sticky top-0 z-20 border-b border-gray-800 bg-gray-950/90 backdrop-blur-sm">
+      {/* Header */}
+      <header className="sticky top-0 z-20 border-b border-white/10 bg-black/80 backdrop-blur">
         <div className="mx-auto max-w-[1400px] px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-6">
             <div className="text-2xl font-black tracking-tight">
               <span className="text-green-400">FUT</span> Squad Builder
             </div>
             <select
-              className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400 focus:border-green-400"
+              className="bg-neutral-900 border border-white/10 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400"
               value={formationKey}
               onChange={(e) => setFormationKey(e.target.value)}
             >
@@ -269,245 +277,217 @@ export default function SquadBuilder() {
           </div>
 
           <div className="flex items-center gap-3 text-sm">
-            <div className="flex items-center gap-2 bg-gray-800/80 border border-gray-700 px-3 py-2 rounded-lg">
+            <div className="flex items-center gap-2 bg-neutral-900 border border-white/10 px-3 py-2 rounded-lg">
               <Star size={16} className="text-yellow-400" />
               <span className="font-semibold">{avgRating}</span>
             </div>
-            <div className="flex items-center gap-2 bg-gray-800/80 border border-gray-700 px-3 py-2 rounded-lg">
+            <div className="flex items-center gap-2 bg-neutral-900 border border-white/10 px-3 py-2 rounded-lg">
               <Trophy size={16} className="text-blue-400" />
               <span className="font-semibold">{teamChem}/33</span>
             </div>
-            <div className="flex items-center gap-2 bg-gray-800/80 border border-gray-700 px-3 py-2 rounded-lg">
+            <div className="flex items-center gap-2 bg-neutral-900 border border-white/10 px-3 py-2 rounded-lg">
               <DollarSign size={16} className="text-green-400" />
-              <span className="font-semibold">{fmtCoins(squadPrice)}</span>
+              <span className="font-semibold">{coins(squadPrice)}</span>
             </div>
-            <button className="bg-green-500 hover:bg-green-600 px-4 py-2 rounded-lg font-semibold transition-colors" onClick={shareUrl}>
+            <button onClick={share} className="bg-green-500 hover:bg-green-600 px-4 py-2 rounded-lg font-semibold">
               Share Link
             </button>
-            <button className="bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded-lg font-semibold transition-colors" onClick={clearAll}>
+            <button onClick={clearAll} className="bg-neutral-800 hover:bg-neutral-700 px-4 py-2 rounded-lg font-semibold">
               Clear
             </button>
           </div>
         </div>
       </header>
 
+      {/* Body */}
       <main className="mx-auto max-w-[1400px] px-6 py-6 grid grid-cols-12 gap-6">
         {/* Pitch */}
         <div className="col-span-8">
+          {/* You already have Pitch rendering the turf/markings; we just position slots */}
           <Pitch height="600px">
             {slots.map((slot) => {
               const pl = placed[slot.key];
               const chem = pl ? perPlayerChem[pl.id] ?? 0 : 0;
+
               return (
                 <div
                   key={slot.key}
                   onDragOver={(e) => e.preventDefault()}
-                  onDrop={(e) => handleDrop(e, slot.key)}
-                  className="absolute transform -translate-x-1/2 -translate-y-1/2"
+                  onDrop={(e) => onDrop(e, slot.key)}
+                  className="absolute -translate-x-1/2 -translate-y-1/2"
                   style={{ left: `${slot.x}%`, top: `${slot.y}%` }}
                 >
                   {pl ? (
-                    <div className="relative">
-                      <EnhancedPlayerCard
+                    <div className="relative group">
+                      <PlayerCard
                         player={pl}
-                        slotPosition={slot.pos}
+                        slotPos={slot.pos}
                         chem={chem}
                         draggable
-                        onDragStart={(e) => handleDragStart(e, pl.id)}
+                        onDragStart={(e) => onDragStart(e, pl.id)}
                         onRemove={() => clearSlot(slot.key)}
                       />
-                      <div className="absolute -bottom-8 left-0 right-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                        <div className="flex justify-center gap-2 text-xs">
-                          <button className="bg-gray-800/90 hover:bg-gray-700 text-white px-2 py-1 rounded border border-gray-600" onClick={() => setSearchOpen(slot.key)}>
-                            Swap
-                          </button>
-                          <button className="bg-red-800/90 hover:bg-red-700 text-white px-2 py-1 rounded border border-red-600" onClick={() => clearSlot(slot.key)}>
-                            Remove
-                          </button>
-                        </div>
+                      <div className="absolute -bottom-8 left-0 right-0 opacity-0 group-hover:opacity-100 transition text-xs flex gap-2 justify-center">
+                        <button
+                          className="px-2 py-1 rounded bg-neutral-800 border border-white/10 hover:bg-neutral-700"
+                          onClick={() => setSearchOpen(slot.key)}
+                        >
+                          Swap
+                        </button>
+                        <button
+                          className="px-2 py-1 rounded bg-red-700 border border-red-600 hover:bg-red-600"
+                          onClick={() => clearSlot(slot.key)}
+                        >
+                          Remove
+                        </button>
                       </div>
                     </div>
                   ) : (
-                    <EnhancedEmptySlot position={slot.pos} isSelected={searchOpen === slot.key} onClick={() => setSearchOpen(slot.key)} />
+                    <EmptySlot pos={slot.pos} selected={searchOpen === slot.key} onClick={() => setSearchOpen(slot.key)} />
                   )}
                 </div>
               );
             })}
           </Pitch>
 
-          <div className="mt-6 flex items-center gap-6 text-xs text-gray-400">
-            <span className="flex items-center gap-2">💡 <strong>Tip:</strong> Click a slot to search only eligible players for that position.</span>
-            <span className="flex items-center gap-2">🔴 <strong>Red dot:</strong> Out of position (0 chemistry)</span>
-            <span className="flex items-center gap-2">🟢 <strong>Green dot:</strong> Full chemistry (3/3)</span>
+          <div className="mt-4 text-xs text-white/60 flex flex-wrap gap-4">
+            <span>💡 Tip: Click a slot then search — results are filtered to eligible positions.</span>
+            <span>🔴 Red dot = out of position (0 chem)</span>
+            <span>🟢 Green dot = full chemistry (3/3)</span>
           </div>
         </div>
 
         {/* Search */}
-        <aside className="col-span-4 space-y-4">
-          <div className="bg-gray-900/90 border border-gray-800 rounded-2xl overflow-hidden">
-            <div className="p-4 border-b border-gray-800">
+        <aside className="col-span-4">
+          <div className="bg-neutral-950 border border-white/10 rounded-2xl overflow-hidden">
+            <div className="p-4 border-b border-white/10">
               <div className="relative">
-                <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/50" />
                 <input
-                  className="w-full bg-gray-800 border border-gray-700 rounded-lg pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-400 focus:border-green-400"
-                  placeholder={searchOpen ? `Search ${currentSlotPos}… (filtered)` : "Search name, club, league, nation"}
+                  className="w-full bg-neutral-900 border border-white/10 rounded-lg pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-400"
+                  placeholder={
+                    searchOpen
+                      ? `Search players for ${slots.find((s) => s.key === searchOpen)?.pos}…`
+                      : "Search name, club, league, nation, position"
+                  }
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                 />
               </div>
 
               {searchOpen && (
-                <div className="mt-3 flex items-center justify-between bg-gray-800/50 rounded-lg px-3 py-2">
-                  <span className="text-sm text-gray-300">
-                    Adding to: <span className="font-semibold text-green-400">{currentSlotPos}</span>
+                <div className="mt-3 flex items-center justify-between bg-neutral-900 rounded-lg px-3 py-2">
+                  <span className="text-sm text-white/80">
+                    Adding to:{" "}
+                    <span className="font-semibold text-green-400">
+                      {slots.find((s) => s.key === searchOpen)?.pos}
+                    </span>
                   </span>
-                  <button
-                    onClick={() => {
-                      setSearchOpen(null);
-                      setSearch("");
-                      setResults([]);
-                    }}
-                    className="text-gray-400 hover:text-white transition-colors"
-                  >
+                  <button className="text-white/60 hover:text-white" onClick={() => { setSearchOpen(null); setSearch(""); }}>
                     <X size={16} />
                   </button>
                 </div>
               )}
             </div>
 
-            <div className="max-h-96 overflow-y-auto custom-scrollbar">
+            <div className="max-h-96 overflow-y-auto custom-scrollbar p-3 space-y-2">
               {results.length > 0 ? (
-                <div className="p-3 space-y-2">
-                  {results.map((p) => {
-                    const valid = currentSlotPos ? isValidForSlot(currentSlotPos, p.positions) : true;
-                    return (
-                      <div
-                        key={p.id}
-                        onClick={() => searchOpen && addPlayerToSlot(p, searchOpen)}
-                        className={`bg-gray-800 border border-gray-700 rounded-xl p-3 transition-all ${
-                          searchOpen && valid ? "hover:bg-gray-700 cursor-pointer hover:border-gray-600" : searchOpen && !valid ? "opacity-50 cursor-not-allowed" : "cursor-default"
-                        }`}
-                      >
-                        <div className="flex items-center gap-3">
-                          <EnhancedPlayerCard player={p} size="sm" draggable onDragStart={(e) => handleDragStart(e, p.id)} />
-                          <div className="min-w-0 flex-1">
-                            <div className="flex items-center gap-2">
-                              <span className="font-semibold text-sm truncate">{p.name}</span>
-                              {p.isIcon && <span className="text-xs bg-orange-500/80 text-white px-1.5 py-0.5 rounded font-bold">ICON</span>}
-                              {p.isHero && <span className="text-xs bg-purple-500/80 text-white px-1.5 py-0.5 rounded font-bold">HERO</span>}
-                            </div>
-                            <div className="text-xs text-gray-400 truncate">{p.club || "—"} • {p.nation || "—"}</div>
-                            <div className="text-xs flex items-center gap-2">
-                              <span className="text-white font-medium">⭐ {p.rating ?? "-"}</span>
-                              <span className="text-gray-500">•</span>
-                              <span className="text-green-400 font-medium">{fmtCoins(p.price)}</span>
-                            </div>
-                            {!valid && searchOpen && <div className="text-xs text-red-400 mt-1">❌ Cannot play {currentSlotPos}</div>}
-                          </div>
-                          {searchOpen && (
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                addPlayerToSlot(p, searchOpen);
-                              }}
-                              disabled={!valid}
-                              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                                valid ? "bg-green-500 hover:bg-green-600 text-white shadow-sm" : "bg-gray-600 text-gray-400 cursor-not-allowed"
-                              }`}
-                            >
-                              Add
-                            </button>
+                results.map((p) => {
+                  const slotPos = searchOpen ? slots.find((s) => s.key === searchOpen)?.pos : null;
+                  const eligible = slotPos ? isValidForSlot(slotPos, p.positions) : true;
+                  return (
+                    <div
+                      key={p.id}
+                      className={cls(
+                        "bg-neutral-900 border border-white/10 rounded-xl p-3 transition",
+                        eligible ? "hover:bg-neutral-800 cursor-pointer" : "opacity-60 cursor-not-allowed"
+                      )}
+                      onClick={() => searchOpen && eligible && addToSlot(p, searchOpen)}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-12 h-16 rounded-md overflow-hidden border border-white/10 shrink-0">
+                          {p.image_url ? (
+                            <img src={p.image_url} alt={p.name} className="w-full h-full object-cover" />
+                          ) : (
+                            <div className="w-full h-full grid place-items-center text-xs text-white/50">No image</div>
                           )}
                         </div>
+
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2">
+                            <span className="font-semibold text-sm truncate">{p.name}</span>
+                            <span className="text-xs text-white/60">⭐ {p.rating ?? "-"}</span>
+                            {typeof p.price === "number" && (
+                              <>
+                                <span className="text-white/40">•</span>
+                                <span className="text-xs text-yellow-300 font-semibold">{p.price.toLocaleString()}</span>
+                              </>
+                            )}
+                          </div>
+                          <div className="text-xs text-white/60 truncate">
+                            {p.club || "—"} • {p.nation || "—"} • {p.league || "—"}
+                          </div>
+                          <div className="text-[11px] text-white/50 truncate mt-0.5">
+                            Positions: {(p.positions || []).join(", ") || "—"}
+                          </div>
+                          {slotPos && !eligible && (
+                            <div className="text-[11px] text-red-400 mt-1">Cannot play {slotPos}</div>
+                          )}
+                        </div>
+
+                        {searchOpen && (
+                          <button
+                            disabled={!eligible}
+                            className={cls(
+                              "px-3 py-1.5 rounded-lg text-xs font-bold",
+                              eligible ? "bg-green-500 hover:bg-green-600 text-black" : "bg-neutral-700 text-white/50"
+                            )}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (eligible) addToSlot(p, searchOpen);
+                            }}
+                          >
+                            Add
+                          </button>
+                        )}
                       </div>
-                    );
-                  })}
-                </div>
-              ) : searchOpen ? (
-                <div className="p-8 text-center text-gray-500">
-                  <Users size={32} className="mx-auto mb-3 opacity-50" />
-                  <div className="text-sm">No eligible players found for {currentSlotPos}</div>
-                </div>
+                    </div>
+                  );
+                })
               ) : search ? (
-                <div className="p-8 text-center text-gray-400">
-                  <Search size={32} className="mx-auto mb-3 opacity-50" />
-                  <div className="text-sm">No players found for “{search}”</div>
-                </div>
+                <div className="py-10 text-center text-white/50">No results for “{search}”.</div>
               ) : (
-                <div className="p-8 text-center text-gray-500">
-                  <Users size={32} className="mx-auto mb-3 opacity-50" />
-                  <div className="text-sm">Click a slot to filter by position, then search.</div>
+                <div className="py-10 text-center text-white/40">
+                  Start typing to search. Click a pitch slot to filter to that position.
                 </div>
               )}
             </div>
           </div>
 
-          {/* Sidebar stats */}
-          <div className="bg-gray-900/90 border border-gray-800 rounded-2xl p-4">
-            <h3 className="font-semibold text-sm mb-3 flex items-center gap-2">
-              <Users size={16} className="text-blue-400" />
-              Squad Overview
-            </h3>
-            <div className="space-y-3">
-              <div className="bg-gray-800 rounded-lg p-3">
-                <div className="flex justify-between items-center mb-2">
-                  <span className="text-gray-400 text-xs">Squad Completion</span>
-                  <span className="font-bold text-sm">{playerCount}/11</span>
-                </div>
-                <div className="w-full bg-gray-700 rounded-full h-2">
-                  <div className="bg-gradient-to-r from-green-500 to-green-400 h-2 rounded-full transition-all duration-500" style={{ width: `${(playerCount / 11) * 100}%` }} />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="bg-gray-800 rounded-lg p-3 text-center">
-                  <div className="text-yellow-400 font-bold text-xl">{avgRating}</div>
-                  <div className="text-gray-400 text-xs">Avg Rating</div>
-                </div>
-                <div className="bg-gray-800 rounded-lg p-3 text-center">
-                  <div className="text-green-400 font-bold text-xl">{teamChem}</div>
-                  <div className="text-gray-400 text-xs">Team Chemistry</div>
-                </div>
-              </div>
-              <div className="bg-gray-800 rounded-lg p-3 text-center">
-                <div className="text-blue-400 font-bold text-lg">{squadPrice.toLocaleString()}</div>
-                <div className="text-gray-400 text-xs">Total Squad Value (coins)</div>
-              </div>
+          {/* Simple overview */}
+          <div className="mt-4 grid grid-cols-3 gap-3">
+            <div className="bg-neutral-950 border border-white/10 rounded-xl p-3 text-center">
+              <div className="text-yellow-400 font-bold text-xl">{avgRating}</div>
+              <div className="text-white/60 text-xs">Avg Rating</div>
+            </div>
+            <div className="bg-neutral-950 border border-white/10 rounded-xl p-3 text-center">
+              <div className="text-green-400 font-bold text-xl">{teamChem}</div>
+              <div className="text-white/60 text-xs">Team Chem</div>
+            </div>
+            <div className="bg-neutral-950 border border-white/10 rounded-xl p-3 text-center">
+              <div className="text-blue-400 font-bold text-lg">{squadPrice.toLocaleString()}</div>
+              <div className="text-white/60 text-xs">Squad Coins</div>
             </div>
           </div>
 
-          <div className="bg-gray-900/90 border border-gray-800 rounded-2xl p-4">
-            <h3 className="font-semibold text-sm mb-3 flex items-center gap-2">
-              <Trophy size={16} className="text-green-400" />
-              Chemistry Rules (FC25-style)
-            </h3>
-            <div className="grid grid-cols-3 gap-2">
-              <div className="bg-gray-800 rounded-lg p-2 text-center">
-                <div className="text-blue-400 font-semibold text-xs">Club</div>
-                <div className="text-gray-400 text-xs mt-1">2/4/7 → +1/+2/+3</div>
-              </div>
-              <div className="bg-gray-800 rounded-lg p-2 text-center">
-                <div className="text-green-400 font-semibold text-xs">Nation</div>
-                <div className="text-gray-400 text-xs mt-1">2/5/8 → +1/+2/+3</div>
-              </div>
-              <div className="bg-gray-800 rounded-lg p-2 text-center">
-                <div className="text-purple-400 font-semibold text-xs">League</div>
-                <div className="text-gray-400 text-xs mt-1">3/5/8 → +1/+2/+3</div>
-              </div>
-            </div>
-            <div className="text-gray-400 text-xs space-y-1 border-t border-gray-800 pt-3">
-              <div className="flex items-center gap-2">
-                <span className="text-xs bg-orange-500/80 text-white px-1.5 py-0.5 rounded font-bold">ICON</span>
-                <span>3 chem in position, boost nation globally</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-xs bg-purple-500/80 text-white px-1.5 py-0.5 rounded font-bold">HERO</span>
-                <span>3 chem in position, boost their league</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-xs bg-red-500/80 text-white px-1.5 py-0.5 rounded font-bold">OOP</span>
-                <span>Out of position → 0 chem, no contributions</span>
-              </div>
-            </div>
+          <div className="mt-4 bg-neutral-950 border border-white/10 rounded-xl p-4 text-xs text-white/60">
+            <div className="font-semibold text-white/80 mb-2">Chemistry Rules (FC25)</div>
+            <ul className="space-y-1">
+              <li>Club: 2/4/7 → +1/+2/+3</li>
+              <li>Nation: 2/5/8 → +1/+2/+3</li>
+              <li>League: 3/5/8 → +1/+2/+3</li>
+              <li>Out of position = 0 chem & no contribution</li>
+            </ul>
           </div>
         </aside>
       </main>
