@@ -1,43 +1,43 @@
 // src/utils/positions.js
 
-// Canonical set
+// Canonical positions
 const POSITION_SET = new Set([
   "GK",
   "RB","RWB","CB","LB","LWB",
   "CDM","CM","CAM",
   "RM","LM",
   "RW","LW",
-  "RF","LF","CF","ST",
+  "RF","LF","CF","ST"
 ]);
 
-// Common aliases → canonical
+// Aliases -> canonical
 const ALIASES = new Map([
-  ["GOALKEEPER","GK"], ["KEEPER","GK"], ["G K","GK"],
+  ["GOALKEEPER","GK"], ["KEEPER","GK"], ["GK","GK"],
 
-  ["RIGHT BACK","RB"], ["RIGHTBACK","RB"],
-  ["LEFT BACK","LB"], ["LEFTBACK","LB"],
-  ["RIGHT WING BACK","RWB"], ["RIGHTWINGBACK","RWB"],
-  ["LEFT WING BACK","LWB"], ["LEFTWINGBACK","LWB"],
-  ["CENTER BACK","CB"], ["CENTRE BACK","CB"], ["CENTERBACK","CB"], ["CENTREBACK","CB"],
+  ["RIGHT BACK","RB"], ["RIGHTBACK","RB"], ["RB","RB"],
+  ["LEFT BACK","LB"], ["LEFTBACK","LB"], ["LB","LB"],
+  ["RIGHT WING BACK","RWB"], ["RIGHTWINGBACK","RWB"], ["RWB","RWB"],
+  ["LEFT WING BACK","LWB"], ["LEFTWINGBACK","LWB"], ["LWB","LWB"],
+  ["CENTER BACK","CB"], ["CENTRE BACK","CB"], ["CENTERBACK","CB"], ["CENTREBACK","CB"], ["CB","CB"],
 
-  ["DEFENSIVE MID","CDM"], ["DEFENSIVE MIDFIELDER","CDM"],
-  ["CENTER MID","CM"], ["CENTRE MID","CM"], ["CENTERMID","CM"], ["CENTREMID","CM"],
-  ["ATTACKING MID","CAM"], ["ATTACKING MIDFIELDER","CAM"],
+  ["DEFENSIVE MID","CDM"], ["DEFENSIVE MIDFIELDER","CDM"], ["CDM","CDM"],
+  ["CENTRE MID","CM"], ["CENTER MID","CM"], ["CENTREMID","CM"], ["CENTERMID","CM"], ["CM","CM"],
+  ["ATTACKING MID","CAM"], ["ATTACKING MIDFIELDER","CAM"], ["CAM","CAM"],
 
-  ["RIGHT MID","RM"], ["RIGHTMID","RM"],
-  ["LEFT MID","LM"],  ["LEFTMID","LM"],
+  ["RIGHT MID","RM"], ["RIGHTMID","RM"], ["RM","RM"],
+  ["LEFT MID","LM"], ["LEFTMID","LM"], ["LM","LM"],
 
-  ["RIGHT WING","RW"], ["RIGHTWING","RW"],
-  ["LEFT WING","LW"],  ["LEFTWING","LW"],
+  ["RIGHT WING","RW"], ["RIGHTWING","RW"], ["RW","RW"],
+  ["LEFT WING","LW"], ["LEFTWING","LW"], ["LW","LW"],
 
-  ["RIGHT FORWARD","RF"], ["RIGHTFORWARD","RF"],
-  ["LEFT FORWARD","LF"],  ["LEFTFORWARD","LF"],
-  ["CENTRE FORWARD","CF"], ["CENTER FORWARD","CF"], ["CENTREFORWARD","CF"], ["CENTERFORWARD","CF"],
+  ["RIGHT FORWARD","RF"], ["RIGHTFORWARD","RF"], ["RF","RF"],
+  ["LEFT FORWARD","LF"], ["LEFTFORWARD","LF"], ["LF","LF"],
+  ["CENTRE FORWARD","CF"], ["CENTER FORWARD","CF"], ["CENTREFORWARD","CF"], ["CENTERFORWARD","CF"], ["CF","CF"],
 
-  ["STRIKER","ST"], ["FORWARD","ST"],
+  ["STRIKER","ST"], ["FORWARD","ST"], ["ST","ST"]
 ]);
 
-// Compatibility: a card with base position P can be used at slots in this list
+// Card-pos → allowed squad slot-positions
 const COMPATIBILITY = {
   GK: ["GK"],
 
@@ -59,53 +59,49 @@ const COMPATIBILITY = {
   RF: ["RF","CF","RW","ST"],
   LF: ["LF","CF","LW","ST"],
   CF: ["CF","CAM","ST","RF","LF"],
-  ST: ["ST","CF","RF","LF","RW","LW"],
+  ST: ["ST","CF","RF","LF","RW","LW"]
 };
 
 function normalizePosition(p) {
   if (p == null) return null;
-  const s = String(p).trim().toUpperCase().replace(/\s+/g, " ");
-  if (POSITION_SET.has(s)) return s;
+  const cleaned = String(p).trim().toUpperCase().replace(/\s+/g, " ");
+  if (POSITION_SET.has(cleaned)) return cleaned;
 
-  if (ALIASES.has(s)) return ALIASES.get(s);
+  const noSpaces = cleaned.replace(/\s+/g, "");
+  if (ALIASES.has(cleaned)) return ALIASES.get(cleaned);
+  if (ALIASES.has(noSpaces)) return ALIASES.get(noSpaces);
 
-  const tight = s.replace(/\s+/g, "");
-  if (ALIASES.has(tight)) return ALIASES.get(tight);
-
-  const letters = s.replace(/[^A-Z]/g, "");
-  if (POSITION_SET.has(letters)) return letters;
-  if (ALIASES.has(letters)) return ALIASES.get(letters);
+  const lettersOnly = cleaned.replace(/[^A-Z]/g, "");
+  if (POSITION_SET.has(lettersOnly)) return lettersOnly;
+  if (ALIASES.has(lettersOnly)) return ALIASES.get(lettersOnly);
 
   return null;
 }
 
 export function normalizePositions(list) {
-  const arr = Array.isArray(list) ? list : [list];
-  const out = [];
   const seen = new Set();
-  for (const raw of arr) {
-    const n = normalizePosition(raw);
-    if (n && !seen.has(n)) {
-      seen.add(n);
-      out.push(n);
+  const out = [];
+  (Array.isArray(list) ? list : [list]).forEach((p) => {
+    const norm = normalizePosition(p);
+    if (norm && !seen.has(norm)) {
+      seen.add(norm);
+      out.push(norm);
     }
-  }
+  });
   return out;
 }
 
 export const POSITIONS = Array.from(POSITION_SET);
+export const isPosition = (p) => POSITION_SET.has(String(p || "").toUpperCase());
 
-/**
- * slotPosition: a single code ("ST")
- * playerPositions: array of codes ["ST","CF"] (will be normalized)
- */
+/** Correct argument order: (slotPosition, playerPositions[]) */
 export function isValidForSlot(slotPosition, playerPositions) {
   const slot = normalizePosition(slotPosition);
   if (!slot) return false;
-  const list = normalizePositions(playerPositions);
 
+  const list = normalizePositions(playerPositions);
   for (const p of list) {
-    if (p === slot) return true; // exact
+    if (p === slot) return true; // exact match
     const compat = COMPATIBILITY[p] || [];
     if (compat.includes(slot)) return true;
   }
