@@ -3,9 +3,8 @@ import { normalizePositions } from "../utils/positions";
 
 const API_BASE = import.meta.env.VITE_API_URL || "";
 
-// --- session caches
-const defCache = new Map();   // id -> FUT.GG definition
-const priceCache = new Map(); // id -> { current, isExtinct, updatedAt }
+const defCache = new Map();
+const priceCache = new Map();
 
 export async function searchPlayers(query) {
   const q = (query || "").trim();
@@ -22,10 +21,14 @@ export async function searchPlayers(query) {
       card_id: Number(p.card_id),
       name: p.name,
       rating: Number(p.rating) || 0,
+      // Keep whatever DB gives; enrich will normalize/complete
       club: p.club || null,
       nation: p.nation || null,
-      league: null, // filled by enrich
-      positions: normalizePositions(p.position ? [p.position] : []), // normalized
+      league: p.league || null,
+      clubId: p.clubId || null,
+      nationId: p.nationId || null,
+      leagueId: p.leagueId || null,
+      positions: normalizePositions(p.position ? [p.position] : []),
       image_url: p.image_url || null,
       price: typeof p.price === "number" ? p.price : null,
       isIcon: false,
@@ -92,14 +95,37 @@ function extractPositionsFromDef(def) {
   return normalizePositions(raw);
 }
 
+// --- NEW: tolerant extraction helpers (name + id)
+function pickLeague(def) {
+  const obj = def?.league || {};
+  const name =
+    obj.name || obj.shortName || def?.leagueName || def?.leagueShortName || null;
+  const id = obj.id || def?.leagueId || null;
+  return { league: name, leagueId: id };
+}
+function pickClub(def) {
+  const obj = def?.club || {};
+  const name = obj.name || def?.clubName || null;
+  const id = obj.id || def?.clubId || null;
+  return { club: name, clubId: id };
+}
+function pickNation(def) {
+  const obj = def?.nation || {};
+  const name = obj.name || def?.nationName || null;
+  const id = obj.id || def?.nationId || null;
+  return { nation: name, nationId: id };
+}
+
 export async function enrichPlayer(base) {
   const id = Number(base.card_id || base.id);
   const [def, live] = await Promise.all([fetchDefinition(id), fetchLivePrice(id)]);
 
-  const league = def?.league?.name || base.league || null;
+  const { league, leagueId } = pickLeague(def);
+  const { club, clubId } = pickClub(def);
+  const { nation, nationId } = pickNation(def);
+
   const positions = extractPositionsFromDef(def);
   const cardImage = cardImageFromDef(def);
-
   const price = typeof live?.current === "number" ? live.current : base.price ?? null;
 
   const rarity = (def?.rarity?.name || "").toLowerCase();
@@ -110,14 +136,17 @@ export async function enrichPlayer(base) {
     ...base,
     id,
     card_id: id,
-    league,
+    // prefer IDs from def; fall back to whatever we already had
+    league: league || base.league || null,
+    leagueId: leagueId ?? base.leagueId ?? null,
+    club: club || base.club || null,
+    clubId: clubId ?? base.clubId ?? null,
+    nation: nation || base.nation || null,
+    nationId: nationId ?? base.nationId ?? null,
     positions: positions.length ? positions : base.positions,
     image_url: cardImage || base.image_url || null,
     price,
     isIcon,
     isHero,
-    // fallback club/nation if DB was missing
-    club: base.club || def?.club?.name || null,
-    nation: base.nation || def?.nation?.name || null,
   };
 }
