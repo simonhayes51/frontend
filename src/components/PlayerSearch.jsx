@@ -504,17 +504,6 @@ const PlayerDetail = ({ player, onBack }) => {
               </div>
             </div>
 
-            {/* Price History (orange chart) */}
-            <div className="bg-[#334155] rounded-lg p-4 mb-6">
-              <h3 className="font-semibold mb-3 text-lg">Price History</h3>
-              <PriceTrendChart
-                playerId={cardId}
-                platform={platform}
-                initialTimeframe="today"
-                height={300}
-              />
-            </div>
-
             {/* Club / Nation / League / Position */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
               {/* Club */}
@@ -689,6 +678,17 @@ const PlayerDetail = ({ player, onBack }) => {
                 )
             )}
           </div>
+        </div>
+
+        {/* Price History (orange chart) */}
+        <div className="bg-[#334155] rounded-lg p-4 mb-6">
+          <h3 className="font-semibold mb-3 text-lg">Price History</h3>
+          <PriceTrendChart
+            playerId={cardId}
+            platform={platform}
+            initialTimeframe="today"
+            height={300}
+          />
         </div>
 
         {priceData?.auctions?.length > 0 && (
