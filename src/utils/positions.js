@@ -94,7 +94,7 @@ export function normalizePositions(list) {
 export const POSITIONS = Array.from(POSITION_SET);
 export const isPosition = (p) => POSITION_SET.has(String(p || "").toUpperCase());
 
-// ✅ FIXED: Corrected parameter order to match how it's called in chemistry.js
+// Correct parameter order: isValidForSlot(slotPosition, playerPositions)
 export function isValidForSlot(slotPosition, playerPositions) {
   const slot = normalizePosition(slotPosition);
   if (!slot) return false;
