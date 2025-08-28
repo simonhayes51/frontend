@@ -203,7 +203,7 @@ export default function PriceTrendChart({
               stroke={ORANGE}
               fill="url(#chartFill)"
               fillOpacity={0.6}
-              dot={{ r: 3, stroke: ORANGE, fill: "#c93600", strokeWidth: 1 }}
+              dot={{ r: 3, stroke: ORANGE, fill: "#91db32", strokeWidth: 1 }}
               activeDot={{ r: 4 }}
               isAnimationActive={false}
             />
