@@ -1,68 +1,66 @@
 // src/components/squad/Pitch.jsx
 import React from "react";
 
-export default function Pitch({ children, height = "600px", orientation = "vertical" }) {
+export default function Pitch({ children, height = "800px" }) {
   const container = {
     position: "relative",
     width: "100%",
     height,
-    minHeight: 520,
-    borderRadius: 24,
+    minHeight: 700, // Increased from 520
+    borderRadius: 28,
     overflow: "hidden",
     background: `
-      radial-gradient(ellipse at center, rgba(6,95,70,0.25), rgba(2,44,34,0.15) 70%),
+      radial-gradient(ellipse at center, rgba(6,95,70,0.3), rgba(2,44,34,0.2) 70%),
       linear-gradient(180deg, 
-        rgba(6,95,70,0.18) 0%, 
-        rgba(4,120,87,0.12) 25%,
-        rgba(6,95,70,0.08) 50%, 
-        rgba(4,120,87,0.12) 75%,
-        rgba(6,95,70,0.18) 100%)
+        rgba(6,95,70,0.15) 0%, 
+        rgba(4,120,87,0.08) 25%,
+        rgba(6,95,70,0.05) 50%, 
+        rgba(4,120,87,0.08) 75%,
+        rgba(6,95,70,0.15) 100%)
     `,
-    border: "2px solid rgba(6,95,70,0.4)",
+    border: "2px solid rgba(6,95,70,0.6)",
     boxShadow: `
-      0 8px 32px rgba(0,0,0,0.4),
-      inset 0 0 0 1px rgba(34,197,94,0.1),
-      inset 0 1px 0 rgba(255,255,255,0.05)
+      0 12px 40px rgba(0,0,0,0.5),
+      inset 0 0 0 2px rgba(34,197,94,0.15),
+      inset 0 2px 0 rgba(255,255,255,0.05)
     `,
   };
 
   const inner = {
     position: "absolute",
-    top: 12,
-    bottom: 12,
-    left: 12,
-    right: 12,
-    borderRadius: 18,
-    border: "2px solid rgba(34,197,94,0.3)",
+    top: 16,
+    bottom: 16,
+    left: 16,
+    right: 16,
+    borderRadius: 22,
+    border: "2px solid rgba(34,197,94,0.4)",
     overflow: "hidden",
-    background: "transparent",
   };
 
   const stripeWrap = {
     position: "absolute",
     inset: 0,
-    borderRadius: 18,
+    borderRadius: 22,
     pointerEvents: "none",
   };
 
-  const lineColor = "rgba(34,197,94,0.4)";
-  const markingColor = "rgba(255,255,255,0.25)";
+  const lineColor = "rgba(34,197,94,0.5)";
+  const markingColor = "rgba(255,255,255,0.3)";
 
   return (
     <div style={container}>
       <div style={inner}>
-        {/* Enhanced grass stripes with subtle animation */}
+        {/* Enhanced grass stripes */}
         <div style={stripeWrap}>
-          {Array.from({ length: 16 }).map((_, i) => (
+          {Array.from({ length: 18 }).map((_, i) => (
             <div
               key={i}
-              className="grass-stripe"
               style={{
                 position: "absolute",
                 left: 0,
                 right: 0,
-                top: `${(i * 100) / 16}%`,
-                height: `${100 / 16}%`,
+                top: `${(i * 100) / 18}%`,
+                height: `${100 / 18}%`,
                 background:
                   i % 2 === 0
                     ? "rgba(6,95,70,0.12)"
@@ -77,12 +75,12 @@ export default function Pitch({ children, height = "600px", orientation = "verti
         <div
           style={{
             position: "absolute",
-            left: "5%",
-            right: "5%",
+            left: "8%",
+            right: "8%",
             top: "50%",
             transform: "translateY(-50%)",
-            borderTop: `2px solid ${markingColor}`,
-            filter: "drop-shadow(0 0 4px rgba(255,255,255,0.1))",
+            borderTop: `3px solid ${markingColor}`,
+            filter: "drop-shadow(0 0 6px rgba(255,255,255,0.2))",
           }}
         />
 
@@ -93,12 +91,12 @@ export default function Pitch({ children, height = "600px", orientation = "verti
             left: "50%",
             top: "50%",
             transform: "translate(-50%, -50%)",
-            width: "20%",
-            height: "20%",
+            width: "22%",
+            height: "22%",
             borderRadius: "50%",
-            border: `2px solid ${markingColor}`,
+            border: `3px solid ${markingColor}`,
             boxSizing: "border-box",
-            filter: "drop-shadow(0 0 4px rgba(255,255,255,0.1))",
+            filter: "drop-shadow(0 0 6px rgba(255,255,255,0.2))",
           }}
         />
         
@@ -109,11 +107,11 @@ export default function Pitch({ children, height = "600px", orientation = "verti
             left: "50%",
             top: "50%",
             transform: "translate(-50%, -50%)",
-            width: 8,
-            height: 8,
+            width: 10,
+            height: 10,
             borderRadius: "50%",
             background: markingColor,
-            boxShadow: "0 0 6px rgba(255,255,255,0.3)",
+            boxShadow: "0 0 8px rgba(255,255,255,0.4)",
           }}
         />
 
@@ -138,18 +136,35 @@ export default function Pitch({ children, height = "600px", orientation = "verti
 
 function EnhancedPenaltyBox({ position, lineColor }) {
   const isTop = position === "top";
-  const areaHeight = "24%";
-  const sixHeight = "9%";
-  const arcRadius = "10%";
+  const areaHeight = "28%"; // Increased for better proportions
+  const sixHeight = "12%";
 
   // 18-yard box
   const areaStyle = {
     position: "absolute",
     left: "50%",
     transform: "translateX(-50%)",
-    width: "65%",
+    width: "68%",
     height: areaHeight,
-    border: `2px solid ${lineColor}`,
+    border: `3px solid ${lineColor}`,
+    boxSizing: "border-box",
+    top: isTop ? 0 : undefined,
+    bottom: !isTop ? 0 : undefined,
+    borderTopLeftRadius: isTop ? 0 : 16,
+    borderTopRightRadius: isTop ? 0 : 16,
+    borderBottomLeftRadius: !isTop ? 0 : 16,
+    borderBottomRightRadius: !isTop ? 0 : 16,
+    filter: "drop-shadow(0 0 6px rgba(255,255,255,0.15))",
+  };
+
+  // 6-yard box
+  const sixStyle = {
+    position: "absolute",
+    left: "50%",
+    transform: "translateX(-50%)",
+    width: "35%",
+    height: sixHeight,
+    border: `3px solid ${lineColor}`,
     boxSizing: "border-box",
     top: isTop ? 0 : undefined,
     bottom: !isTop ? 0 : undefined,
@@ -157,25 +172,7 @@ function EnhancedPenaltyBox({ position, lineColor }) {
     borderTopRightRadius: isTop ? 0 : 12,
     borderBottomLeftRadius: !isTop ? 0 : 12,
     borderBottomRightRadius: !isTop ? 0 : 12,
-    filter: "drop-shadow(0 0 4px rgba(255,255,255,0.1))",
-  };
-
-  // 6-yard box (goal area)
-  const sixStyle = {
-    position: "absolute",
-    left: "50%",
-    transform: "translateX(-50%)",
-    width: "32%",
-    height: sixHeight,
-    border: `2px solid ${lineColor}`,
-    boxSizing: "border-box",
-    top: isTop ? 0 : undefined,
-    bottom: !isTop ? 0 : undefined,
-    borderTopLeftRadius: isTop ? 0 : 8,
-    borderTopRightRadius: isTop ? 0 : 8,
-    borderBottomLeftRadius: !isTop ? 0 : 8,
-    borderBottomRightRadius: !isTop ? 0 : 8,
-    filter: "drop-shadow(0 0 4px rgba(255,255,255,0.1))",
+    filter: "drop-shadow(0 0 6px rgba(255,255,255,0.15))",
   };
 
   // Penalty spot
@@ -183,13 +180,13 @@ function EnhancedPenaltyBox({ position, lineColor }) {
     position: "absolute",
     left: "50%",
     transform: "translateX(-50%)",
-    width: 8,
-    height: 8,
+    width: 10,
+    height: 10,
     borderRadius: "50%",
     background: lineColor,
-    top: isTop ? "15%" : undefined,
-    bottom: !isTop ? "15%" : undefined,
-    boxShadow: "0 0 6px rgba(255,255,255,0.3)",
+    top: isTop ? "17%" : undefined,
+    bottom: !isTop ? "17%" : undefined,
+    boxShadow: "0 0 8px rgba(255,255,255,0.4)",
   };
 
   // Penalty arc
@@ -197,16 +194,16 @@ function EnhancedPenaltyBox({ position, lineColor }) {
     position: "absolute",
     left: "50%",
     transform: "translateX(-50%)",
-    width: "22%",
-    height: "22%",
+    width: "25%",
+    height: "25%",
     borderRadius: "50%",
-    border: `2px solid ${lineColor}`,
+    border: `3px solid ${lineColor}`,
     boxSizing: "border-box",
     clipPath: isTop ? "inset(50% 0 0 0)" : "inset(0 0 50% 0)",
-    top: isTop ? `calc(${areaHeight} - 11%)` : undefined,
-    bottom: !isTop ? `calc(${areaHeight} - 11%)` : undefined,
+    top: isTop ? `calc(${areaHeight} - 12.5%)` : undefined,
+    bottom: !isTop ? `calc(${areaHeight} - 12.5%)` : undefined,
     background: "transparent",
-    filter: "drop-shadow(0 0 4px rgba(255,255,255,0.1))",
+    filter: "drop-shadow(0 0 6px rgba(255,255,255,0.15))",
   };
 
   return (
@@ -220,8 +217,8 @@ function EnhancedPenaltyBox({ position, lineColor }) {
 }
 
 function CornerArc({ corner, color }) {
-  const size = "12%";
-  const thickness = "2px";
+  const size = "15%";
+  const thickness = "3px";
   
   const getPosition = () => {
     switch (corner) {
@@ -247,7 +244,7 @@ function CornerArc({ corner, color }) {
         borderRadius: "50%",
         border: `${thickness} solid ${color}`,
         background: "transparent",
-        filter: "drop-shadow(0 0 3px rgba(255,255,255,0.1))",
+        filter: "drop-shadow(0 0 4px rgba(255,255,255,0.15))",
         ...getPosition(),
       }}
     />
