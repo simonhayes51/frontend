@@ -1,64 +1,84 @@
 // src/api/squadApi.js
-import { normalizePositions } from "../utils/positions";
+import { normalizePositions, isValidForSlot } from "../utils/positions";
 
 const API_BASE = import.meta.env.VITE_API_URL || "";
 
-// Enhanced caching with TTL
-const defCache = new Map();
-const priceCache = new Map();
-const searchCache = new Map();
+// simple in-memory caches with TTL
+const TTL = 5 * 60 * 1000;
+const searchCache = new Map(); // key -> {ts,data}
+const defCache = new Map();    // cardId -> {ts,data}
+const priceCache = new Map();  // cardId -> {ts,data}
 
-const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
-const isCacheValid = (t) => t && Date.now() - t < CACHE_TTL;
+const fresh = (x) => x && Date.now() - x.ts < TTL;
 
-/** Slot-aware search: pass optional position filter (e.g., 'ST') */
-export async function searchPlayers(query, positionFilter) {
+export async function searchPlayers(query, slotPos) {
   const q = (query || "").trim();
-  const pos = (positionFilter || "").trim().toUpperCase();
+  if (!q) return [];
 
-  const key = `${q}::${pos}`;
-  const cached = searchCache.get(key);
-  if (cached && isCacheValid(cached.timestamp)) return cached.data;
+  const key = `${q.toLowerCase()}|${slotPos || ""}`;
+  const hit = searchCache.get(key);
+  if (fresh(hit)) return hit.data;
 
   const url = new URL(`${API_BASE}/api/search-players`);
-  if (q) url.searchParams.set("q", q);
-  if (pos) url.searchParams.set("pos", pos);
+  url.searchParams.set("q", q);
+  if (slotPos) url.searchParams.set("pos", slotPos); // backend may ignore; we also filter client-side
 
+  let players = [];
   try {
     const r = await fetch(url.toString(), { credentials: "include" });
-    if (!r.ok) return [];
+    if (r.ok) {
+      const { players: raw = [] } = await r.json();
 
-    const { players = [] } = await r.json();
+      players = raw.map((p) => {
+        // p.position (primary) + p.altposition (CSV or single); normalize to array of canonical codes
+        const alt = p.altposition
+          ? Array.isArray(p.altposition)
+            ? p.altposition
+            : String(p.altposition).split(/[;,|/]/)
+          : [];
+        const positions = normalizePositions([p.position, ...alt]);
 
-    const res = players.map((p) => ({
-      id: Number(p.card_id),
-      card_id: Number(p.card_id),
-      name: p.name || "Unknown Player",
-      rating: Number(p.rating) || 0,
-      club: p.club || null,
-      league: p.league || null,
-      nation: p.nation || null,
-      // backend now returns positions array; still normalize just in case
-      positions: normalizePositions(p.positions || p.position || []),
-      image_url: p.image_url || null,
-      price: typeof p.price === "number" ? p.price : null,
-      // ids can be added later if you add them server side
-      clubId: p.clubId ?? null,
-      leagueId: p.leagueId ?? null,
-      nationId: p.nationId ?? null,
-      isIcon: false,
-      isHero: false,
-    }));
+        return {
+          id: Number(p.card_id),
+          card_id: Number(p.card_id),
+          name: p.name || "Unknown",
+          rating: Number(p.rating) || 0,
+          version: p.version || null,
+          image_url: p.image_url || null,
 
-    searchCache.set(key, { data: res, timestamp: Date.now() });
-    return res;
+          // entity names from DB (IDs optional; chemistry can work with names alone)
+          club: p.club || null,
+          nation: p.nation || null,
+          league: p.league || null,
+
+          // allow IDs if you later add them (chemistry.js will use names when IDs absent)
+          clubId: p.clubId ?? null,
+          nationId: p.nationId ?? null,
+          leagueId: p.leagueId ?? null,
+
+          positions,
+          price: typeof p.price === "number" ? p.price : null,
+
+          // flags (will be refined by enrich)
+          isIcon: false,
+          isHero: false,
+        };
+      });
+
+      // client-side filter by slot eligibility as a fallback
+      if (slotPos) {
+        players = players.filter((p) => isValidForSlot(slotPos, p.positions));
+      }
+    }
   } catch (e) {
-    console.error("searchPlayers failed:", e);
-    return [];
+    console.warn("searchPlayers failed:", e);
   }
+
+  searchCache.set(key, { ts: Date.now(), data: players });
+  return players;
 }
 
-function cardImageFromDef(def) {
+function cardImg(def) {
   if (def?.futggCardImagePath) {
     return `https://game-assets.fut.gg/cdn-cgi/image/quality=90,format=auto,width=500/${def.futggCardImagePath}`;
   }
@@ -71,19 +91,14 @@ function cardImageFromDef(def) {
 async function fetchDefinition(cardId) {
   const id = Number(cardId);
   if (!id) return null;
-
-  const cached = defCache.get(id);
-  if (cached && isCacheValid(cached.timestamp)) return cached.data;
+  const hit = defCache.get(id);
+  if (fresh(hit)) return hit.data;
 
   try {
-    const r = await fetch(`${API_BASE}/api/fut-player-definition/${id}`, {
-      credentials: "include",
-    });
-    if (!r.ok) return null;
-    const json = await r.json();
+    const r = await fetch(`${API_BASE}/api/fut-player-definition/${id}`, { credentials: "include" });
+    const json = r.ok ? await r.json() : null;
     const def = json?.data || null;
-
-    defCache.set(id, { data: def, timestamp: Date.now() });
+    defCache.set(id, { ts: Date.now(), data: def });
     return def;
   } catch {
     return null;
@@ -93,24 +108,19 @@ async function fetchDefinition(cardId) {
 async function fetchLivePrice(cardId) {
   const id = Number(cardId);
   if (!id) return { current: null, isExtinct: false, updatedAt: null };
-
-  const cached = priceCache.get(id);
-  if (cached && isCacheValid(cached.timestamp)) return cached.data;
+  const hit = priceCache.get(id);
+  if (fresh(hit)) return hit.data;
 
   try {
-    const r = await fetch(`${API_BASE}/api/fut-player-price/${id}`, {
-      credentials: "include",
-    });
-    if (!r.ok) return { current: null, isExtinct: false, updatedAt: null };
-
-    const json = await r.json();
+    const r = await fetch(`${API_BASE}/api/fut-player-price/${id}`, { credentials: "include" });
+    const json = r.ok ? await r.json() : null;
     const cur = json?.data?.currentPrice || {};
     const out = {
       current: typeof cur.price === "number" ? cur.price : null,
       isExtinct: !!cur.isExtinct,
       updatedAt: cur.priceUpdatedAt || null,
     };
-    priceCache.set(id, { data: out, timestamp: Date.now() });
+    priceCache.set(id, { ts: Date.now(), data: out });
     return out;
   } catch {
     return { current: null, isExtinct: false, updatedAt: null };
@@ -126,55 +136,46 @@ function extractPositionsFromDef(def) {
     def?.positionName,
     ...(Array.isArray(def?.preferredPositions) ? def.preferredPositions : []),
     ...(Array.isArray(def?.playablePositions) ? def.playablePositions : []),
-  ].flat().filter(Boolean);
+  ].filter(Boolean);
   return normalizePositions(raw);
 }
 
-function detectSpecialCardType(def) {
-  const rarity = (def?.rarity?.name || "").toLowerCase();
-  const type = (def?.cardType || "").toLowerCase();
-  const n = (def?.name || "").toLowerCase();
-  return {
-    isIcon: rarity.includes("icon") || type.includes("icon") || n.includes("icon"),
-    isHero: rarity.includes("hero") || type.includes("hero") || n.includes("hero"),
-  };
-}
-
-/** Enrich a basic player (add image, fuller positions, price, special flags) */
 export async function enrichPlayer(base) {
   const id = Number(base.card_id || base.id);
   if (!id) return base;
 
   const [def, live] = await Promise.all([fetchDefinition(id), fetchLivePrice(id)]);
-  const positions = extractPositionsFromDef(def);
+
+  const positions = (() => {
+    const fromDef = extractPositionsFromDef(def);
+    return fromDef.length ? fromDef : base.positions || [];
+  })();
+
+  const image_url = cardImg(def) || base.image_url || null;
+
+  const league = def?.league?.name || base.league || null;
+  const leagueId = def?.league?.id ?? base.leagueId ?? null;
+  const club = def?.club?.name || base.club || null;
+  const clubId = def?.club?.id ?? base.clubId ?? null;
+  const nation = def?.nation?.name || base.nation || null;
+  const nationId = def?.nation?.id ?? base.nationId ?? null;
+
+  const rarity = (def?.rarity?.name || "").toLowerCase();
+  const isIcon = rarity.includes("icon");
+  const isHero = rarity.includes("hero");
+
   const price = typeof live?.current === "number" ? live.current : base.price ?? null;
-  const img = cardImageFromDef(def);
-  const { isIcon, isHero } = detectSpecialCardType(def);
 
   return {
     ...base,
-    id,
-    card_id: id,
-    positions: positions.length ? positions : base.positions,
-    image_url: img || base.image_url || null,
+    positions,
+    image_url,
+    league, leagueId,
+    club, clubId,
+    nation, nationId,
+    isIcon, isHero,
     price,
-    isIcon,
-    isHero,
     isExtinct: !!live?.isExtinct,
     priceUpdatedAt: live?.updatedAt || null,
-  };
-}
-
-// Utilities
-export function clearPlayerCaches() {
-  defCache.clear();
-  priceCache.clear();
-  searchCache.clear();
-}
-export function getCacheStats() {
-  return {
-    definitions: defCache.size,
-    prices: priceCache.size,
-    searches: searchCache.size,
   };
 }
