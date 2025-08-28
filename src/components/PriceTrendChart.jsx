@@ -172,6 +172,10 @@ export default function PriceTrendChart({
               axisLine={{ stroke: AXIS }}
               tickLine={{ stroke: GRID }}
               width={55}
+              domain={[
+                0, // keep 0 at the bottom
+                (dataMax) => Math.ceil(dataMax * 1.1), // add 10% headroom above the max
+              ]}
             />
 
             <Tooltip
