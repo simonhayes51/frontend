@@ -15,16 +15,19 @@ import SquadBuilder from "./pages/SquadBuilder";
 import PlayerSearch from "./pages/PlayerSearch";
 
 // Lazy-loaded pages
-const Dashboard    = lazy(() => import("./pages/Dashboard"));
-const AddTrade     = lazy(() => import("./pages/AddTrade"));
-const Trades       = lazy(() => import("./pages/Trades"));
-const Profile      = lazy(() => import("./pages/Profile"));
-const Settings     = lazy(() => import("./pages/Settings"));
-const ProfitGraph  = lazy(() => import("./pages/ProfitGraph"));
-const PriceCheck   = lazy(() => import("./pages/PriceCheck"));
-const Login        = lazy(() => import("./pages/Login"));
-const AccessDenied = lazy(() => import("./pages/AccessDenied"));
-const NotFound     = lazy(() => import("./pages/NotFound"));
+const Dashboard       = lazy(() => import("./pages/Dashboard"));
+const AddTrade        = lazy(() => import("./pages/AddTrade"));
+const Trades          = lazy(() => import("./pages/Trades"));
+const Profile         = lazy(() => import("./pages/Profile"));
+const Settings        = lazy(() => import("./pages/Settings"));
+const ProfitGraph     = lazy(() => import("./pages/ProfitGraph"));
+const PriceCheck      = lazy(() => import("./pages/PriceCheck"));
+const Login           = lazy(() => import("./pages/Login"));
+const AccessDenied    = lazy(() => import("./pages/AccessDenied"));
+const NotFound        = lazy(() => import("./pages/NotFound"));
+
+// ✅ New themed dashboard page (renders without Layout for exact look)
+const ThemedDashboard = lazy(() => import("./pages/ThemedDashboard"));
 
 function App() {
   return (
@@ -37,6 +40,20 @@ function App() {
                 {/* Public */}
                 <Route path="/login" element={<Login />} />
                 <Route path="/access-denied" element={<AccessDenied />} />
+
+                {/* New: standalone themed dashboard */}
+                <Route
+                  path="/new"
+                  element={
+                    <PrivateRoute>
+                      <SettingsProvider>
+                        <DashboardProvider>
+                          <ThemedDashboard />
+                        </DashboardProvider>
+                      </SettingsProvider>
+                    </PrivateRoute>
+                  }
+                />
 
                 {/* Protected (renders inside <Layout /> via <Outlet />) */}
                 <Route
@@ -61,9 +78,8 @@ function App() {
                   <Route path="pricecheck" element={<PriceCheck />} />
                   <Route path="watchlist" element={<Watchlist />} />
                   <Route path="squad" element={<SquadBuilder />} />
-
-                  {/* Alias: /squad -> /player-search */}
-                  <Route path="squad" element={<Navigate to="/player-search" replace />} />
+                  {/* If you want /squad to redirect to /player-search instead, replace the line above with the one below */}
+                  {/* <Route path="squad" element={<Navigate to="/player-search" replace />} /> */}
                 </Route>
 
                 {/* 404 */}
