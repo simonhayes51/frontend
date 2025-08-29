@@ -52,7 +52,7 @@ function App() {
                   }
                 >
                   <Route index element={<Dashboard />} />
-                  <Route path="add-trade" element={<AddTrade />} />
+                  <Route path="addtrade" element={<AddTrade />} />
                   <Route path="trades" element={<Trades />} />
                   <Route path="player-search" element={<PlayerSearch />} />
                   <Route path="profile" element={<Profile />} />
