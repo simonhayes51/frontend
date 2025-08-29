@@ -1,9 +1,10 @@
-// src/pages/Dashboard.jsx
+// Updated Dashboard component with settings integration (hardened)
 import React from "react";
 import { useDashboard } from "../context/DashboardContext";
 import { useSettings } from "../context/SettingsContext";
 
 const Dashboard = () => {
+  // Pull from contexts
   const {
     netProfit,
     taxPaid,
@@ -16,35 +17,29 @@ const Dashboard = () => {
   const {
     formatCurrency,
     formatDate,
+    calculateProfit,
     visible_widgets: rawWidgets,
     include_tax_in_profit,
     isLoading: settingsLoading,
   } = useSettings();
 
-  // --- SAFE FALLBACKS -------------------------------------------------------
+  // ✅ Safe fallbacks so UI never crashes on first render / bad data
   const trades = Array.isArray(rawTrades) ? rawTrades : [];
-
-  // ✅ If settings.visible_widgets is missing or empty, show a sensible default set
-  const visible_widgets =
-    Array.isArray(rawWidgets) && rawWidgets.length > 0
-      ? rawWidgets
-      : ["profit", "tax", "balance", "trades"];
-  // --------------------------------------------------------------------------
+  const visible_widgets = Array.isArray(rawWidgets) ? rawWidgets : [];
 
   if (isLoading || settingsLoading) {
     return (
       <div className="p-4">
         <div className="animate-pulse">
           <div className="h-8 bg-gray-800 rounded mb-4"></div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-            {[1, 2, 3, 4].map((i) => (
+          <div className="grid grid-cols-3 gap-4 mb-6">
+            {[1, 2, 3].map((i) => (
               <div key={i} className="bg-gray-800 rounded-lg p-4">
                 <div className="h-4 bg-gray-700 rounded mb-2"></div>
                 <div className="h-8 bg-gray-700 rounded"></div>
               </div>
             ))}
           </div>
-          <div className="h-40 bg-gray-800 rounded"></div>
         </div>
       </div>
     );
@@ -52,9 +47,11 @@ const Dashboard = () => {
 
   if (error) return <div className="text-red-500 p-4">{String(error)}</div>;
 
+  // Derived helpers (guard against NaN)
   const gross = (netProfit ?? 0) + (taxPaid ?? 0);
   const taxPct = gross > 0 ? ((taxPaid ?? 0) / gross) * 100 : 0;
 
+  // Widget components
   const widgets = {
     profit: (
       <div className="bg-gray-800 rounded-lg p-4">
@@ -99,7 +96,11 @@ const Dashboard = () => {
         <p className="text-2xl font-bold text-purple-400">{trades.length}</p>
         {trades.length > 0 && (
           <p className="text-sm text-gray-400">
-            Avg profit: {formatCurrency((netProfit ?? 0) / (trades.length || 1))} coins
+            Avg profit:{" "}
+            {formatCurrency(
+              (netProfit ?? 0) / (trades.length || 1) // avoid divide-by-zero
+            )}{" "}
+            coins
           </p>
         )}
       </div>
@@ -110,16 +111,15 @@ const Dashboard = () => {
     <div className="p-4 max-w-6xl mx-auto">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">Dashboard</h1>
-        <div className="text-sm text-gray-400">
-          Last updated: {formatDate(new Date())}
-        </div>
+        <div className="text-sm text-gray-400">Last updated: {formatDate(new Date())}</div>
       </div>
 
-      {/* Widgets – will now show even if settings don't provide them yet */}
+      {/* Stats Grid - Only show widgets that are enabled in settings */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        {visible_widgets.map((key) => widgets[key]).filter(Boolean)}
+        {visible_widgets.map((widgetKey) => widgets[widgetKey]).filter(Boolean)}
       </div>
 
+      {/* Recent Trades Section */}
       <div className="bg-gray-900 rounded-lg p-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-semibold">Recent Trades</h2>
@@ -161,8 +161,8 @@ const Dashboard = () => {
                     </div>
                     <div className="text-sm text-gray-400 mt-1">
                       {formatCurrency(trade?.buy ?? 0)} → {formatCurrency(trade?.sell ?? 0)}
-                      {trade?.quantity > 1 && ` (${trade.quantity}x)`} {" • "}
-                      {trade?.platform ?? "Console"}
+                      {trade?.quantity > 1 && ` (${trade.quantity}x)`}
+                      {" • "}{trade?.platform ?? "Console"}
                     </div>
                   </div>
                   <div className="text-right">
@@ -193,6 +193,7 @@ const Dashboard = () => {
         )}
       </div>
 
+      {/* Quick Stats Bar */}
       {trades.length > 0 && (
         <div className="mt-6 grid grid-cols-2 md:grid-cols-4 gap-4">
           <div className="text-center">
@@ -223,9 +224,8 @@ const Dashboard = () => {
             <div className="text-2xl font-bold text-purple-400">
               {trades.length > 0
                 ? formatCurrency(
-                    Math.max(
-                      ...trades.map((t) => t?.profit ?? Number.NEGATIVE_INFINITY)
-                    ) || 0
+                    Math.max(...trades.map((t) => t?.profit ?? Number.NEGATIVE_INFINITY)) ||
+                      0
                   )
                 : 0}
             </div>
