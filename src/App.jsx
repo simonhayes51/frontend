@@ -1,5 +1,6 @@
+// src/App.jsx
 import { lazy, Suspense } from "react";
-import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom"; // ⬅️ BrowserRouter
+import { HashRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
 import { DashboardProvider } from "./context/DashboardContext";
 import { SettingsProvider } from "./context/SettingsContext";
@@ -10,8 +11,11 @@ import PrivateRoute from "./components/PrivateRoute";
 import Landing from "./pages/Landing";
 import Watchlist from "./pages/Watchlist";
 import SquadBuilder from "./pages/SquadBuilder";
+
+// Direct import
 import PlayerSearch from "./pages/PlayerSearch";
 
+// Lazy-loaded pages
 const Dashboard    = lazy(() => import("./pages/Dashboard"));
 const AddTrade     = lazy(() => import("./pages/AddTrade"));
 const Trades       = lazy(() => import("./pages/Trades"));
@@ -22,7 +26,6 @@ const PriceCheck   = lazy(() => import("./pages/PriceCheck"));
 const Login        = lazy(() => import("./pages/Login"));
 const AccessDenied = lazy(() => import("./pages/AccessDenied"));
 const NotFound     = lazy(() => import("./pages/NotFound"));
-const AuthDone     = lazy(() => import("./pages/AuthDone"));   // exists
 
 function App() {
   return (
@@ -34,10 +37,9 @@ function App() {
               <Routes>
                 {/* Public */}
                 <Route path="/login" element={<Login />} />
-                <Route path="/auth-done" element={<AuthDone />} />   {/* OAuth return */}
                 <Route path="/access-denied" element={<AccessDenied />} />
 
-                {/* Protected */}
+                {/* Protected (renders inside <Layout /> via <Outlet />) */}
                 <Route
                   path="/"
                   element={
@@ -60,6 +62,8 @@ function App() {
                   <Route path="pricecheck" element={<PriceCheck />} />
                   <Route path="watchlist" element={<Watchlist />} />
                   <Route path="squad" element={<SquadBuilder />} />
+
+                  {/* Alias: /squad -> /player-search */}
                   <Route path="squad" element={<Navigate to="/player-search" replace />} />
                 </Route>
 
