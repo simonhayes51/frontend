@@ -1,176 +1,55 @@
-import { createContext, useContext, useReducer, useEffect } from 'react';
-import api from '../utils/axios';
+import React, { createContext, useContext, useEffect, useState } from "react";
+import axios from "../axios";
 
-const DashboardContext = createContext();
-
-// Dashboard reducer for managing state
-const dashboardReducer = (state, action) => {
-  switch (action.type) {
-    case 'SET_LOADING':
-      return { ...state, isLoading: action.payload };
-    case 'SET_DASHBOARD_DATA':
-      return {
-        ...state,
-        ...action.payload,
-        isLoading: false,
-        error: null
-      };
-    case 'SET_ERROR':
-      return {
-        ...state,
-        error: action.payload,
-        isLoading: false
-      };
-    case 'ADD_TRADE':
-      return {
-        ...state,
-        trades: [action.payload, ...state.trades.slice(0, 9)], // Keep only 10 most recent
-        netProfit: state.netProfit + action.payload.profit,
-        taxPaid: state.taxPaid + action.payload.ea_tax,
-        profile: {
-          ...state.profile,
-          totalProfit: state.profile.totalProfit + action.payload.profit,
-          tradesLogged: state.profile.tradesLogged + 1
-        }
-      };
-    case 'REFRESH_DATA':
-      return { ...state, shouldRefresh: true };
-    default:
-      return state;
-  }
-};
-
-const initialState = {
-  isLoading: true,
-  error: null,
-  netProfit: 0,
-  taxPaid: 0,
-  startingBalance: 0,
-  trades: [],
-  profile: {
-    totalProfit: 0,
-    tradesLogged: 0,
-    winRate: 0,
-    mostUsedTag: 'N/A',
-    bestTrade: null
-  },
-  shouldRefresh: false
-};
+const Ctx = createContext(null);
 
 export const DashboardProvider = ({ children }) => {
-  const [state, dispatch] = useReducer(dashboardReducer, initialState);
+  const [netProfit, setNetProfit] = useState(0);
+  const [taxPaid, setTaxPaid] = useState(0);
+  const [startingBalance, setStartingBalance] = useState(0);
+  const [trades, setTrades] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState("");
 
-  // Fetch dashboard data
-  const fetchDashboardData = async () => {
-    try {
-      dispatch({ type: 'SET_LOADING', payload: true });
-      
-      const response = await api.get('/api/dashboard');
-      dispatch({ 
-        type: 'SET_DASHBOARD_DATA', 
-        payload: response.data 
-      });
-    } catch (error) {
-      console.error('Dashboard fetch error:', error);
-      dispatch({ 
-        type: 'SET_ERROR', 
-        payload: error.userMessage || 'Failed to load dashboard data' 
-      });
-    }
-  };
-
-  // Add a new trade
-  const addTrade = async (tradeData) => {
-    try {
-      const response = await api.post('/api/trades', tradeData);
-      
-      // Create trade object for local state update
-      const newTrade = {
-        ...tradeData,
-        profit: response.data.profit,
-        ea_tax: response.data.ea_tax,
-        timestamp: new Date().toISOString()
-      };
-      
-      dispatch({ type: 'ADD_TRADE', payload: newTrade });
-      
-      return { success: true, message: response.data.message };
-    } catch (error) {
-      console.error('Add trade error:', error);
-      return { 
-        success: false, 
-        message: error.userMessage || 'Failed to add trade' 
-      };
-    }
-  };
-
-  // Get all trades
-  const getAllTrades = async () => {
-    try {
-      const response = await api.get('/api/trades');
-      return { success: true, trades: response.data.trades };
-    } catch (error) {
-      console.error('Get trades error:', error);
-      return { 
-        success: false, 
-        message: error.userMessage || 'Failed to load trades' 
-      };
-    }
-  };
-
-  // Delete a trade
-  const deleteTrade = async (tradeId) => {
-    try {
-      await api.delete(`/api/trades/${tradeId}`);
-      // Refresh data after deletion
-      await fetchDashboardData();
-      return { success: true, message: 'Trade deleted successfully' };
-    } catch (error) {
-      console.error('Delete trade error:', error);
-      return { 
-        success: false, 
-        message: error.userMessage || 'Failed to delete trade' 
-      };
-    }
-  };
-
-  // Refresh dashboard data
-  const refreshData = () => {
-    fetchDashboardData();
-  };
-
-  // Load data on mount
   useEffect(() => {
-    fetchDashboardData();
+    let cancelled = false;
+    const load = async () => {
+      setIsLoading(true);
+      setError("");
+      try {
+        const user_id = localStorage.getItem("user_id");
+        if (!user_id) throw new Error("No user_id in localStorage");
+
+        // Adjust endpoints to your backend
+        const [sum, t] = await Promise.all([
+          axios.get(`/summary?user_id=${user_id}`),
+          axios.get(`/trades?user_id=${user_id}&limit=100`),
+        ]);
+
+        if (!cancelled) {
+          const s = sum?.data || {};
+          setNetProfit(Number(s.netProfit || s.net_profit || 0));
+          setTaxPaid(Number(s.taxPaid || s.tax_paid || 0));
+          setStartingBalance(Number(s.startingBalance || s.starting_balance || 0));
+
+          const list = Array.isArray(t?.data) ? t.data : (t?.data?.trades || []);
+          setTrades(list);
+        }
+      } catch (e) {
+        if (!cancelled) setError(e?.message || "Failed to load dashboard");
+      } finally {
+        if (!cancelled) setIsLoading(false);
+      }
+    };
+    load();
+    return () => { cancelled = true; };
   }, []);
 
-  // Handle refresh requests
-  useEffect(() => {
-    if (state.shouldRefresh) {
-      fetchDashboardData();
-    }
-  }, [state.shouldRefresh]);
-
-  const value = {
-    ...state,
-    addTrade,
-    getAllTrades,
-    deleteTrade,
-    refreshData,
-    fetchDashboardData
-  };
-
   return (
-    <DashboardContext.Provider value={value}>
+    <Ctx.Provider value={{ netProfit, taxPaid, startingBalance, trades, isLoading, error }}>
       {children}
-    </DashboardContext.Provider>
+    </Ctx.Provider>
   );
 };
 
-export const useDashboard = () => {
-  const context = useContext(DashboardContext);
-  if (!context) {
-    throw new Error('useDashboard must be used within a DashboardProvider');
-  }
-  return context;
-};
+export const useDashboard = () => useContext(Ctx);
