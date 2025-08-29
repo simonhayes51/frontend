@@ -1,10 +1,10 @@
-// src/pages/ThemedDashboard.jsx - Complete integrated version
+// src/pages/ThemedDashboard.jsx - Complete integrated version with fixed imports
 import React, { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Search, Plus, TrendingUp, TrendingDown, Eye, Settings, User, Bell, Filter, 
   Calendar, BarChart3, PieChart, Activity, Coins, Target, Clock, Star, 
-  AlertCircle, Menu, X, Grid3x3, ChevronDown, LineChart, DollarSign, 
+  AlertCircle, Menu, X, Layout, ChevronDown, LineChart, DollarSign, 
   Trophy, Sun, Moon, Save, RotateCcw
 } from "lucide-react";
 
@@ -798,7 +798,7 @@ const ThemedDashboard = () => {
                       : `${theme.button} ${theme.text}`
                   }`}
                 >
-                  <Grid3x3 className="w-4 h-4" />
+                  <Layout className="w-4 h-4" />
                   {isCustomizing ? 'Done Customizing' : 'Customize Widgets'}
                 </button>
               </div>
