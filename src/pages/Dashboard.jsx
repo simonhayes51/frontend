@@ -1,4 +1,4 @@
-// Updated Dashboard component with settings integration (hardened)
+// src/pages/Dashboard.jsx
 import React from "react";
 import { useDashboard } from "../context/DashboardContext";
 import { useSettings } from "../context/SettingsContext";
