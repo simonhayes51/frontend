@@ -10,11 +10,8 @@ import PrivateRoute from "./components/PrivateRoute";
 import Landing from "./pages/Landing";
 import Watchlist from "./pages/Watchlist";
 import SquadBuilder from "./pages/SquadBuilder";
-
-// Direct import
 import PlayerSearch from "./pages/PlayerSearch";
 
-// Lazy-loaded pages
 const Dashboard    = lazy(() => import("./pages/Dashboard"));
 const AddTrade     = lazy(() => import("./pages/AddTrade"));
 const Trades       = lazy(() => import("./pages/Trades"));
@@ -25,6 +22,7 @@ const PriceCheck   = lazy(() => import("./pages/PriceCheck"));
 const Login        = lazy(() => import("./pages/Login"));
 const AccessDenied = lazy(() => import("./pages/AccessDenied"));
 const NotFound     = lazy(() => import("./pages/NotFound"));
+const AuthDone     = lazy(() => import("./pages/AuthDone"));   // NEW
 
 function App() {
   return (
@@ -36,9 +34,10 @@ function App() {
               <Routes>
                 {/* Public */}
                 <Route path="/login" element={<Login />} />
+                <Route path="/auth-done" element={<AuthDone />} /> {/* NEW for OAuth return */}
                 <Route path="/access-denied" element={<AccessDenied />} />
 
-                {/* Protected (renders inside <Layout /> via <Outlet />) */}
+                {/* Protected (inside Layout via Outlet) */}
                 <Route
                   path="/"
                   element={
@@ -61,8 +60,7 @@ function App() {
                   <Route path="pricecheck" element={<PriceCheck />} />
                   <Route path="watchlist" element={<Watchlist />} />
                   <Route path="squad" element={<SquadBuilder />} />
-
-                  {/* Alias: /squad -> /player-search */}
+                  {/* Alias */}
                   <Route path="squad" element={<Navigate to="/player-search" replace />} />
                 </Route>
 
