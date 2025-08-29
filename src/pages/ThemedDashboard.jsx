@@ -12,7 +12,6 @@ import { useDashboard } from "../context/DashboardContext";
 import { useSettings } from "../context/SettingsContext";
 
 const ThemedDashboard = () => {
-  // ---- app contexts ----
   const navigate = useNavigate();
   const { user, logout } = useAuth();
 
@@ -32,18 +31,15 @@ const ThemedDashboard = () => {
     isLoading: settingsLoading,
   } = useSettings();
 
-  // ---- local ui state ----
   const [activeView, setActiveView] = useState("dashboard");
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [isCustomizing, setIsCustomizing] = useState(false);
 
-  // minimal settings just for theme toggle (independent of SettingsContext)
   const [uiSettings, setUiSettings] = useState({ theme: "dark" });
   const updateUITheme = () =>
     setUiSettings((s) => ({ theme: s.theme === "dark" ? "light" : "dark" }));
 
-  // ---- theme tokens (no dynamic variant strings that Tailwind would purge) ----
   const themes = {
     dark: {
       bg: "bg-gray-900",
@@ -74,7 +70,6 @@ const ThemedDashboard = () => {
   };
   const theme = themes[uiSettings.theme];
 
-  // ---- safe data ----
   const trades = Array.isArray(rawTrades) ? rawTrades : [];
   const net = Number(rawNet ?? 0);
   const tax = Number(rawTax ?? 0);
@@ -82,7 +77,6 @@ const ThemedDashboard = () => {
   const gross = net + tax;
   const taxPct = gross > 0 ? (tax / gross) * 100 : 0;
 
-  // visible profit per-trade card uses the same include_tax_in_profit rule
   const recentTrades = useMemo(
     () =>
       trades.slice(0, 8).map((t) => {
@@ -94,10 +88,8 @@ const ThemedDashboard = () => {
     [trades, include_tax_in_profit]
   );
 
-  // very small “alert count” derived from losing trades just to show the red dot
   const alertsCount = trades.filter((t) => Number(t?.profit ?? 0) < 0).length;
 
-  // ---- widget defs (just ids + sizes; content uses real data) ----
   const [dashboardWidgets, setDashboardWidgets] = useState([
     { id: "profit", type: "profit-tracker", size: "large" },
     { id: "watchlist", type: "watchlist-preview", size: "medium" },
@@ -118,7 +110,6 @@ const ThemedDashboard = () => {
     { type: "competition-tracker", name: "Competitions", icon: Trophy },
   ];
 
-  // ---- settings modal (visual only) ----
   const SettingsPanel = () => (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
       <div className={`${theme.cardBg} rounded-xl p-0 w-full max-w-4xl mx-4 max-h-[90vh] overflow-hidden`}>
@@ -181,7 +172,6 @@ const ThemedDashboard = () => {
     </div>
   );
 
-  // ---- widget renderer (real data wired) ----
   const Widget = ({ widget }) => {
     const removeWidget = () =>
       setDashboardWidgets((arr) => arr.filter((w) => w.id !== widget.id));
@@ -210,7 +200,7 @@ const ThemedDashboard = () => {
               </h3>
               <div className="text-right">
                 <div className="text-green-400 text-2xl font-bold">
-                  {formatCurrency(net)} {include_tax_in_profit ? "" : ""}
+                  {formatCurrency(net)}
                 </div>
                 {!include_tax_in_profit && (
                   <div className="text-green-400 text-xs">Net (excl. EA tax)</div>
@@ -314,7 +304,6 @@ const ThemedDashboard = () => {
         );
 
       case "watchlist-preview":
-        // left as a thin shell; you can wire your real watchlist endpoint here
         return (
           <div className={cardCls}>
             {isCustomizing && (
@@ -458,16 +447,13 @@ const ThemedDashboard = () => {
     }
   };
 
-  // ---- loading & error banners ----
   const busy = dashLoading || settingsLoading;
 
   return (
     <div className={`min-h-screen ${theme.bg}`}>
-      {/* top nav */}
       <nav className={`${theme.navBg} border-b ${theme.border} sticky top-0 z-40`}>
         <div className="px-6 py-4">
           <div className="flex items-center justify-between">
-            {/* brand + main tabs */}
             <div className="flex items-center gap-8">
               <div className="flex items-center gap-3">
                 <div className="w-8 h-8 bg-green-500 rounded-lg flex items-center justify-center">
@@ -505,7 +491,6 @@ const ThemedDashboard = () => {
               </div>
             </div>
 
-            {/* right side: theme, bell, auth */}
             <div className="flex items-center gap-3">
               <button
                 onClick={updateUITheme}
@@ -611,21 +596,18 @@ const ThemedDashboard = () => {
         </div>
       </nav>
 
-      {/* top-level warnings */}
       <div className="px-6 pt-4">
         {dashError && (
           <div className="mb-4 text-sm text-red-400">
             {String(dashError)}
           </div>
         )}
-        {busy && (
+        {(dashLoading || settingsLoading) && (
           <div className="mb-4 text-sm text-gray-400">Loading…</div>
         )}
       </div>
 
-      {/* main content */}
       <main className="px-6 py-6">
-        {/* Dashboard */}
         {activeView === "dashboard" && (
           <div className="space-y-6">
             <div className="flex items-center justify-between">
@@ -650,7 +632,6 @@ const ThemedDashboard = () => {
               </div>
             </div>
 
-            {/* Widget Library */}
             {isCustomizing && (
               <div
                 className={`${
@@ -692,7 +673,6 @@ const ThemedDashboard = () => {
               </div>
             )}
 
-            {/* Widgets */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {dashboardWidgets.map((w) => (
                 <Widget key={w.id} widget={w} />
@@ -701,7 +681,6 @@ const ThemedDashboard = () => {
           </div>
         )}
 
-        {/* Trades */}
         {activeView === "trades" && (
           <div className="space-y-6">
             <div className="flex items-center justify-between">
@@ -744,7 +723,11 @@ const ThemedDashboard = () => {
                         <span className={theme.textSecondary}>{formatCurrency(t?.sell ?? 0)}</span>
                         <span className={`${Number(t?.profit ?? 0) >= 0 ? "text-green-400" : "text-red-400"} font-medium`}>
                           {Number(t?.profit ?? 0) >= 0 ? "+" : ""}
-                          {formatCurrency(include_tax_in_profit ? Number(t?.profit ?? 0) - Number(t?.ea_tax ?? 0) : Number(t?.profit ?? 0))}
+                          {formatCurrency(
+                            include_tax_in_profit
+                              ? Number(t?.profit ?? 0) - Number(t?.ea_tax ?? 0)
+                              : Number(t?.profit ?? 0)
+                          )}
                         </span>
                         <span className={theme.textSecondary}>{t?.timestamp ? formatDate(t.timestamp) : "—"}</span>
                         <button className="text-blue-400 hover:text-blue-300">View</button>
@@ -757,7 +740,6 @@ const ThemedDashboard = () => {
           </div>
         )}
 
-        {/* Watchlist – stub */}
         {activeView === "watchlist" && (
           <div className="space-y-6">
             <div className="flex items-center justify-between">
@@ -771,7 +753,6 @@ const ThemedDashboard = () => {
           </div>
         )}
 
-        {/* Analytics – visual placeholders kept, can be wired later */}
         {activeView === "analytics" && (
           <div className="space-y-8">
             <div className="flex items-center justify-between">
@@ -790,7 +771,6 @@ const ThemedDashboard = () => {
               </div>
             </div>
 
-            {/* KPI cards derived from context */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               <div className={`${theme.cardBg} rounded-xl p-6 border ${theme.border}`}>
                 <div className="flex items-center gap-3 mb-3">
@@ -848,7 +828,6 @@ const ThemedDashboard = () => {
               </div>
             </div>
 
-            {/* simple placeholder charts */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <div className={`${theme.cardBg} rounded-xl p-6 border ${theme.border}`}>
                 <h3 className={`${theme.text} text-xl font-semibold mb-6 flex items-center gap-2`}>
