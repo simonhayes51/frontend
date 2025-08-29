@@ -1,159 +1,62 @@
-// src/context/SettingsContext.jsx
-import { createContext, useContext, useReducer, useEffect } from 'react';
-import api from '../utils/axios';
+import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
 
-const SettingsContext = createContext();
+// 🧰 small helpers you already used elsewhere
+const currency = (n = 0) =>
+  new Intl.NumberFormat(undefined, { maximumFractionDigits: 0 }).format(Number(n) || 0);
 
-const settingsReducer = (state, action) => {
-  switch (action.type) {
-    case 'SET_SETTINGS':
-      return {
-        ...state,
-        ...action.payload,
-        isLoading: false
-      };
-    case 'UPDATE_SETTING':
-      return {
-        ...state,
-        [action.key]: action.value
-      };
-    case 'SET_LOADING':
-      return {
-        ...state,
-        isLoading: action.payload
-      };
-    default:
-      return state;
+const fmtDate = (d) => {
+  try {
+    const date = d instanceof Date ? d : new Date(d);
+    return date.toLocaleString();
+  } catch {
+    return "—";
   }
 };
 
-const defaultSettings = {
-  default_platform: "Console",
-  custom_tags: [],
-  currency_format: "coins",
+const DEFAULT = {
   theme: "dark",
-  timezone: "UTC",
-  date_format: "US",
+  notifications: { priceAlerts: true, tradeConfirmations: true, marketUpdates: false, weeklyReports: true },
+  display: { currency: "coins", dateFormat: "relative", compactMode: false, showProfitPercentage: true },
+  trading: { autoRefresh: true, refreshInterval: 30, confirmTrades: true, defaultTradeAmount: 100000 },
+  // which widgets are visible (id matches ThemedDashboard widget types)
+  visible_widgets: ["profit-tracker", "watchlist-preview", "market-trends", "recent-trades", "quick-analytics", "price-alerts"],
   include_tax_in_profit: true,
-  default_chart_range: "30d",
-  visible_widgets: ["profit", "tax", "balance", "trades"],
-  isLoading: true
 };
+
+const SettingsContext = createContext(null);
 
 export const SettingsProvider = ({ children }) => {
-  const [settings, dispatch] = useReducer(settingsReducer, defaultSettings);
+  const [settings, setSettings] = useState(() => {
+    try {
+      return { ...DEFAULT, ...(JSON.parse(localStorage.getItem("settings") || "{}")) };
+    } catch {
+      return DEFAULT;
+    }
+  });
+  const [isLoading, setIsLoading] = useState(false);
 
-  // Load settings on mount
+  // persist
   useEffect(() => {
-    fetchSettings();
-  }, []);
+    localStorage.setItem("settings", JSON.stringify(settings));
+    // allow ThemedDashboard body background to change
+    document.documentElement.classList.toggle("light", settings.theme === "light");
+  }, [settings]);
 
-  const fetchSettings = async () => {
-    try {
-      dispatch({ type: 'SET_LOADING', payload: true });
-      const response = await api.get('/api/settings');
-      dispatch({ type: 'SET_SETTINGS', payload: response.data });
-    } catch (error) {
-      console.error('Failed to fetch settings:', error);
-      dispatch({ type: 'SET_LOADING', payload: false });
-    }
-  };
-
-  const updateSetting = async (key, value) => {
-    try {
-      // Optimistic update
-      dispatch({ type: 'UPDATE_SETTING', key, value });
-      
-      // Persist to server
-      const newSettings = { ...settings, [key]: value };
-      await api.post('/api/settings', newSettings);
-    } catch (error) {
-      console.error('Failed to update setting:', error);
-      // Revert optimistic update on error
-      fetchSettings();
-    }
-  };
-
-  // Currency formatting helper
-  const formatCurrency = (amount) => {
-    if (!amount && amount !== 0) return 'N/A';
-    
-    const num = Number(amount);
-    
-    switch (settings.currency_format) {
-      case 'k':
-        if (num >= 1000) {
-          return `${(num / 1000).toFixed(1)}K`;
-        }
-        return num.toLocaleString();
-      case 'm':
-        if (num >= 1000000) {
-          return `${(num / 1000000).toFixed(1)}M`;
-        } else if (num >= 1000) {
-          return `${(num / 1000).toFixed(1)}K`;
-        }
-        return num.toLocaleString();
-      default:
-        return num.toLocaleString();
-    }
-  };
-
-  // Date formatting helper
-  const formatDate = (date) => {
-    if (!date) return 'N/A';
-    
-    try {
-      const d = new Date(date);
-      const options = {
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
-        timeZone: settings.timezone
-      };
-
-      if (settings.date_format === 'EU') {
-        return d.toLocaleString('en-GB', options);
-      } else {
-        return d.toLocaleString('en-US', options);
-      }
-    } catch (error) {
-      return 'N/A';
-    }
-  };
-
-  // Profit calculation helper
-  const calculateProfit = (buy, sell, quantity, ea_tax = 0) => {
-    const baseProfit = (sell - buy) * quantity;
-    
-    if (settings.include_tax_in_profit) {
-      return baseProfit - ea_tax;
-    }
-    
-    return baseProfit;
-  };
-
-  const value = {
-    ...settings,
-    updateSetting,
-    formatCurrency,
-    formatDate,
-    calculateProfit,
-    fetchSettings
-  };
-
-  return (
-    <SettingsContext.Provider value={value}>
-      {children}
-    </SettingsContext.Provider>
+  const api = useMemo(
+    () => ({
+      ...settings,
+      isLoading,
+      setSettings,
+      updateSettings: (patch) => setSettings((s) => ({ ...s, ...patch })),
+      formatCurrency: currency,
+      formatDate: fmtDate,
+      calculateProfit: ({ profit = 0, ea_tax = 0 }) =>
+        settings.include_tax_in_profit ? profit - ea_tax : profit,
+    }),
+    [settings, isLoading]
   );
+
+  return <SettingsContext.Provider value={api}>{children}</SettingsContext.Provider>;
 };
 
-export const useSettings = () => {
-  const context = useContext(SettingsContext);
-  if (!context) {
-    throw new Error('useSettings must be used within a SettingsProvider');
-  }
-  return context;
-};
+export const useSettings = () => useContext(SettingsContext);
