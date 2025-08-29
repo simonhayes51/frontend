@@ -1,34 +1,29 @@
 // src/App.jsx
 import { lazy, Suspense } from "react";
-import { HashRouter as Router, Routes, Route, Outlet } from "react-router-dom";
-
+import { HashRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
 import { DashboardProvider } from "./context/DashboardContext";
 import { SettingsProvider } from "./context/SettingsContext";
-
 import ErrorBoundary from "./components/ErrorBoundary";
+import Layout from "./components/Layout";
 import Loading from "./components/Loading";
 import PrivateRoute from "./components/PrivateRoute";
 
-// Direct import
-import PlayerSearch from "./pages/PlayerSearch";
+// Legacy pages (lazy)
+const Dashboard    = lazy(() => import("./pages/Dashboard"));
+const AddTrade     = lazy(() => import("./pages/AddTrade"));
+const Trades       = lazy(() => import("./pages/Trades"));
+const Profile      = lazy(() => import("./pages/Profile"));
+const Settings     = lazy(() => import("./pages/Settings"));
+const ProfitGraph  = lazy(() => import("./pages/ProfitGraph"));
+const PriceCheck   = lazy(() => import("./pages/PriceCheck"));
+const Login        = lazy(() => import("./pages/Login"));
+const AccessDenied = lazy(() => import("./pages/AccessDenied"));
+const NotFound     = lazy(() => import("./pages/NotFound"));
+const PlayerSearch = lazy(() => import("./pages/PlayerSearch"));
 
-// Lazy-loaded pages
-const ThemedDashboard = lazy(() => import("./pages/ThemedDashboard")); // ✅ new default
-const AddTrade        = lazy(() => import("./pages/AddTrade"));
-const Trades          = lazy(() => import("./pages/Trades"));
-const Profile         = lazy(() => import("./pages/Profile"));
-const Settings        = lazy(() => import("./pages/Settings"));
-const ProfitGraph     = lazy(() => import("./pages/ProfitGraph"));
-const PriceCheck      = lazy(() => import("./pages/PriceCheck"));
-const Login           = lazy(() => import("./pages/Login"));
-const AccessDenied    = lazy(() => import("./pages/AccessDenied"));
-const NotFound        = lazy(() => import("./pages/NotFound"));
-const Watchlist       = lazy(() => import("./pages/Watchlist"));
-const SquadBuilder    = lazy(() => import("./pages/SquadBuilder"));
-
-// A tiny shell to hold providers and expose an <Outlet /> for nested routes
-const AppShell = () => <Outlet />;
+// New themed page (no sidebar, public)
+const ThemedDashboard = lazy(() => import("./pages/ThemedDashboard"));
 
 function App() {
   return (
@@ -38,27 +33,47 @@ function App() {
           <div className="bg-black min-h-screen text-white">
             <Suspense fallback={<Loading />}>
               <Routes>
-                {/* Public */}
+                {/* ---------- PUBLIC: Themed dashboard is the default ---------- */}
+                <Route
+                  path="/"
+                  element={
+                    <SettingsProvider>
+                      <DashboardProvider>
+                        <ThemedDashboard />
+                      </DashboardProvider>
+                    </SettingsProvider>
+                  }
+                />
+                {/* Keep /new working too */}
+                <Route
+                  path="/new"
+                  element={
+                    <SettingsProvider>
+                      <DashboardProvider>
+                        <ThemedDashboard />
+                      </DashboardProvider>
+                    </SettingsProvider>
+                  }
+                />
+
+                {/* ---------- PUBLIC auth pages (legacy app) ---------- */}
                 <Route path="/login" element={<Login />} />
                 <Route path="/access-denied" element={<AccessDenied />} />
 
-                {/* Protected: NO Layout/Sidebar — everything renders full-bleed */}
+                {/* ---------- LEGACY APP (with sidebar) under /app/* ---------- */}
                 <Route
-                  path="/"
+                  path="/app"
                   element={
                     <PrivateRoute>
                       <SettingsProvider>
                         <DashboardProvider>
-                          <AppShell />
+                          <Layout />
                         </DashboardProvider>
                       </SettingsProvider>
                     </PrivateRoute>
                   }
                 >
-                  {/* Default page: your new themed dashboard */}
-                  <Route index element={<ThemedDashboard />} />
-
-                  {/* Other pages (also without sidebar) */}
+                  <Route index element={<Dashboard />} />
                   <Route path="add-trade" element={<AddTrade />} />
                   <Route path="trades" element={<Trades />} />
                   <Route path="player-search" element={<PlayerSearch />} />
@@ -66,11 +81,11 @@ function App() {
                   <Route path="settings" element={<Settings />} />
                   <Route path="analytics" element={<ProfitGraph />} />
                   <Route path="pricecheck" element={<PriceCheck />} />
-                  <Route path="watchlist" element={<Watchlist />} />
-                  <Route path="squad" element={<SquadBuilder />} />
+                  {/* optional alias */}
+                  <Route path="squad" element={<Navigate to="/app/player-search" replace />} />
                 </Route>
 
-                {/* 404 */}
+                {/* ---------- 404 ---------- */}
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </Suspense>
