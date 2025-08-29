@@ -1,5 +1,5 @@
 // src/pages/Dashboard.jsx
-// Updated Dashboard component with settings integration (hardened)
+// Hardened Dashboard that reads from DashboardContext + SettingsContext
 import React from "react";
 import { useDashboard } from "../context/DashboardContext";
 import { useSettings } from "../context/SettingsContext";
@@ -112,12 +112,14 @@ const Dashboard = () => {
     <div className="p-4 max-w-6xl mx-auto">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">Dashboard</h1>
-        <div className="text-sm text-gray-400">Last updated: {formatDate(new Date())}</div>
+        <div className="text-sm text-gray-400">
+          Last updated: {formatDate(new Date())}
+        </div>
       </div>
 
       {/* Stats Grid - Only show widgets that are enabled in settings */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        {visible_widgets.map((widgetKey) => widgets[widgetKey]).filter(Boolean)}
+        {visible_widgets.map((key) => widgets[key]).filter(Boolean)}
       </div>
 
       {/* Recent Trades Section */}
