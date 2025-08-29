@@ -1,8 +1,16 @@
-[phases.setup]
-nixpkgs = ["nodejs_18", "serve"]
+# Force exact Node version & install dev deps (Vite, plugins)
+[variables]
+NIXPACKS_NODE_VERSION = "18"
+NPM_CONFIG_PRODUCTION = "false"
+# Or: NIXPACKS_INSTALL_DEV = "1"
+
+# Explicit phases so Nixpacks doesn't get clever
+[phases.install]
+cmds = ["npm i"]
 
 [phases.build]
-cmds = ["npm install", "npm run build"]
+cmds = ["npm run build"]
 
-[phases.start]
-cmd = "npx serve -s dist -l 8080"
+[start]
+# Use your package.json start cmd (serve -s dist -l $PORT --single)
+cmd = "npm run start"
