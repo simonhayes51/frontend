@@ -1,3 +1,4 @@
+// src/pages/Dashboard.jsx
 // Updated Dashboard component with settings integration (hardened)
 import React from "react";
 import { useDashboard } from "../context/DashboardContext";
