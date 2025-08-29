@@ -1,21 +1,20 @@
+// src/App.jsx
 import { lazy, Suspense } from "react";
-import { HashRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import { HashRouter as Router, Routes, Route, Outlet } from "react-router-dom";
+
 import { AuthProvider } from "./context/AuthContext";
 import { DashboardProvider } from "./context/DashboardContext";
 import { SettingsProvider } from "./context/SettingsContext";
+
 import ErrorBoundary from "./components/ErrorBoundary";
-import Layout from "./components/Layout";
 import Loading from "./components/Loading";
 import PrivateRoute from "./components/PrivateRoute";
-import Landing from "./pages/Landing";
-import Watchlist from "./pages/Watchlist";
-import SquadBuilder from "./pages/SquadBuilder";
 
 // Direct import
 import PlayerSearch from "./pages/PlayerSearch";
 
 // Lazy-loaded pages
-const Dashboard       = lazy(() => import("./pages/Dashboard"));
+const ThemedDashboard = lazy(() => import("./pages/ThemedDashboard")); // ✅ new default
 const AddTrade        = lazy(() => import("./pages/AddTrade"));
 const Trades          = lazy(() => import("./pages/Trades"));
 const Profile         = lazy(() => import("./pages/Profile"));
@@ -25,9 +24,11 @@ const PriceCheck      = lazy(() => import("./pages/PriceCheck"));
 const Login           = lazy(() => import("./pages/Login"));
 const AccessDenied    = lazy(() => import("./pages/AccessDenied"));
 const NotFound        = lazy(() => import("./pages/NotFound"));
+const Watchlist       = lazy(() => import("./pages/Watchlist"));
+const SquadBuilder    = lazy(() => import("./pages/SquadBuilder"));
 
-// ✅ New themed dashboard page (renders without Layout for exact look)
-const ThemedDashboard = lazy(() => import("./pages/ThemedDashboard"));
+// A tiny shell to hold providers and expose an <Outlet /> for nested routes
+const AppShell = () => <Outlet />;
 
 function App() {
   return (
@@ -41,34 +42,23 @@ function App() {
                 <Route path="/login" element={<Login />} />
                 <Route path="/access-denied" element={<AccessDenied />} />
 
-                {/* New: standalone themed dashboard */}
-                <Route
-                  path="/new"
-                  element={
-                    <PrivateRoute>
-                      <SettingsProvider>
-                        <DashboardProvider>
-                          <ThemedDashboard />
-                        </DashboardProvider>
-                      </SettingsProvider>
-                    </PrivateRoute>
-                  }
-                />
-
-                {/* Protected (renders inside <Layout /> via <Outlet />) */}
+                {/* Protected: NO Layout/Sidebar — everything renders full-bleed */}
                 <Route
                   path="/"
                   element={
                     <PrivateRoute>
                       <SettingsProvider>
                         <DashboardProvider>
-                          <Layout />
+                          <AppShell />
                         </DashboardProvider>
                       </SettingsProvider>
                     </PrivateRoute>
                   }
                 >
-                  <Route index element={<Dashboard />} />
+                  {/* Default page: your new themed dashboard */}
+                  <Route index element={<ThemedDashboard />} />
+
+                  {/* Other pages (also without sidebar) */}
                   <Route path="add-trade" element={<AddTrade />} />
                   <Route path="trades" element={<Trades />} />
                   <Route path="player-search" element={<PlayerSearch />} />
@@ -78,8 +68,6 @@ function App() {
                   <Route path="pricecheck" element={<PriceCheck />} />
                   <Route path="watchlist" element={<Watchlist />} />
                   <Route path="squad" element={<SquadBuilder />} />
-                  {/* If you want /squad to redirect to /player-search instead, replace the line above with the one below */}
-                  {/* <Route path="squad" element={<Navigate to="/player-search" replace />} /> */}
                 </Route>
 
                 {/* 404 */}
