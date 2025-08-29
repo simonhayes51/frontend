@@ -1,40 +1,28 @@
-// src/api/axios.js
+// src/axios.js
 import axios from "axios";
 
 const instance = axios.create({
   // IMPORTANT: no trailing /api here
   baseURL: import.meta.env.VITE_API_URL || "https://backend-production-1f1a.up.railway.app",
-  withCredentials: true, // send/receive session cookies
+  withCredentials: true,      // send/receive session cookies
   timeout: 10000,
 });
 
-// Request interceptor
+// Request interceptor (nice-to-have logging/safety)
 instance.interceptors.request.use(
   (config) => {
     config.headers["Content-Type"] = config.headers["Content-Type"] || "application/json";
-
-    // Ensure we never end up with double slashes (//api/...)
-    if (config.url) {
-      config.url = config.url.replace(/([^:]\/)\/+/g, "$1");
-    }
-
-    if (import.meta.env.DEV) {
-      console.log(`→ ${config.method?.toUpperCase()} ${config.baseURL}${config.url}`);
-    }
+    if (config.url) config.url = config.url.replace(/([^:]\/)\/+/g, "$1"); // avoid double slashes
+    if (import.meta.env.DEV) console.log(`→ ${config.method?.toUpperCase()} ${config.baseURL}${config.url}`);
     return config;
   },
-  (error) => {
-    console.error("Request error:", error);
-    return Promise.reject(error);
-  }
+  (error) => Promise.reject(error)
 );
 
-// Response interceptor
+// RESPONSE: do NOT auto-redirect on 401 — let the route/UI decide (prevents loops)
 instance.interceptors.response.use(
   (response) => {
-    if (import.meta.env.DEV) {
-      console.log("←", response.status, response.config.url);
-    }
+    if (import.meta.env.DEV) console.log("←", response.status, response.config.url);
     return response;
   },
   (error) => {
@@ -43,8 +31,7 @@ instance.interceptors.response.use(
 
     switch (status) {
       case 401:
-        console.log("Authentication required, redirecting to login...");
-        if (typeof window !== "undefined") window.location.href = "/login";
+        // surface to caller; no redirect here
         break;
       case 403:
         console.error("Access forbidden:", message);
@@ -56,23 +43,10 @@ instance.interceptors.response.use(
         console.error("Server error:", message);
         break;
       default:
-        console.error("Request failed:", message);
+        if (!status) console.error("Network error. Please check your connection");
     }
-
-    const enhancedError = { ...error, userMessage: getUserFriendlyMessage(status, message) };
-    return Promise.reject(enhancedError);
+    return Promise.reject(error);
   }
 );
-
-function getUserFriendlyMessage(status, originalMessage) {
-  switch (status) {
-    case 401: return "Please log in to continue";
-    case 403: return "You do not have permission to perform this action";
-    case 404: return "The requested resource was not found";
-    case 500: return "Server error. Please try again later";
-    case undefined: return "Network error. Please check your connection";
-    default: return originalMessage || "An unexpected error occurred";
-  }
-}
 
 export default instance;
