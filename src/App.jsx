@@ -1,5 +1,5 @@
 import { lazy, Suspense } from "react";
-import { HashRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom"; // ⬅️ BrowserRouter
 import { AuthProvider } from "./context/AuthContext";
 import { DashboardProvider } from "./context/DashboardContext";
 import { SettingsProvider } from "./context/SettingsContext";
@@ -22,7 +22,7 @@ const PriceCheck   = lazy(() => import("./pages/PriceCheck"));
 const Login        = lazy(() => import("./pages/Login"));
 const AccessDenied = lazy(() => import("./pages/AccessDenied"));
 const NotFound     = lazy(() => import("./pages/NotFound"));
-const AuthDone     = lazy(() => import("./pages/AuthDone"));   // NEW
+const AuthDone     = lazy(() => import("./pages/AuthDone"));   // exists
 
 function App() {
   return (
@@ -34,10 +34,10 @@ function App() {
               <Routes>
                 {/* Public */}
                 <Route path="/login" element={<Login />} />
-                <Route path="/auth-done" element={<AuthDone />} /> {/* NEW for OAuth return */}
+                <Route path="/auth-done" element={<AuthDone />} />   {/* OAuth return */}
                 <Route path="/access-denied" element={<AccessDenied />} />
 
-                {/* Protected (inside Layout via Outlet) */}
+                {/* Protected */}
                 <Route
                   path="/"
                   element={
@@ -60,7 +60,6 @@ function App() {
                   <Route path="pricecheck" element={<PriceCheck />} />
                   <Route path="watchlist" element={<Watchlist />} />
                   <Route path="squad" element={<SquadBuilder />} />
-                  {/* Alias */}
                   <Route path="squad" element={<Navigate to="/player-search" replace />} />
                 </Route>
 
