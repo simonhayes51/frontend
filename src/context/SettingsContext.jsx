@@ -1,62 +1,99 @@
-import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
-
-// 🧰 small helpers you already used elsewhere
-const currency = (n = 0) =>
-  new Intl.NumberFormat(undefined, { maximumFractionDigits: 0 }).format(Number(n) || 0);
-
-const fmtDate = (d) => {
-  try {
-    const date = d instanceof Date ? d : new Date(d);
-    return date.toLocaleString();
-  } catch {
-    return "—";
-  }
-};
-
-const DEFAULT = {
-  theme: "dark",
-  notifications: { priceAlerts: true, tradeConfirmations: true, marketUpdates: false, weeklyReports: true },
-  display: { currency: "coins", dateFormat: "relative", compactMode: false, showProfitPercentage: true },
-  trading: { autoRefresh: true, refreshInterval: 30, confirmTrades: true, defaultTradeAmount: 100000 },
-  // which widgets are visible (id matches ThemedDashboard widget types)
-  visible_widgets: ["profit-tracker", "watchlist-preview", "market-trends", "recent-trades", "quick-analytics", "price-alerts"],
-  include_tax_in_profit: true,
-};
+import React, { createContext, useContext, useEffect, useState, useCallback } from "react";
 
 const SettingsContext = createContext(null);
 
+// Default widget order (includes Top Earner)
+const DEFAULT_WIDGET_ORDER = [
+  "profit",
+  "trades",
+  "roi",
+  "winrate",
+  "avg_profit",
+  "best_trade",
+  "volume",
+  "profit_trend",
+  "tax",
+  "balance",
+  "latest_trade",
+  "top_earner",
+];
+const DEFAULT_VISIBLE = [...DEFAULT_WIDGET_ORDER];
+
+// Any extra preferences can live here as well (used by Trading tab)
+const DEFAULTS = {
+  include_tax_in_profit: true,
+  visible_widgets: DEFAULT_VISIBLE,
+  widget_order: DEFAULT_WIDGET_ORDER,
+  recent_trades_limit: 5,
+  // “Trading” page example prefs (optional)
+  default_platform: "Console",
+  default_quantity: 1,
+};
+
 export const SettingsProvider = ({ children }) => {
-  const [settings, setSettings] = useState(() => {
-    try {
-      return { ...DEFAULT, ...(JSON.parse(localStorage.getItem("settings") || "{}")) };
-    } catch {
-      return DEFAULT;
-    }
+  const [state, setState] = useState({
+    ...DEFAULTS,
   });
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  // persist
+  // Helpers
+  const formatCurrency = useCallback((n) => {
+    const v = Number.isFinite(n) ? n : 0;
+    return v.toLocaleString("en-GB");
+  }, []);
+
+  const formatDate = useCallback((d) => {
+    const dt = d instanceof Date ? d : new Date(d);
+    return dt.toLocaleString("en-GB", {
+      year: "numeric",
+      month: "short",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  }, []);
+
+  // Load from localStorage
   useEffect(() => {
-    localStorage.setItem("settings", JSON.stringify(settings));
-    // allow ThemedDashboard body background to change
-    document.documentElement.classList.toggle("light", settings.theme === "light");
-  }, [settings]);
+    try {
+      const raw = localStorage.getItem("user_settings");
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        setState((s) => ({ ...s, ...parsed }));
+      }
+    } catch (e) {
+      console.error("Failed to load settings from localStorage", e);
+      setError(e);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
 
-  const api = useMemo(
-    () => ({
-      ...settings,
-      isLoading,
-      setSettings,
-      updateSettings: (patch) => setSettings((s) => ({ ...s, ...patch })),
-      formatCurrency: currency,
-      formatDate: fmtDate,
-      calculateProfit: ({ profit = 0, ea_tax = 0 }) =>
-        settings.include_tax_in_profit ? profit - ea_tax : profit,
-    }),
-    [settings, isLoading]
-  );
+  // Save any partial update
+  const saveSettings = (partial) => {
+    setState((prev) => {
+      const merged = { ...prev, ...partial };
+      try {
+        localStorage.setItem("user_settings", JSON.stringify(merged));
+      } catch (e) {
+        console.error("Failed to save settings to localStorage", e);
+        setError(e);
+      }
+      return merged;
+    });
+  };
 
-  return <SettingsContext.Provider value={api}>{children}</SettingsContext.Provider>;
+  const value = {
+    ...state,
+    isLoading,
+    error,
+    saveSettings,
+    formatCurrency,
+    formatDate,
+  };
+
+  return <SettingsContext.Provider value={value}>{children}</SettingsContext.Provider>;
 };
 
 export const useSettings = () => useContext(SettingsContext);
