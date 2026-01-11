@@ -62,6 +62,12 @@ const MobileNavigation = () => {
       description: "Tracked players"
     },
     { 
+      path: "/social", 
+      label: "Social Feed", 
+      icon: "💬",
+      description: "Trade tips & signals"
+    },
+    { 
       path: "/settings", 
       label: "Settings", 
       icon: "⚙️",

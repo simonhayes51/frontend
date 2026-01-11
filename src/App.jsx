@@ -26,6 +26,7 @@ const PriceCheck   = lazy(() => import("./pages/PriceCheck"));
 const Login        = lazy(() => import("./pages/Login"));
 const AccessDenied = lazy(() => import("./pages/AccessDenied"));
 const NotFound     = lazy(() => import("./pages/NotFound"));
+const SocialFeed   = lazy(() => import("./pages/SocialFeed"));
 
 function App() {
   return (
@@ -62,6 +63,7 @@ function App() {
                   <Route path="pricecheck" element={<PriceCheck />} />
                   <Route path="watchlist" element={<Watchlist />} />
                   <Route path="squad" element={<SquadBuilder />} />
+                  <Route path="social" element={<SocialFeed />} />
 
                   {/* Alias: /squad -> /player-search */}
                   <Route path="squad" element={<Navigate to="/player-search" replace />} />
